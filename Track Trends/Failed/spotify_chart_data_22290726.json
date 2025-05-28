@@ -1,0 +1,5898 @@
+[
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 200,
+        "added_at": "2022-01-05T00:00:00.000Z",
+        "code2": "GLOBAL",
+        "plays": 714038,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": null,
+        "pre_rank": 198,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 10445538,
+        "total_plays": 1353502770,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 192,
+        "added_at": "2021-08-15T00:00:00.000Z",
+        "code2": "US",
+        "plays": 192123,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "21690015.00",
+        "pre_rank": 188,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 3852476,
+        "total_plays": 272583260,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 173,
+        "added_at": "2021-08-09T00:00:00.000Z",
+        "code2": "GB",
+        "plays": 51299,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "2778814.97",
+        "pre_rank": 143,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 907729,
+        "total_plays": 55673743,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 192,
+        "added_at": "2022-01-19T00:00:00.000Z",
+        "code2": "IN",
+        "plays": 59512,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "2598299.25",
+        "pre_rank": 199,
+        "peak_rank": 1,
+        "peak_date": "2019-02-27T00:00:00.000Z",
+        "peak_plays": 59512,
+        "total_plays": 35789170,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 193,
+        "added_at": "2021-03-23T00:00:00.000Z",
+        "code2": "KR",
+        "plays": 1056,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1643992.48",
+        "pre_rank": 181,
+        "peak_rank": 145,
+        "peak_date": "2021-02-27T00:00:00.000Z",
+        "peak_plays": 1340,
+        "total_plays": 31744,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 185,
+        "added_at": "2021-08-09T00:00:00.000Z",
+        "code2": "CA",
+        "plays": 30040,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1623832.27",
+        "pre_rank": 191,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 434431,
+        "total_plays": 36623888,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 193,
+        "added_at": "2020-07-19T00:00:00.000Z",
+        "code2": "RU",
+        "plays": 8765,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1448704.61",
+        "pre_rank": 187,
+        "peak_rank": 145,
+        "peak_date": "2020-07-15T00:00:00.000Z",
+        "peak_plays": 9634,
+        "total_plays": 43388,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 200,
+        "added_at": "2020-05-26T00:00:00.000Z",
+        "code2": "BR",
+        "plays": 64295,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1417068.69",
+        "pre_rank": 199,
+        "peak_rank": 7,
+        "peak_date": "2019-02-11T00:00:00.000Z",
+        "peak_plays": 461403,
+        "total_plays": 56031660,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 181,
+        "added_at": "2021-08-08T00:00:00.000Z",
+        "code2": "AU",
+        "plays": 30365,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1303127.76",
+        "pre_rank": 199,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 400979,
+        "total_plays": 35754229,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 200,
+        "added_at": "2021-08-12T00:00:00.000Z",
+        "code2": "MX",
+        "plays": 86777,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1038393.91",
+        "pre_rank": 185,
+        "peak_rank": 6,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 427493,
+        "total_plays": 63915313,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 199,
+        "added_at": "2020-05-20T00:00:00.000Z",
+        "code2": "ID",
+        "plays": 26572,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "1029919.36",
+        "pre_rank": 196,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 140661,
+        "total_plays": 30329962,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 193,
+        "added_at": "2020-03-08T00:00:00.000Z",
+        "code2": "CH",
+        "plays": 5097,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "736487.86",
+        "pre_rank": 191,
+        "peak_rank": 1,
+        "peak_date": "2019-02-14T00:00:00.000Z",
+        "peak_plays": 53655,
+        "total_plays": 4334441,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 188,
+        "added_at": "2022-05-02T00:00:00.000Z",
+        "code2": "SA",
+        "plays": 1506,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "715551.42",
+        "pre_rank": 181,
+        "peak_rank": 1,
+        "peak_date": "2021-08-07T00:00:00.000Z",
+        "peak_plays": 27549,
+        "total_plays": 2230068,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 197,
+        "added_at": "2020-04-19T00:00:00.000Z",
+        "code2": "TR",
+        "plays": 22243,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "711417.93",
+        "pre_rank": 195,
+        "peak_rank": 5,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 113790,
+        "total_plays": 17809353,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 192,
+        "added_at": "2020-06-06T00:00:00.000Z",
+        "code2": "PL",
+        "plays": 16070,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "576100.16",
+        "pre_rank": 199,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 125425,
+        "total_plays": 12465518,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 194,
+        "added_at": "2020-07-02T00:00:00.000Z",
+        "code2": "BE",
+        "plays": 5888,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "539738.51",
+        "pre_rank": 200,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 61055,
+        "total_plays": 7184897,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 199,
+        "added_at": "2021-02-12T00:00:00.000Z",
+        "code2": "TH",
+        "plays": 6750,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "487771.78",
+        "pre_rank": 195,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 32563,
+        "total_plays": 5705601,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 198,
+        "added_at": "2022-04-13T00:00:00.000Z",
+        "code2": "AE",
+        "plays": 1226,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "423200.81",
+        "pre_rank": 191,
+        "peak_rank": 11,
+        "peak_date": "2019-06-04T00:00:00.000Z",
+        "peak_plays": 5565,
+        "total_plays": 1424338,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 198,
+        "added_at": "2021-08-08T00:00:00.000Z",
+        "code2": "IL",
+        "plays": 3711,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "392786.88",
+        "pre_rank": 196,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 18762,
+        "total_plays": 3463391,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 172,
+        "added_at": "2020-12-31T00:00:00.000Z",
+        "code2": "PH",
+        "plays": 36741,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "389323.91",
+        "pre_rank": 193,
+        "peak_rank": 5,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 222676,
+        "total_plays": 21882040,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 190,
+        "added_at": "2021-03-10T00:00:00.000Z",
+        "code2": "HK",
+        "plays": 3143,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "365719.20",
+        "pre_rank": 188,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 26604,
+        "total_plays": 3995993,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 186,
+        "added_at": "2021-08-27T00:00:00.000Z",
+        "code2": "EG",
+        "plays": 1606,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "351715.24",
+        "pre_rank": 196,
+        "peak_rank": 41,
+        "peak_date": "2021-08-08T00:00:00.000Z",
+        "peak_plays": 4483,
+        "total_plays": 114373,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 196,
+        "added_at": "2022-01-16T00:00:00.000Z",
+        "code2": "MY",
+        "plays": 7111,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "330425.18",
+        "pre_rank": 200,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 75858,
+        "total_plays": 13445122,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 200,
+        "added_at": "2021-08-09T00:00:00.000Z",
+        "code2": "IE",
+        "plays": 5328,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "308373.11",
+        "pre_rank": 169,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 109024,
+        "total_plays": 7384176,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 190,
+        "added_at": "2021-07-05T00:00:00.000Z",
+        "code2": "SG",
+        "plays": 5860,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "298439.22",
+        "pre_rank": 189,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 81137,
+        "total_plays": 9761270,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 175,
+        "added_at": "2021-08-09T00:00:00.000Z",
+        "code2": "ZA",
+        "plays": 3009,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "296205.72",
+        "pre_rank": 179,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 11184,
+        "total_plays": 1588831,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 200,
+        "added_at": "2022-02-27T00:00:00.000Z",
+        "code2": "VN",
+        "plays": 4922,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "256920.55",
+        "pre_rank": 200,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 13589,
+        "total_plays": 7419623,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 195,
+        "added_at": "2020-04-28T00:00:00.000Z",
+        "code2": "CZ",
+        "plays": 3728,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "235270.02",
+        "pre_rank": 196,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 21920,
+        "total_plays": 2384529,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 199,
+        "added_at": "2020-10-25T00:00:00.000Z",
+        "code2": "PT",
+        "plays": 4102,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "227792.37",
+        "pre_rank": 199,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 43337,
+        "total_plays": 4088991,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 176,
+        "added_at": "2021-08-16T00:00:00.000Z",
+        "code2": "RO",
+        "plays": 2401,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "222576.46",
+        "pre_rank": 193,
+        "peak_rank": 1,
+        "peak_date": "2019-02-16T00:00:00.000Z",
+        "peak_plays": 19276,
+        "total_plays": 2578099,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 194,
+        "added_at": "2020-05-14T00:00:00.000Z",
+        "code2": "NZ",
+        "plays": 5886,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "203900.85",
+        "pre_rank": 187,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 85320,
+        "total_plays": 6054910,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 181,
+        "added_at": "2020-07-02T00:00:00.000Z",
+        "code2": "GR",
+        "plays": 2454,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "203644.99",
+        "pre_rank": 196,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 23688,
+        "total_plays": 2383849,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 192,
+        "added_at": "2021-08-11T00:00:00.000Z",
+        "code2": "PE",
+        "plays": 12236,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "195375.63",
+        "pre_rank": 187,
+        "peak_rank": 24,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 50883,
+        "total_plays": 6084673,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 197,
+        "added_at": "2021-02-24T00:00:00.000Z",
+        "code2": "HU",
+        "plays": 2712,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "159229.63",
+        "pre_rank": 197,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 22932,
+        "total_plays": 3015257,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 192,
+        "added_at": "2020-08-26T00:00:00.000Z",
+        "code2": "UA",
+        "plays": 1488,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "157996.17",
+        "pre_rank": 198,
+        "peak_rank": 63,
+        "peak_date": "2020-07-15T00:00:00.000Z",
+        "peak_plays": 2596,
+        "total_plays": 63994,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 167,
+        "added_at": "2021-08-08T00:00:00.000Z",
+        "code2": "SK",
+        "plays": 1539,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "102777.12",
+        "pre_rank": 187,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 10684,
+        "total_plays": 1159267,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 197,
+        "added_at": "2020-03-19T00:00:00.000Z",
+        "code2": "GT",
+        "plays": 3220,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "76206.23",
+        "pre_rank": 191,
+        "peak_rank": 15,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 10637,
+        "total_plays": 1336932,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 136,
+        "added_at": "2020-12-31T00:00:00.000Z",
+        "code2": "BG",
+        "plays": 1004,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "67448.11",
+        "pre_rank": 116,
+        "peak_rank": 1,
+        "peak_date": "2019-03-01T00:00:00.000Z",
+        "peak_plays": 9504,
+        "total_plays": 558018,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 180,
+        "added_at": "2021-08-12T00:00:00.000Z",
+        "code2": "CR",
+        "plays": 3283,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "58035.88",
+        "pre_rank": 180,
+        "peak_rank": 5,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 23552,
+        "total_plays": 2460297,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 126,
+        "added_at": "2020-05-22T00:00:00.000Z",
+        "code2": "LT",
+        "plays": 1054,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "52738.34",
+        "pre_rank": 95,
+        "peak_rank": 1,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 8514,
+        "total_plays": 626183,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 195,
+        "added_at": "2021-08-17T00:00:00.000Z",
+        "code2": "PA",
+        "plays": 1548,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "49446.49",
+        "pre_rank": 181,
+        "peak_rank": 16,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 9163,
+        "total_plays": 817608,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 186,
+        "added_at": "2021-08-12T00:00:00.000Z",
+        "code2": "BO",
+        "plays": 2409,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "36171.18",
+        "pre_rank": 174,
+        "peak_rank": 19,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 6958,
+        "total_plays": 1034509,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 187,
+        "added_at": "2021-08-12T00:00:00.000Z",
+        "code2": "SV",
+        "plays": 2412,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "23324.94",
+        "pre_rank": 178,
+        "peak_rank": 9,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 7148,
+        "total_plays": 1234363,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    },
+    {
+        "id": 10341048,
+        "spotify_id": 10341048,
+        "rank": 175,
+        "added_at": "2021-08-12T00:00:00.000Z",
+        "code2": "HN",
+        "plays": 1676,
+        "duration": "daily",
+        "chart_type": "regional",
+        "gnp": "22201.40",
+        "pre_rank": 177,
+        "peak_rank": 11,
+        "peak_date": "2019-02-08T00:00:00.000Z",
+        "peak_plays": 6211,
+        "total_plays": 912174,
+        "name": "7 rings",
+        "isrc": "USUM71900110",
+        "spotify_track_id": "6ocbgoVGwYJhOv1GgI9NsF",
+        "spotify_album_id": "2fYhqwDWXjbpjaIJPEfKFw",
+        "spotify_popularity": 85,
+        "cm_track": 22290726,
+        "image_url": "https://i.scdn.co/image/ab67616d0000b27356ac7b86e090f307e218e9c8",
+        "spotify_artist_names": [
+            "Ariana Grande"
+        ],
+        "track_genre": "electropop, pop, hip-hop/rap",
+        "cm_artist": [
+            3963
+        ],
+        "artist_names": [
+            "Ariana Grande"
+        ],
+        "code2s": [
+            "US"
+        ],
+        "artist_images": [
+            "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+        ],
+        "artist_covers": [
+            "https://i.scdn.co/image/4599ff6a6b96d54df41e97a484605f0e517ba278"
+        ],
+        "spotify_artist_ids": [
+            "66CXWjxzNUsdJxJ2JdwvnR"
+        ],
+        "spotify_track_ids": [
+            "6ocbgoVGwYJhOv1GgI9NsF"
+        ],
+        "spotify_album_ids": [
+            "2fYhqwDWXjbpjaIJPEfKFw"
+        ],
+        "spotify_duration_ms": 179706,
+        "album_ids": [
+            3500300
+        ],
+        "album_names": [
+            "7 rings"
+        ],
+        "album_upc": [
+            "602577432804"
+        ],
+        "album_label": [
+            "Universal Records"
+        ],
+        "release_dates": [
+            "2019-02-08"
+        ],
+        "composer_name": "Ariana Grande, Njomza Vitia, Oscar Hammerstein Ii, Kimberly Krysiuk, Richard Rodgers, Taylor Parks",
+        "album": [
+            {
+                "id": 3500300,
+                "label": "Universal Records",
+                "name": "7 rings",
+                "ordering": 0,
+                "release_date": "2019-01-18",
+                "upc": "602577432804"
+            }
+        ],
+        "duration_ms": 179706,
+        "explicit": true,
+        "genre": "electropop, pop, hip-hop/rap",
+        "genre_smart_ordered": [
+            {
+                "1": 501872
+            },
+            {
+                "2": 501120
+            },
+            {
+                "3": 501121
+            }
+        ],
+        "latest": {
+            "spotify_popularity": 85
+        },
+        "moods": [
+            "EMPOWERED",
+            "WARM",
+            "SEXY",
+            "AMBITIOUS",
+            "DARK"
+        ],
+        "score": 0.3039569881720479,
+        "songwriter": [
+            "Ariana Grande",
+            "Njomza Vitia",
+            "Oscar Hammerstein Ii",
+            "Kimberly Krysiuk",
+            "Richard Rodgers",
+            "Taylor Parks"
+        ],
+        "tags": "electropop, pop, hip-hop/rap",
+        "artists": [
+            {
+                "band": false,
+                "career_health": "steady",
+                "career_stage": "superstar",
+                "code2": "US",
+                "gender": 0,
+                "id": 3963,
+                "name": "Ariana Grande",
+                "network_strength": {
+                    "instagram_label": "influential",
+                    "instagram_score": 1,
+                    "label": "influential",
+                    "score": 1,
+                    "tiktok_label": "prominent",
+                    "tiktok_score": 0.9388560157790806,
+                    "youtube_label": "influential",
+                    "youtube_score": 0.8115942028986183
+                },
+                "image_url": "https://i.scdn.co/image/ab6761610000e5eb6725802588d7dc1aba076ca5"
+            }
+        ]
+    }
+]
