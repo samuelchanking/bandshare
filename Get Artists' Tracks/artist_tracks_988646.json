@@ -1,0 +1,1061 @@
+{
+    "obj": [
+        {
+            "id": 28918297,
+            "isrc": "UKN492000151",
+            "artist_type": "main",
+            "cm_artist": [
+                988646,
+                519504
+            ],
+            "artist_names": [
+                "Dirty Freud",
+                "Eckoes"
+            ],
+            "code2s": [
+                "GB",
+                "US"
+            ],
+            "artist_images": [
+                null,
+                null
+            ],
+            "artist_covers": [
+                null,
+                null
+            ],
+            "spotify_track_ids": [
+                "4KivtaqsGooPIBlRXxu7OQ"
+            ],
+            "spotify_album_ids": [
+                "1aAig18QFaP4VKuBMeLOA3"
+            ],
+            "spotify_duration_ms": 204800,
+            "preview_url": null,
+            "itunes_track_ids": [
+                "1503660866"
+            ],
+            "itunes_album_ids": [
+                "1503660864"
+            ],
+            "storefronts": [
+                "GB"
+            ],
+            "deezer_track_ids": [
+                "874064082"
+            ],
+            "deezer_album_ids": [
+                131190392
+            ],
+            "deezer_duration": 204,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                5862325
+            ],
+            "album_names": [
+                "Lies"
+            ],
+            "album_upc": [
+                "5060365437069"
+            ],
+            "album_label": [
+                "Keep It Dirty Recordings"
+            ],
+            "release_dates": [
+                "2020-03-27T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T15:49:10Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b27326cb9a30f033c46b2e5ae508",
+            "name": "Lies",
+            "genre_smart_ordered": [
+                {
+                    "1": 501207
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 28918297,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 23,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 2661,
+                "sp_popularity": null,
+                "sp_streams": 14357,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 28918297,
+            "tags": "reggae",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894482,
+            "isrc": "GBKQU1679956",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "5hcbg5u9RwL1sTPBbEUnXj"
+            ],
+            "spotify_album_ids": [
+                "6ynL1KPDO2XNdEWFLH4m7w"
+            ],
+            "spotify_duration_ms": 202057,
+            "preview_url": null,
+            "itunes_track_ids": [
+                "1133644126"
+            ],
+            "itunes_album_ids": [
+                "1133643890"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": [
+                "128781483"
+            ],
+            "deezer_album_ids": [
+                13611533
+            ],
+            "deezer_duration": 202,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                278718
+            ],
+            "album_names": [
+                "The Talking Cure"
+            ],
+            "album_upc": [
+                "5054282454513"
+            ],
+            "album_label": [
+                "Red Alfa Records"
+            ],
+            "release_dates": [
+                "2016-07-20T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T16:03:56Z",
+            "image_url": "https://i.scdn.co/image/0c20c15221213179f86978f7159516ea47af55dd",
+            "name": "5_11 - Original Mix",
+            "genre_smart_ordered": [
+                {
+                    "1": 501124
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894482,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 1,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 10,
+                "sp_popularity": null,
+                "sp_streams": 1444,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894482,
+            "tags": "electronic",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894483,
+            "isrc": "QZAPG1896453",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "0rwsbi2SE0Jwel4Ib6M6qm"
+            ],
+            "spotify_album_ids": [
+                "6SrNbMDdEgntUQGcum0ffI"
+            ],
+            "spotify_duration_ms": 190500,
+            "preview_url": null,
+            "itunes_track_ids": [
+                "1341507907"
+            ],
+            "itunes_album_ids": [
+                "1341507898"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": null,
+            "deezer_album_ids": null,
+            "deezer_duration": null,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6207635
+            ],
+            "album_names": [
+                "Boxing With God"
+            ],
+            "album_upc": [
+                "840093451941"
+            ],
+            "album_label": [
+                "Keep It Dirty records"
+            ],
+            "release_dates": [
+                "2018-04-09T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T16:21:45Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b273611e60308bed73b0a2b099ed",
+            "name": "Born To",
+            "genre_smart_ordered": [
+                {
+                    "1": 501175
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894483,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 3,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 156,
+                "sp_popularity": null,
+                "sp_streams": 1789,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894483,
+            "tags": "house",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894484,
+            "isrc": "QZAPG1896455",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "0f3Ut6RCzJzm5mqq8e9kKT"
+            ],
+            "spotify_album_ids": [
+                "6SrNbMDdEgntUQGcum0ffI"
+            ],
+            "spotify_duration_ms": 196874,
+            "preview_url": null,
+            "itunes_track_ids": [
+                "1341508153"
+            ],
+            "itunes_album_ids": [
+                "1341507898"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": null,
+            "deezer_album_ids": null,
+            "deezer_duration": null,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6207635
+            ],
+            "album_names": [
+                "Boxing With God"
+            ],
+            "album_upc": [
+                "840093451941"
+            ],
+            "album_label": [
+                "Keep It Dirty records"
+            ],
+            "release_dates": [
+                "2018-04-09T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T13:56:31Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b273611e60308bed73b0a2b099ed",
+            "name": "Hit the Floor",
+            "genre_smart_ordered": [
+                {
+                    "1": 501146
+                },
+                {
+                    "2": 501124
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894484,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 1,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 10,
+                "sp_popularity": null,
+                "sp_streams": 1444,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894484,
+            "tags": "dance, electronic",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894486,
+            "isrc": "GBLFP1578247",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "3ld0i07RSrPZM5sVreKG28"
+            ],
+            "spotify_album_ids": [
+                "6ac0kM3LbtFax7MtsiBVmz"
+            ],
+            "spotify_duration_ms": 253500,
+            "itunes_track_ids": [
+                "1091239018"
+            ],
+            "itunes_album_ids": [
+                "1091239015"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": [
+                "120566540"
+            ],
+            "deezer_album_ids": [
+                12581826
+            ],
+            "deezer_duration": 253,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6207623
+            ],
+            "album_names": [
+                "Hands of Mercy"
+            ],
+            "album_upc": [
+                "5054960041295"
+            ],
+            "album_label": [
+                "Independent"
+            ],
+            "release_dates": [
+                "2016-03-07T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T13:57:34Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b273e03f1529ff0cd07c559fcf48",
+            "name": "Dark Energy",
+            "genre_smart_ordered": [
+                {
+                    "1": 501124
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894486,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 3,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 262,
+                "sp_popularity": null,
+                "sp_streams": 1553,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894486,
+            "tags": "electronic",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894487,
+            "isrc": "QZAPG1896456",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "7qPJ6VpNmCkU4YWVTQ1qYy"
+            ],
+            "spotify_album_ids": [
+                "6SrNbMDdEgntUQGcum0ffI"
+            ],
+            "spotify_duration_ms": 282461,
+            "itunes_track_ids": [
+                "1341508154"
+            ],
+            "itunes_album_ids": [
+                "1341507898"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": null,
+            "deezer_album_ids": null,
+            "deezer_duration": null,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6207635
+            ],
+            "album_names": [
+                "Boxing With God"
+            ],
+            "album_upc": [
+                "840093451941"
+            ],
+            "album_label": [
+                "Keep It Dirty records"
+            ],
+            "release_dates": [
+                "2018-04-09T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T15:57:40Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b273611e60308bed73b0a2b099ed",
+            "name": "Murky Dealings",
+            "genre_smart_ordered": [
+                {
+                    "1": 501146
+                },
+                {
+                    "2": 501124
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894487,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 1,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 10,
+                "sp_popularity": null,
+                "sp_streams": 1706,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894487,
+            "tags": "dance, electronic",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894488,
+            "isrc": "QZAPG1896452",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "3yh856YARzmTc26OOD8Vcr"
+            ],
+            "spotify_album_ids": [
+                "6SrNbMDdEgntUQGcum0ffI"
+            ],
+            "spotify_duration_ms": 218789,
+            "preview_url": null,
+            "itunes_track_ids": [
+                "1341507906"
+            ],
+            "itunes_album_ids": [
+                "1341507898"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": null,
+            "deezer_album_ids": null,
+            "deezer_duration": null,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6207635
+            ],
+            "album_names": [
+                "Boxing With God"
+            ],
+            "album_upc": [
+                "840093451941"
+            ],
+            "album_label": [
+                "Keep It Dirty records"
+            ],
+            "release_dates": [
+                "2018-04-09T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T12:45:33Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b273611e60308bed73b0a2b099ed",
+            "name": "Be Mine",
+            "genre_smart_ordered": [
+                {
+                    "1": 501175
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894488,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 6,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 15046,
+                "sp_popularity": null,
+                "sp_streams": 3440,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894488,
+            "tags": "house",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29894489,
+            "isrc": "QZAPG1896454",
+            "artist_type": "main",
+            "cm_artist": [
+                988646,
+                3744077,
+                517572
+            ],
+            "artist_names": [
+                "Dirty Freud",
+                "Fullmarx",
+                "Salio"
+            ],
+            "code2s": [
+                "GB",
+                null,
+                null
+            ],
+            "artist_images": [
+                null,
+                null,
+                null
+            ],
+            "artist_covers": [
+                null,
+                null,
+                null
+            ],
+            "spotify_track_ids": [
+                "0OqWNjH83ocVn8eM1D8Wps"
+            ],
+            "spotify_album_ids": [
+                "6SrNbMDdEgntUQGcum0ffI"
+            ],
+            "spotify_duration_ms": 201904,
+            "preview_url": null,
+            "itunes_track_ids": [
+                "1341507908"
+            ],
+            "itunes_album_ids": [
+                "1341507898"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": null,
+            "deezer_album_ids": null,
+            "deezer_duration": null,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6207635
+            ],
+            "album_names": [
+                "Boxing With God"
+            ],
+            "album_upc": [
+                "840093451941"
+            ],
+            "album_label": [
+                "Keep It Dirty records"
+            ],
+            "release_dates": [
+                "2018-04-09T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T13:35:14Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b273611e60308bed73b0a2b099ed",
+            "name": "Kadema",
+            "genre_smart_ordered": [
+                {
+                    "1": 501146
+                },
+                {
+                    "2": 501124
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29894489,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 3,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 182,
+                "sp_popularity": null,
+                "sp_streams": 2351,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29894489,
+            "tags": "dance, electronic",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 29910993,
+            "isrc": "UKN492000485",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "0uLEzIFwYTQZ9ZkoAAzhBW"
+            ],
+            "spotify_album_ids": [
+                "5xDKgIHzxnZRUZ3yPT9K0Z"
+            ],
+            "spotify_duration_ms": 200476,
+            "itunes_track_ids": [
+                "1513549497"
+            ],
+            "itunes_album_ids": [
+                "1513549496"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": [
+                "951361462"
+            ],
+            "deezer_album_ids": [
+                146386232
+            ],
+            "deezer_duration": 200,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                6213539
+            ],
+            "album_names": [
+                "Ninja Man"
+            ],
+            "album_upc": [
+                "5060365438325"
+            ],
+            "album_label": [
+                "Keep It Dirty Recordings"
+            ],
+            "release_dates": [
+                "2020-06-26T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T16:51:30Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b2731c521e4d821775025800f0a9",
+            "name": "Ninja Man",
+            "genre_smart_ordered": [
+                {
+                    "1": 501124
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 29910993,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 45,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 4124,
+                "sp_popularity": null,
+                "sp_streams": 16669,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 29910993,
+            "tags": "electronic",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        },
+        {
+            "id": 30542666,
+            "isrc": "GBKQU1481097",
+            "artist_type": "main",
+            "cm_artist": [
+                988646
+            ],
+            "artist_names": [
+                "Dirty Freud"
+            ],
+            "code2s": [
+                "GB"
+            ],
+            "artist_images": [
+                null
+            ],
+            "artist_covers": [
+                null
+            ],
+            "spotify_track_ids": [
+                "6Ko9ps4L9VA8RrWphD6NSD",
+                "4ehs9Umbb78GZ34Iy4yhb2"
+            ],
+            "spotify_album_ids": [
+                "34YDhJ4usHfK1KrL5eORXD",
+                "2KaeWY5u6zpE9k6E2wDSHS"
+            ],
+            "spotify_duration_ms": 129986,
+            "itunes_track_ids": [
+                "927986554"
+            ],
+            "itunes_album_ids": [
+                "927986536"
+            ],
+            "storefronts": [
+                "US"
+            ],
+            "deezer_track_ids": null,
+            "deezer_album_ids": null,
+            "deezer_duration": null,
+            "amazon_track_ids": null,
+            "amazon_album_ids": null,
+            "album_ids": [
+                5216630,
+                6436838
+            ],
+            "album_names": [
+                "Filthy Sounds Collection, Vol. 13",
+                "Agendas EP"
+            ],
+            "album_upc": [
+                "5054283227031",
+                "5054281332355"
+            ],
+            "album_label": [
+                "Filthy Sounds",
+                "Filthy Sounds"
+            ],
+            "release_dates": [
+                "2017-10-25T00:00:00.000Z",
+                "2014-11-08T00:00:00.000Z"
+            ],
+            "created_at": "2025-05-24T12:43:47Z",
+            "image_url": "https://i.scdn.co/image/ab67616d0000b2738c2fd7c3e40deef4df984dcf",
+            "name": "Whizzing Through Time & Space - Original Mix",
+            "genre_smart_ordered": [
+                {
+                    "1": 501146
+                },
+                {
+                    "2": 501175
+                }
+            ],
+            "cm_statistics": {
+                "cm_track": 30542666,
+                "de_playlist_total_reach": null,
+                "num_am_editorial_playlists": null,
+                "num_am_playlists": null,
+                "num_az_editorial_playlists": null,
+                "num_az_playlists": null,
+                "num_de_editorial_playlists": null,
+                "num_de_playlists": null,
+                "num_sp_editorial_playlists": 0,
+                "num_sp_playlists": 2,
+                "num_tt_videos": null,
+                "num_yt_editorial_playlists": null,
+                "num_yt_playlists": null,
+                "sp_playlist_total_reach": 10,
+                "sp_popularity": null,
+                "sp_streams": 2047,
+                "yt_playlist_total_reach": null
+            },
+            "cm_track": 30542666,
+            "tags": "dance, house",
+            "cm_audio_features": {
+                "acousticness": 0,
+                "danceability": 0,
+                "energy": 0,
+                "instrumentalness": 0,
+                "key": 0,
+                "liveness": 0,
+                "loudness": 0,
+                "mode": 0,
+                "speechiness": 0,
+                "tempo": 0,
+                "valence": 0
+            },
+            "modified_at": null,
+            "description": null
+        }
+    ],
+    "total": 81
+}
