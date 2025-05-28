@@ -1,0 +1,31 @@
+{
+    "obj": [
+        {
+            "domain": "spotify",
+            "track_domain_id": "7qPJ6VpNmCkU4YWVTQ1qYy",
+            "type": "streams",
+            "data": [
+                {
+                    "value": 1671,
+                    "timestp": "2025-01-02"
+                },
+                {
+                    "value": 1673,
+                    "timestp": "2025-01-30"
+                },
+                {
+                    "value": 1688,
+                    "timestp": "2025-02-25"
+                },
+                {
+                    "value": 1707,
+                    "timestp": "2025-04-01"
+                },
+                {
+                    "value": 1706,
+                    "timestp": "2025-05-06"
+                }
+            ]
+        }
+    ]
+}
