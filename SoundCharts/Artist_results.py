@@ -3,11 +3,28 @@ import json
 import urllib.parse
 import re
 import time
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, OperationFailure
+
+
 
 headers = {
     'x-app-id': 'MANCHESTER_696DCD6E',
     'x-api-key': '11ed17a6cf25afa4',
 }
+
+# Connect to MongoDB
+try:
+    client = MongoClient('mongodb://localhost:27017/')
+    db = client['soundcharts']
+    artists_collection = db['artists']
+    albums_collection = db['albums']
+    songs_collection = db['songs']
+    print("Connected to MongoDB database 'soundcharts'")
+except ConnectionError:
+    print("Failed to connect to MongoDB. Ensure MongoDB is running on localhost:27017")
+    exit()
+    
 
 # Prompt for artist name
 artist_name = input("Enter artist name to search (e.g., Billie Eilish): ")
@@ -109,6 +126,23 @@ for endpoint in endpoints:
         except ValueError:
             print("No additional error details available")
         combined_data[endpoint['file_key']] = {'error': f"Failed to fetch: Status {response.status_code}"}
+        
+        
+#Store artist data in MongoDB
+try:
+    # Check if artist already exists to avoid duplicates
+    if artists_collection.find_one({'artist_uuid': artist_uuid}):
+        artists_collection.update_one(
+            {'artist_uuid': artist_uuid},
+            {'$set': combined_data}
+        )
+        print(f"Updated artist {artist_uuid} in 'artists' collection")
+    else:
+        artists_collection.insert_one(combined_data)
+        print(f"Inserted artist {artist_uuid} into 'artists' collection")
+except OperationFailure as e:
+    print(f"Failed to store artist data in MongoDB: {e}")
+    exit()
 
 # Step 3: Fetch album data if albums are available
 combined_album_data = {}
@@ -168,6 +202,23 @@ if 'albums' in combined_data and 'items' in combined_data['albums']:
                 except ValueError:
                     print("No additional error details available")
                 combined_album_data[album_uuid][endpoint['data_key']] = {'error': f"Failed to fetch: Status {response.status_code}"}
+                
+    # Store album data in MongoDB
+    try:
+        for album_uuid, album_data in combined_album_data.items():
+            if albums_collection.find_one({'album_uuid': album_uuid}):
+                albums_collection.update_one(
+                    {'album_uuid': album_uuid},
+                    {'$set': album_data}
+                )
+                print(f"Updated album {album_uuid} in 'albums' collection")
+            else:
+                albums_collection.insert_one(album_data)
+                print(f"Inserted album {album_uuid} into 'albums' collection")
+    except OperationFailure as e:
+        print(f"Failed to store album data in MongoDB: {e}")
+        exit()
+
 
 # Step 4: Fetch song data if songs are available
 combined_song_data = {}
@@ -228,19 +279,22 @@ if 'songs' in combined_data and 'items' in combined_data['songs'] and isinstance
                 except (ValueError, AttributeError):
                     print("No additional error details available")
                 combined_song_data[song_uuid][endpoint['data_key']] = {'error': f"Failed to fetch: Status {response.status_code if response else 'N/A'}"}
+        # Store song data in MongoDB
+    try:
+        for song_uuid, song_data in combined_song_data.items():
+            if songs_collection.find_one({'song_uuid': song_uuid}):
+                songs_collection.update_one(
+                    {'song_uuid': song_uuid},
+                    {'$set': song_data}
+                )
+                print(f"Updated song {song_uuid} in 'songs' collection")
+            else:
+                songs_collection.insert_one(song_data)
+                print(f"Inserted song {song_uuid} into 'songs' collection")
+    except OperationFailure as e:
+        print(f"Failed to store song data in MongoDB: {e}")
+        exit()
 
-# Step 5: Export combined data to separate JSON files
-artist_output_file = f'artist_data_{sanitized_artist_name}.json'
-with open(artist_output_file, 'w', encoding='utf-8') as f:
-    json.dump(combined_data, f, ensure_ascii=False, indent=4)
-print(f"Combined artist data exported to {artist_output_file}")
-
-album_output_file = f'album_data_{sanitized_artist_name}.json'
-with open(album_output_file, 'w', encoding='utf-8') as f:
-    json.dump(combined_album_data, f, ensure_ascii=False, indent=4)
-print(f"Combined album data exported to {album_output_file}")
-
-song_output_file = f'song_data_{sanitized_artist_name}.json'
-with open(song_output_file, 'w', encoding='utf-8') as f:
-    json.dump(combined_song_data, f, ensure_ascii=False, indent=4)
-print(f"Combined song data exported to {song_output_file}")
+# Step 5: Close MongoDB connection
+client.close()
+print("MongoDB connection closed")
