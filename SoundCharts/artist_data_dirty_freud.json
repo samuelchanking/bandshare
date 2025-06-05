@@ -1,0 +1,1643 @@
+{
+    "metadata": {
+        "type": "artist",
+        "object": {
+            "uuid": "11e83fed-c5cd-e380-ba73-a0369fe50396",
+            "slug": "dirty-freud",
+            "name": "Dirty Freud",
+            "appUrl": "https://app.soundcharts.com/app/artist/dirty-freud/overview",
+            "imageUrl": "https://assets.soundcharts.com/artist/d/c/5/11e83fed-c5cd-e380-ba73-a0369fe50396.jpg",
+            "countryCode": "GB"
+        },
+        "errors": []
+    },
+    "audience": {
+        "related": {
+            "artist": {
+                "uuid": "11e83fed-c5cd-e380-ba73-a0369fe50396",
+                "slug": "dirty-freud",
+                "name": "Dirty Freud",
+                "appUrl": "https://app.soundcharts.com/app/artist/dirty-freud/overview",
+                "imageUrl": "https://assets.soundcharts.com/artist/d/c/5/11e83fed-c5cd-e380-ba73-a0369fe50396.jpg"
+            },
+            "platform": "spotify",
+            "lastCrawlDate": "2025-06-03T12:00:00+00:00"
+        },
+        "items": [
+            {
+                "date": "2025-03-02T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 9108,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-04T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 9112,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-06T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 9128,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-08T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 9132,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-10T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 8519,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-12T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 7783,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-14T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 5874,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-16T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 5201,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-18T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 5163,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-20T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 4829,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-23T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 4259,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-26T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 3360,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-03-29T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 3252,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-01T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 3069,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-04T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2904,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-07T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2803,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-10T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2797,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-13T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2328,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-16T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2319,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-19T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2306,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-22T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2303,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-25T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2302,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-04-28T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2303,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-01T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2305,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-04T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2306,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-07T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2306,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-10T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2306,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-13T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2374,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-16T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2374,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-19T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2373,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-22T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2369,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-25T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2369,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            },
+            {
+                "date": "2025-05-28T00:00:00+00:00",
+                "likeCount": null,
+                "followerCount": 2369,
+                "followingCount": null,
+                "postCount": null,
+                "viewCount": null
+            }
+        ],
+        "page": {
+            "offset": 0,
+            "limit": 100,
+            "next": null,
+            "previous": null,
+            "total": 33
+        },
+        "errors": []
+    },
+    "albums": {
+        "related": {
+            "uuid": "11e83fed-c5cd-e380-ba73-a0369fe50396",
+            "slug": "dirty-freud",
+            "name": "Dirty Freud",
+            "appUrl": "https://app.soundcharts.com/app/artist/dirty-freud/overview",
+            "imageUrl": "https://assets.soundcharts.com/artist/d/c/5/11e83fed-c5cd-e380-ba73-a0369fe50396.jpg"
+        },
+        "items": [
+            {
+                "name": "Agendas EP",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2014-11-08T00:00:00+00:00",
+                "uuid": "2ec7ec6b-491e-4b66-ad92-51ad2e03fd76",
+                "type": "album"
+            },
+            {
+                "name": "All In This Together",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2023-11-03T00:00:00+00:00",
+                "uuid": "46f7fb35-4b6e-4fbb-95f5-6b4dea9060dc",
+                "type": "album"
+            },
+            {
+                "name": "Blood Bayou",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-10-02T00:00:00+00:00",
+                "uuid": "e6e10bc5-eb2a-4aaf-858a-11215c03c513",
+                "type": "single"
+            },
+            {
+                "name": "Boxing With God",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2018-04-09T00:00:00+00:00",
+                "uuid": "3fd05983-ac21-42f7-9025-626b08e023bf",
+                "type": "album"
+            },
+            {
+                "name": "Chaos Is My Playground",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2023-10-11T00:00:00+00:00",
+                "uuid": "640f0853-f44b-470e-91f4-ef65ecc15380",
+                "type": "single"
+            },
+            {
+                "name": "Chaos Is My Playground (feat. Eckoes) - Single",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2023-10-11T00:00:00+00:00",
+                "uuid": "b3e5681b-f727-40b8-961e-c40520ff7021",
+                "type": "single"
+            },
+            {
+                "name": "Dirty Deeds E.P",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2017-04-17T00:00:00+00:00",
+                "uuid": "028bfb28-5655-40de-8824-733e6926481a",
+                "type": "single"
+            },
+            {
+                "name": "Dirty Freud",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2014-08-20T00:00:00+00:00",
+                "uuid": "3090ec62-9a56-461f-9ade-16bb5b692221",
+                "type": ""
+            },
+            {
+                "name": "Ego Shrieks E.P.",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2015-08-28T00:00:00+00:00",
+                "uuid": "73fe7ee4-e680-4f17-a9d2-4726e37a7758",
+                "type": "single"
+            },
+            {
+                "name": "Find Me (feat. Iora) [Remix] - Single",
+                "creditName": "Dirty Freud & iora",
+                "releaseDate": "2021-07-02T00:00:00+00:00",
+                "uuid": "85351472-7202-4ec7-99b5-1cae0f444d51",
+                "type": "single"
+            },
+            {
+                "name": "Find Me (Remix)",
+                "creditName": "Dirty Freud & IORA",
+                "releaseDate": "2021-07-02T00:00:00+00:00",
+                "uuid": "72bd19fc-4fb0-421b-9ab7-7c8d013c7c3a",
+                "type": "single"
+            },
+            {
+                "name": "Fly Girl",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2022-05-06T00:00:00+00:00",
+                "uuid": "eaa0d01c-ffc6-40fc-8eb0-244d5e7712b7",
+                "type": "single"
+            },
+            {
+                "name": "Hands of Mercy",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2016-03-07T00:00:00+00:00",
+                "uuid": "e56c4b83-0929-41a9-a8e0-0959d2d7b8f1",
+                "type": "single"
+            },
+            {
+                "name": "I Love It",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2024-05-31T00:00:00+00:00",
+                "uuid": "2beccbc6-2bec-41df-a597-69806332381f",
+                "type": "single"
+            },
+            {
+                "name": "I'm So Fly",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2024-08-08T00:00:00+00:00",
+                "uuid": "ae21f049-36e9-41de-8878-cd230d963449",
+                "type": "single"
+            },
+            {
+                "name": "Intentions",
+                "creditName": "Dirty Freud & Szou",
+                "releaseDate": "2020-08-21T00:00:00+00:00",
+                "uuid": "76e4166e-52d5-460a-ad6e-c91f0a957b9c",
+                "type": "single"
+            },
+            {
+                "name": "Intentions (feat. Szou) - Single",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-08-21T00:00:00+00:00",
+                "uuid": "6f4b880f-29ad-478c-9200-a44d781d80d7",
+                "type": "single"
+            },
+            {
+                "name": "Intentions (feat. Szou) - Single",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-08-21T00:00:00+00:00",
+                "uuid": "d717556c-4d43-4027-849a-3b0ab92fcb2c",
+                "type": "single"
+            },
+            {
+                "name": "It's A Trap",
+                "creditName": "Sweetpea & Dirty Freud",
+                "releaseDate": "2023-02-24T00:00:00+00:00",
+                "uuid": "5efe8c3d-0c50-4d60-9520-98059daada0e",
+                "type": "single"
+            },
+            {
+                "name": "It's a Trap (feat. Brother Raye) - Single",
+                "creditName": "Sweetpea & Dirty Freud",
+                "releaseDate": "2023-02-24T00:00:00+00:00",
+                "uuid": "09e729bc-472b-42bf-a49e-dc68c099d91f",
+                "type": "single"
+            },
+            {
+                "name": "Lies",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-03-27T00:00:00+00:00",
+                "uuid": "64071fa7-7f94-43bd-a9a3-fc3ae1e0f535",
+                "type": "single"
+            },
+            {
+                "name": "Lies (Birkenhof Remix)",
+                "creditName": "Dirty Freud & Birkenhof",
+                "releaseDate": "2020-07-31T00:00:00+00:00",
+                "uuid": "0d1c9d18-0651-4695-aca7-2d4e09b6b020",
+                "type": "single"
+            },
+            {
+                "name": "Love In The Backwater",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-12-11T00:00:00+00:00",
+                "uuid": "c5f228ba-f8c6-4168-ab13-bc081a660afe",
+                "type": "album"
+            },
+            {
+                "name": "Love Letters To A Red Rose",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2021-11-22T00:00:00+00:00",
+                "uuid": "269105b3-4aef-4729-bb64-42142baf33ca",
+                "type": "album"
+            },
+            {
+                "name": "Love Me",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2021-04-16T00:00:00+00:00",
+                "uuid": "22cd6f80-7fa8-4cfc-bea2-f464f54894b2",
+                "type": "single"
+            },
+            {
+                "name": "Meet Me In The Real",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2022-05-20T00:00:00+00:00",
+                "uuid": "29adaf75-2b0d-4aaf-ab51-4f743e18572b",
+                "type": "album"
+            },
+            {
+                "name": "Moments",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-11-06T00:00:00+00:00",
+                "uuid": "b769f3cb-c333-4bb4-8963-4ca5d52ddcfa",
+                "type": "single"
+            },
+            {
+                "name": "Moments - Single",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-11-06T00:00:00+00:00",
+                "uuid": "76406385-f5e6-449f-b42a-faa9a815cda2",
+                "type": "single"
+            },
+            {
+                "name": "Ninja Man",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2020-06-26T00:00:00+00:00",
+                "uuid": "238558bc-50dc-4bb7-acde-9eb55184ac98",
+                "type": "single"
+            },
+            {
+                "name": "Oedipus - EP",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2016-03-20T00:00:00+00:00",
+                "uuid": "006a9299-dfab-47e1-b4ae-745c39200795",
+                "type": "album"
+            },
+            {
+                "name": "Oedipus E.P.",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2016-03-20T00:00:00+00:00",
+                "uuid": "9c432c6c-1e13-4909-aeee-252dc9ea4229",
+                "type": "compil"
+            },
+            {
+                "name": "Parameters",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2014-08-20T00:00:00+00:00",
+                "uuid": "9384e273-3a9f-4e1d-b264-6d7f39891461",
+                "type": ""
+            },
+            {
+                "name": "Prints",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2024-10-10T00:00:00+00:00",
+                "uuid": "ddff0aa3-dfeb-47a7-8778-6e9d9f31b4a9",
+                "type": "single"
+            },
+            {
+                "name": "Promenade",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2023-01-25T00:00:00+00:00",
+                "uuid": "5ee8327f-dceb-4185-af7a-616a262d3302",
+                "type": "single"
+            },
+            {
+                "name": "Reverence In Man That Which Is Supreme",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2021-10-22T00:00:00+00:00",
+                "uuid": "93634052-df00-4de0-904e-a4ac3fcc8fcc",
+                "type": "single"
+            },
+            {
+                "name": "Shame On Me",
+                "creditName": "Dirty Freud & Eckoes",
+                "releaseDate": "2022-03-02T00:00:00+00:00",
+                "uuid": "1f267f41-39ff-419f-b6af-b238842c7a99",
+                "type": "single"
+            },
+            {
+                "name": "Shame On Me (feat. Eckoes) - Single",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2022-03-02T00:00:00+00:00",
+                "uuid": "b829fbf7-3b21-4d49-9177-05e1dcb8bac1",
+                "type": "single"
+            },
+            {
+                "name": "Shame On Me (feat. Eckoes) - Single",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2022-03-02T00:00:00+00:00",
+                "uuid": "af2d26c1-290e-4ef6-b958-c014d1219443",
+                "type": "single"
+            },
+            {
+                "name": "Tears of a Savage",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2014-08-20T00:00:00+00:00",
+                "uuid": "854471f4-f888-493d-9fb5-60665f8f9186",
+                "type": ""
+            },
+            {
+                "name": "The Crows Are All Liars",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2014-08-20T00:00:00+00:00",
+                "uuid": "e9e25e54-2e3a-4d82-9ada-6bc8c33437ec",
+                "type": "single"
+            },
+            {
+                "name": "The Talking Cure",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2016-07-20T00:00:00+00:00",
+                "uuid": "edc014b6-5bb2-4324-aa52-31844d9d37e1",
+                "type": "album"
+            },
+            {
+                "name": "The Villain in Someone's Story",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2023-03-03T00:00:00+00:00",
+                "uuid": "920f060f-c314-4fa2-8ae2-2b207485608b",
+                "type": "album"
+            },
+            {
+                "name": "These Mental Riches You May Here Acquire",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2021-09-24T00:00:00+00:00",
+                "uuid": "a09e0472-c1f8-4051-83af-125ddf0d190c",
+                "type": "single"
+            },
+            {
+                "name": "We're Not Dead Yet!, Vol. 1",
+                "creditName": "Adobe Crash & Dirty Freud & Kh4o5",
+                "releaseDate": "2015-12-15T00:00:00+00:00",
+                "uuid": "feb167d7-b12b-4dc3-940d-596b6157b18a",
+                "type": "single"
+            },
+            {
+                "name": "Whizzing Through Time and Space",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2014-08-20T00:00:00+00:00",
+                "uuid": "5df0eeb1-ca2d-4e65-a123-c83be4175dae",
+                "type": ""
+            },
+            {
+                "name": "Wonderland / Breakin' The Chain",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2022-11-23T00:00:00+00:00",
+                "uuid": "3df38830-0fc5-4c42-bbcf-fe4e0e2ada70",
+                "type": "album"
+            },
+            {
+                "name": "You've Been",
+                "creditName": "Dirty Freud",
+                "releaseDate": "2021-01-29T00:00:00+00:00",
+                "uuid": "53d540a9-c316-44ee-9ca3-6484cb050721",
+                "type": "single"
+            },
+            {
+                "name": "You've Been (Remix by Vales)",
+                "creditName": "Dirty Freud & Vales",
+                "releaseDate": "2021-02-19T00:00:00+00:00",
+                "uuid": "663806fa-9aae-482d-b15e-9e7d906be4d4",
+                "type": "compil"
+            }
+        ],
+        "page": {
+            "offset": 0,
+            "limit": 100,
+            "next": null,
+            "previous": null,
+            "total": 48
+        },
+        "errors": []
+    },
+    "songs": {
+        "related": {
+            "uuid": "11e83fed-c5cd-e380-ba73-a0369fe50396",
+            "slug": "dirty-freud",
+            "name": "Dirty Freud",
+            "appUrl": "https://app.soundcharts.com/app/artist/dirty-freud/overview",
+            "imageUrl": "https://assets.soundcharts.com/artist/d/c/5/11e83fed-c5cd-e380-ba73-a0369fe50396.jpg"
+        },
+        "items": [
+            {
+                "uuid": "70ce959c-aefe-49a8-b37d-82fe18709546",
+                "name": "5_11 - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/e/f/e/70ce959c-aefe-49a8-b37d-82fe18709546.jpg",
+                "releaseDate": "2016-07-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "44dcb9f7-b710-4957-8dce-c42255db076f",
+                "name": "Abide With You Always",
+                "creditName": "Dirty Freud & Ioana Selaru",
+                "imageUrl": "https://assets.soundcharts.com/song/0/1/7/44dcb9f7-b710-4957-8dce-c42255db076f.jpg",
+                "releaseDate": "2021-11-22T00:00:00+00:00"
+            },
+            {
+                "uuid": "418d477c-7f19-49a6-8e55-c2a7857c3a3c",
+                "name": "Another Way To Say Goodbye",
+                "creditName": "Dirty Freud & Lara Jones",
+                "imageUrl": "https://assets.soundcharts.com/song/9/1/f/418d477c-7f19-49a6-8e55-c2a7857c3a3c.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "4f7fd774-30b1-4716-957c-041980fe4f45",
+                "name": "Another Way To Say Goodbye - Off.Noise Remix",
+                "creditName": "Dirty Freud & Off.Noise .",
+                "imageUrl": "https://assets.soundcharts.com/song/1/b/0/4f7fd774-30b1-4716-957c-041980fe4f45.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "9c8fc473-4481-4899-b704-12f6a0e2a720",
+                "name": "Araf Diweed - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/1/8/4/9c8fc473-4481-4899-b704-12f6a0e2a720.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "38bb79e3-c497-4ba8-9700-fbca92e5b6a6",
+                "name": "Baffling Sherlock - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/7/9/4/38bb79e3-c497-4ba8-9700-fbca92e5b6a6.jpg",
+                "releaseDate": "2016-03-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "71778507-23ec-4ee4-903d-b5cf5856453a",
+                "name": "Be Mine",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/c/e/3/71778507-23ec-4ee4-903d-b5cf5856453a.jpg",
+                "releaseDate": "2018-04-09T00:00:00+00:00"
+            },
+            {
+                "uuid": "b7e8b3a5-6aa0-4421-a544-2252dfba4ac0",
+                "name": "Beam Me Up",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/0/a/a/b7e8b3a5-6aa0-4421-a544-2252dfba4ac0.jpg",
+                "releaseDate": "2023-03-03T00:00:00+00:00"
+            },
+            {
+                "uuid": "61e6c33b-4bde-4243-8eb4-f31675966345",
+                "name": "Blood Bayou",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/e/d/b/61e6c33b-4bde-4243-8eb4-f31675966345.jpg",
+                "releaseDate": "2020-10-02T00:00:00+00:00"
+            },
+            {
+                "uuid": "c57ca718-f9a3-4a62-8a60-373c0695a65d",
+                "name": "Blush",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/3/a/9/c57ca718-f9a3-4a62-8a60-373c0695a65d.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "336ad1f9-3b9e-46cb-80e0-bdf369c2bec3",
+                "name": "Blush - SixxFoot Remix",
+                "creditName": "Dirty Freud & SixxFoot & Sixfoot .",
+                "imageUrl": "https://assets.soundcharts.com/song/e/9/b/336ad1f9-3b9e-46cb-80e0-bdf369c2bec3.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "c80197b1-b445-44d4-9e22-c67e38f98df5",
+                "name": "Bone Suckling Sauce - Tim Split's Smoke Blowing Deep Mix",
+                "creditName": "Dirty Freud & Tim Split",
+                "imageUrl": "https://assets.soundcharts.com/song/5/4/4/c80197b1-b445-44d4-9e22-c67e38f98df5.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "7bc083b3-e135-4a3a-93da-ea165bd8e359",
+                "name": "Born Of Bedlam - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/3/1/7bc083b3-e135-4a3a-93da-ea165bd8e359.jpg",
+                "releaseDate": "2014-11-08T00:00:00+00:00"
+            },
+            {
+                "uuid": "55b555f8-1bab-48fa-8029-674a60f1a8fd",
+                "name": "Born To",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/b/a/b/55b555f8-1bab-48fa-8029-674a60f1a8fd.jpg",
+                "releaseDate": "2018-04-09T00:00:00+00:00"
+            },
+            {
+                "uuid": "4e600fb2-09db-40f6-a4e6-083998072b8f",
+                "name": "Break Slow Fast",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/b/d/9/4e600fb2-09db-40f6-a4e6-083998072b8f.jpg",
+                "releaseDate": "2023-03-03T00:00:00+00:00"
+            },
+            {
+                "uuid": "b1ee85c7-68c4-4f2a-aaec-8405bc3d6ff2",
+                "name": "Breakin' The Chain - Instrumental",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/4/c/8/b1ee85c7-68c4-4f2a-aaec-8405bc3d6ff2.jpg",
+                "releaseDate": "2022-11-23T00:00:00+00:00"
+            },
+            {
+                "uuid": "e6c16032-97f7-4550-a726-2fa7840c211c",
+                "name": "Chaos Is My Playground",
+                "creditName": "Dirty Freud & Eckoes",
+                "imageUrl": "https://assets.soundcharts.com/song/7/f/7/e6c16032-97f7-4550-a726-2fa7840c211c.jpg",
+                "releaseDate": "2023-10-11T00:00:00+00:00"
+            },
+            {
+                "uuid": "dc707cfa-8a1b-41a8-951d-4100d11b7565",
+                "name": "Chasing Ancients - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/b/1/a/dc707cfa-8a1b-41a8-951d-4100d11b7565.jpg",
+                "releaseDate": "2016-07-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "fd248d00-6fc9-4b80-8221-eaac3df7225d",
+                "name": "Chronicles",
+                "creditName": "Jonoa & Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/9/c/f/fd248d00-6fc9-4b80-8221-eaac3df7225d.jpg",
+                "releaseDate": "2025-05-16T00:00:00+00:00"
+            },
+            {
+                "uuid": "304a8454-2a35-4dec-85ad-9bff8adc23b9",
+                "name": "Clubmixed Chillout, Vol. 1 (Continuous DJ Mix)",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/3/a/304a8454-2a35-4dec-85ad-9bff8adc23b9.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "6e3efe12-9af6-4c41-8c6d-763e65180ec7",
+                "name": "Clubmixed Deep House, Vol. 1 (Continuous DJ Mix)",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/6/f/a/6e3efe12-9af6-4c41-8c6d-763e65180ec7.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "0d125b47-b1d2-4652-b1f2-32fafa65e356",
+                "name": "Clubmixed Tech House, Vol. 1",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/2/d/1/0d125b47-b1d2-4652-b1f2-32fafa65e356.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "7726af80-ef2f-4efd-8fe2-22e8dd562169",
+                "name": "Cromwell's Wallet",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/f/2/f/7726af80-ef2f-4efd-8fe2-22e8dd562169.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "7d58aa75-b560-4116-8f12-0a0d9f4ea883",
+                "name": "Cromwell's Wallet - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/0/6/5/7d58aa75-b560-4116-8f12-0a0d9f4ea883.jpg",
+                "releaseDate": "2016-03-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "fc7ec742-965e-4e7d-b8f5-dc801f485a4b",
+                "name": "Dark Energy",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/e/5/6/fc7ec742-965e-4e7d-b8f5-dc801f485a4b.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "97225f10-78dc-407b-9aa9-421384f72f8f",
+                "name": "Detach - Dirty Freud Remix",
+                "creditName": "Pijn & Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/c/d/8/97225f10-78dc-407b-9aa9-421384f72f8f.jpg",
+                "releaseDate": "2020-06-11T00:00:00+00:00"
+            },
+            {
+                "uuid": "8c6a1f16-c865-490b-b444-aaf584c7ab00",
+                "name": "Dirty Freud",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/6/8/8c6a1f16-c865-490b-b444-aaf584c7ab00.jpg",
+                "releaseDate": "2014-08-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "99e99874-0b84-4198-a2d4-dc53736f53e8",
+                "name": "Ego Shrieks - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/4/8/b/99e99874-0b84-4198-a2d4-dc53736f53e8.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "e2fbe072-bd8a-4d3f-9f67-974900a3e798",
+                "name": "Escaping The Clink - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/8/d/e2fbe072-bd8a-4d3f-9f67-974900a3e798.jpg",
+                "releaseDate": "2016-03-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "53c8abd0-5aee-40f4-8c93-c74f71a0352b",
+                "name": "Find Me - Remix",
+                "creditName": "Dirty Freud & IORA",
+                "imageUrl": "https://assets.soundcharts.com/song/e/e/a/53c8abd0-5aee-40f4-8c93-c74f71a0352b.jpg",
+                "releaseDate": "2021-07-02T00:00:00+00:00"
+            },
+            {
+                "uuid": "71bba32b-3e4b-429f-ae34-ca7c22b0e33c",
+                "name": "Fly Girl",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/b/4/e/71bba32b-3e4b-429f-ae34-ca7c22b0e33c.jpg",
+                "releaseDate": "2022-05-06T00:00:00+00:00"
+            },
+            {
+                "uuid": "0ccf036e-4848-4e18-bd22-7f0c32549647",
+                "name": "Fly Girl - Rookes Remix",
+                "creditName": "Dirty Freud & Rookes",
+                "imageUrl": "https://assets.soundcharts.com/song/8/4/8/0ccf036e-4848-4e18-bd22-7f0c32549647.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "190f50b7-dd46-4042-89d2-15b8047c6287",
+                "name": "Future Shock Electro (Mixed by Dirty Freud)",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/6/4/d/190f50b7-dd46-4042-89d2-15b8047c6287.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "436c3499-b9ba-487f-92aa-80dcb5f09979",
+                "name": "Hands of Mercy",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/b/9/436c3499-b9ba-487f-92aa-80dcb5f09979.jpg",
+                "releaseDate": "2016-03-07T00:00:00+00:00"
+            },
+            {
+                "uuid": "dd63fda6-34f7-472e-9f36-226c96023716",
+                "name": "Hit the Floor",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/7/f/4/dd63fda6-34f7-472e-9f36-226c96023716.jpg",
+                "releaseDate": "2018-04-09T00:00:00+00:00"
+            },
+            {
+                "uuid": "9a1dfa32-8e25-45ef-854d-05a6feb66faf",
+                "name": "I Love It",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/2/e/9a1dfa32-8e25-45ef-854d-05a6feb66faf.jpg",
+                "releaseDate": "2024-05-31T00:00:00+00:00"
+            },
+            {
+                "uuid": "b6cf45a8-84f5-4f37-8666-289b6eb68dd0",
+                "name": "I Need Some Time Remix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/f/4/b6cf45a8-84f5-4f37-8666-289b6eb68dd0.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "1d1d4e5f-5d4d-486a-9227-874759629818",
+                "name": "I'm So Fly",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/d/4/d/1d1d4e5f-5d4d-486a-9227-874759629818.jpg",
+                "releaseDate": "2024-08-08T00:00:00+00:00"
+            },
+            {
+                "uuid": "73fac12a-766f-4b1d-9b69-48eac1319efd",
+                "name": "In Man There Is Nothing Great But Mind",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/f/6/6/73fac12a-766f-4b1d-9b69-48eac1319efd.jpg",
+                "releaseDate": "2021-11-22T00:00:00+00:00"
+            },
+            {
+                "uuid": "33e93882-0375-4b52-aea1-9f4a400679bd",
+                "name": "Intentions",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/7/3/33e93882-0375-4b52-aea1-9f4a400679bd.jpg",
+                "releaseDate": "2020-08-21T00:00:00+00:00"
+            },
+            {
+                "uuid": "d711d377-61fa-431a-b784-a574b19fd539",
+                "name": "Iron Horses ft Poppy Holiday",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/f/1/d711d377-61fa-431a-b784-a574b19fd539.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "cd530382-61c0-462c-bc21-71da508da933",
+                "name": "It's A Trap",
+                "creditName": "Sweetpea & Dirty Freud & Brother Raye",
+                "imageUrl": "https://assets.soundcharts.com/song/0/c/1/cd530382-61c0-462c-bc21-71da508da933.jpg",
+                "releaseDate": "2023-02-24T00:00:00+00:00"
+            },
+            {
+                "uuid": "2cb00440-9053-495d-a585-69ff044c2ea3",
+                "name": "Kadema",
+                "creditName": "Dirty Freud & Fullmarx & Salio",
+                "imageUrl": "https://assets.soundcharts.com/song/3/5/0/2cb00440-9053-495d-a585-69ff044c2ea3.jpg",
+                "releaseDate": "2018-04-09T00:00:00+00:00"
+            },
+            {
+                "uuid": "39823739-6421-496f-81e0-9445a0a07420",
+                "name": "Kaijus",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/1/2/4/39823739-6421-496f-81e0-9445a0a07420.jpg",
+                "releaseDate": "2023-03-03T00:00:00+00:00"
+            },
+            {
+                "uuid": "b665ce48-44b1-4110-a73c-4eeb40d8a989",
+                "name": "Lies",
+                "creditName": "Dirty Freud & Eckoes",
+                "imageUrl": "https://assets.soundcharts.com/song/1/b/4/b665ce48-44b1-4110-a73c-4eeb40d8a989.jpg",
+                "releaseDate": "2020-03-27T00:00:00+00:00"
+            },
+            {
+                "uuid": "ec0dad2e-c5ea-471b-b9f5-a5000259356c",
+                "name": "Lies - Birkenhof Remix",
+                "creditName": "Dirty Freud & Eckoes & Birkenhof",
+                "imageUrl": "https://assets.soundcharts.com/song/a/e/5/ec0dad2e-c5ea-471b-b9f5-a5000259356c.jpg",
+                "releaseDate": "2020-07-31T00:00:00+00:00"
+            },
+            {
+                "uuid": "14d70b8f-515c-40cb-8900-0b3fee912b2c",
+                "name": "Link Up",
+                "creditName": "Dirty Freud & Jammer & Lost Souljah",
+                "imageUrl": "https://assets.soundcharts.com/song/c/5/1/14d70b8f-515c-40cb-8900-0b3fee912b2c.jpg",
+                "releaseDate": "2023-11-03T00:00:00+00:00"
+            },
+            {
+                "uuid": "644182db-d972-43cc-ac66-5ddf79e0d891",
+                "name": "Los Leandros - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/2/7/9/644182db-d972-43cc-ac66-5ddf79e0d891.jpg",
+                "releaseDate": "2016-03-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "569c5611-4e22-47e1-b480-67ccae1b3d0e",
+                "name": "Love in the backwater",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/2/2/e/569c5611-4e22-47e1-b480-67ccae1b3d0e.jpg",
+                "releaseDate": "2020-12-11T00:00:00+00:00"
+            },
+            {
+                "uuid": "1da0006d-4ac9-4b93-98a2-ac8ce11624e8",
+                "name": "Love Me",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/9/c/a/1da0006d-4ac9-4b93-98a2-ac8ce11624e8.jpg",
+                "releaseDate": "2021-04-16T00:00:00+00:00"
+            },
+            {
+                "uuid": "5b2bb910-4af4-4c07-9dab-92b3a401b893",
+                "name": "Meet Me In The Real",
+                "creditName": "Dirty Freud & Kouba",
+                "imageUrl": "https://assets.soundcharts.com/song/4/f/a/5b2bb910-4af4-4c07-9dab-92b3a401b893.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "69476cb2-0831-49e8-97fc-2325fb728c6c",
+                "name": "Meet Me In The Real - Raye Whitworth Remix",
+                "creditName": "Dirty Freud & Kouba & Raye Whitworth",
+                "imageUrl": "https://assets.soundcharts.com/song/1/3/8/69476cb2-0831-49e8-97fc-2325fb728c6c.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "c7bf436e-fe02-46f6-8260-09e3b2ad9b95",
+                "name": "Modern Life",
+                "creditName": "Dirty Freud & Coldcut & Pat Fulgoni",
+                "imageUrl": "https://assets.soundcharts.com/song/2/0/e/c7bf436e-fe02-46f6-8260-09e3b2ad9b95.jpg",
+                "releaseDate": "2023-11-03T00:00:00+00:00"
+            },
+            {
+                "uuid": "030eb139-896b-49f4-8a72-f3ae5a32d766",
+                "name": "Moments",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/b/6/9/030eb139-896b-49f4-8a72-f3ae5a32d766.jpg",
+                "releaseDate": "2020-12-11T00:00:00+00:00"
+            },
+            {
+                "uuid": "902e993b-f2b0-408c-a7bb-e053bf22fdbe",
+                "name": "Moments",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/0/b/2/902e993b-f2b0-408c-a7bb-e053bf22fdbe.jpg",
+                "releaseDate": "2020-11-06T00:00:00+00:00"
+            },
+            {
+                "uuid": "c2e32de6-acb5-4bad-917e-cac3bb6b432d",
+                "name": "Murky Dealings",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/b/c/c2e32de6-acb5-4bad-917e-cac3bb6b432d.jpg",
+                "releaseDate": "2018-04-09T00:00:00+00:00"
+            },
+            {
+                "uuid": "b13898db-4963-43c2-979d-6eaf27f10d65",
+                "name": "Ninja Man",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/3/6/9/b13898db-4963-43c2-979d-6eaf27f10d65.jpg",
+                "releaseDate": "2020-06-26T00:00:00+00:00"
+            },
+            {
+                "uuid": "1df597b1-4d06-4375-a2e4-e6bdffb5e943",
+                "name": "No Time",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/6/0/d/1df597b1-4d06-4375-a2e4-e6bdffb5e943.jpg",
+                "releaseDate": "2023-03-03T00:00:00+00:00"
+            },
+            {
+                "uuid": "15ec3d6b-3b2b-4200-ad87-88d283d3318c",
+                "name": "Oh Oh",
+                "creditName": "Dirty Freud & Prima & FullMarx",
+                "imageUrl": "https://assets.soundcharts.com/song/b/2/b/15ec3d6b-3b2b-4200-ad87-88d283d3318c.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "35a949f2-8bea-4454-be29-2555c7da41f9",
+                "name": "Oh Oh - Birkenhof Remix",
+                "creditName": "Dirty Freud & Prima & FullMarx & Birkenhof",
+                "imageUrl": "https://assets.soundcharts.com/song/a/e/b/35a949f2-8bea-4454-be29-2555c7da41f9.jpg",
+                "releaseDate": "2022-05-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "01e6db99-0dd5-43fb-8cb5-17bbea6dd1ad",
+                "name": "On Earth There Is Nothing Great But Man",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/d/d/01e6db99-0dd5-43fb-8cb5-17bbea6dd1ad.jpg",
+                "releaseDate": "2021-11-22T00:00:00+00:00"
+            },
+            {
+                "uuid": "dafc51cf-82e5-4237-acc5-95f53861223c",
+                "name": "Orchid Street",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/e/2/dafc51cf-82e5-4237-acc5-95f53861223c.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "106a4481-1336-4a7e-96fb-5d3b00bc279e",
+                "name": "Orchid Street - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/6/3/3/106a4481-1336-4a7e-96fb-5d3b00bc279e.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "6859a35f-65ce-48d7-be02-70ad7ad03c8e",
+                "name": "Parameters",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/e/c/5/6859a35f-65ce-48d7-be02-70ad7ad03c8e.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "fe9e18b2-ed49-4e56-9cb9-14952e0b7ac8",
+                "name": "Prints",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/9/4/d/fe9e18b2-ed49-4e56-9cb9-14952e0b7ac8.jpg",
+                "releaseDate": "2024-10-10T00:00:00+00:00"
+            },
+            {
+                "uuid": "9a0390da-3cbc-441a-b997-de35fd35ce6e",
+                "name": "Promenade",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/c/b/c/9a0390da-3cbc-441a-b997-de35fd35ce6e.jpg",
+                "releaseDate": "2023-01-25T00:00:00+00:00"
+            },
+            {
+                "uuid": "97ce9838-f3f5-46df-8348-fb3fe7d7408d",
+                "name": "Reverence In Man That Which Is Supreme",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/5/f/3/97ce9838-f3f5-46df-8348-fb3fe7d7408d.jpg",
+                "releaseDate": "2021-10-22T00:00:00+00:00"
+            },
+            {
+                "uuid": "82a0594f-90d0-491b-967e-a4cc5093d921",
+                "name": "Revival (Continuous DJ Mix)",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/0/d/0/82a0594f-90d0-491b-967e-a4cc5093d921.jpg",
+                "releaseDate": "2010-09-13T00:00:00+00:00"
+            },
+            {
+                "uuid": "e582cd5d-7c11-48f9-92b7-83f9c05673ba",
+                "name": "Shame On Me",
+                "creditName": "Dirty Freud & Eckoes",
+                "imageUrl": "https://assets.soundcharts.com/song/1/1/c/e582cd5d-7c11-48f9-92b7-83f9c05673ba.jpg",
+                "releaseDate": "2022-03-02T00:00:00+00:00"
+            },
+            {
+                "uuid": "69050ffc-c62a-11e8-8a0f-549f35161576",
+                "name": "Silence Me",
+                "creditName": "Laxmi & Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/2/6/69050ffc-c62a-11e8-8a0f-549f35161576.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "803fa5d1-73bf-4dcb-af36-1dd9e501fb4e",
+                "name": "Silence Me - Original Mix",
+                "creditName": "Laxmi & Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/f/b/3/803fa5d1-73bf-4dcb-af36-1dd9e501fb4e.jpg",
+                "releaseDate": "2016-07-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "9e21cfb5-4b39-41e5-8b49-0ddba1549e5b",
+                "name": "Strange Alliances",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/9/3/b/9e21cfb5-4b39-41e5-8b49-0ddba1549e5b.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "608cd639-88ba-415a-a740-5054975644f0",
+                "name": "Tears of a Savage",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/b/8/608cd639-88ba-415a-a740-5054975644f0.jpg",
+                "releaseDate": "2014-08-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "3361170a-3b9f-4b15-b8a4-a3bbca2be617",
+                "name": "The Assembly Rooms - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/f/9/b/3361170a-3b9f-4b15-b8a4-a3bbca2be617.jpg",
+                "releaseDate": "2016-07-20T00:00:00+00:00"
+            },
+            {
+                "uuid": "70753413-7d12-426b-8d9b-a67956ee22fb",
+                "name": "The Crows Are All Liars",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/2/1/d/70753413-7d12-426b-8d9b-a67956ee22fb.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "a3291ba0-1d23-40b1-8224-85508dd8c280",
+                "name": "The Crows Are All Liars",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/3/2/d/a3291ba0-1d23-40b1-8224-85508dd8c280.jpg",
+                "releaseDate": null
+            },
+            {
+                "uuid": "aeda5150-5ee8-438e-a417-3b4821f40d5c",
+                "name": "These Mental Riches You May Acquire",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/8/e/e/aeda5150-5ee8-438e-a417-3b4821f40d5c.jpg",
+                "releaseDate": "2021-11-22T00:00:00+00:00"
+            },
+            {
+                "uuid": "b34f08e7-7dfa-42f8-8b36-3b6a67380f01",
+                "name": "These Mental Riches You May Here Acquire",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/f/d/b34f08e7-7dfa-42f8-8b36-3b6a67380f01.jpg",
+                "releaseDate": "2021-09-24T00:00:00+00:00"
+            },
+            {
+                "uuid": "e4e18a75-17b2-4629-b38a-b74e9eef6aea",
+                "name": "To Literature, Arts and Science",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/2/b/7/e4e18a75-17b2-4629-b38a-b74e9eef6aea.jpg",
+                "releaseDate": "2021-11-22T00:00:00+00:00"
+            },
+            {
+                "uuid": "c57708ac-6f01-4193-9d84-f2cd1877eacb",
+                "name": "Whizzing Through Time & Space - Original Mix",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/1/0/f/c57708ac-6f01-4193-9d84-f2cd1877eacb.jpg",
+                "releaseDate": "2014-11-08T00:00:00+00:00"
+            },
+            {
+                "uuid": "109f2b08-898a-4922-9391-cc098529f476",
+                "name": "Wonderland",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/8/9/109f2b08-898a-4922-9391-cc098529f476.jpg",
+                "releaseDate": "2022-11-23T00:00:00+00:00"
+            },
+            {
+                "uuid": "34708e19-015a-4199-9d3d-f5bd17ed6177",
+                "name": "You've Been",
+                "creditName": "Dirty Freud",
+                "imageUrl": "https://assets.soundcharts.com/song/a/5/1/34708e19-015a-4199-9d3d-f5bd17ed6177.jpg",
+                "releaseDate": "2021-01-29T00:00:00+00:00"
+            },
+            {
+                "uuid": "648b5270-00bd-4d1f-9f60-39fb71fd66c9",
+                "name": "You've Been (Vales Remix)",
+                "creditName": "Dirty Freud & Vales",
+                "imageUrl": "https://assets.soundcharts.com/song/d/b/0/648b5270-00bd-4d1f-9f60-39fb71fd66c9.jpg",
+                "releaseDate": "2021-02-19T00:00:00+00:00"
+            }
+        ],
+        "page": {
+            "offset": 0,
+            "limit": 100,
+            "next": null,
+            "previous": null,
+            "total": 83
+        },
+        "errors": []
+    },
+    "popularity": {
+        "related": {
+            "artist": {
+                "uuid": "11e83fed-c5cd-e380-ba73-a0369fe50396",
+                "slug": "dirty-freud",
+                "name": "Dirty Freud",
+                "appUrl": "https://app.soundcharts.com/app/artist/dirty-freud/overview",
+                "imageUrl": "https://assets.soundcharts.com/artist/d/c/5/11e83fed-c5cd-e380-ba73-a0369fe50396.jpg"
+            },
+            "platform": "spotify",
+            "lastCrawlDate": "2025-05-30T00:00:00+00:00"
+        },
+        "items": [
+            {
+                "date": "2025-03-01T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-02T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-03T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-04T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-05T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-06T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-07T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-08T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-09T00:00:00+00:00",
+                "value": 21
+            },
+            {
+                "date": "2025-03-10T00:00:00+00:00",
+                "value": 18
+            },
+            {
+                "date": "2025-03-11T00:00:00+00:00",
+                "value": 18
+            },
+            {
+                "date": "2025-03-12T00:00:00+00:00",
+                "value": 18
+            },
+            {
+                "date": "2025-03-13T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-14T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-15T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-16T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-17T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-18T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-19T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-20T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-21T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-22T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-23T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-24T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-25T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-03-26T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-03-27T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-03-28T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-03-29T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-03-30T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-03-31T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-01T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-02T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-03T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-04T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-05T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-06T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-07T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-08T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-09T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-10T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-11T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-12T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-13T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-14T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-15T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-16T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-17T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-18T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-19T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-20T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-21T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-22T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-23T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-24T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-25T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-26T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-27T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-28T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-29T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-04-30T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-01T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-02T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-03T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-04T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-05T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-06T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-05-07T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-05-08T00:00:00+00:00",
+                "value": 13
+            },
+            {
+                "date": "2025-05-09T00:00:00+00:00",
+                "value": 13
+            },
+            {
+                "date": "2025-05-10T00:00:00+00:00",
+                "value": 13
+            },
+            {
+                "date": "2025-05-11T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-05-12T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-05-13T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-05-14T00:00:00+00:00",
+                "value": 12
+            },
+            {
+                "date": "2025-05-15T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-16T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-17T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-18T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-19T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-20T00:00:00+00:00",
+                "value": 11
+            },
+            {
+                "date": "2025-05-21T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-22T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-23T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-24T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-25T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-26T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-27T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-28T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-29T00:00:00+00:00",
+                "value": 10
+            },
+            {
+                "date": "2025-05-30T00:00:00+00:00",
+                "value": 10
+            }
+        ],
+        "page": {
+            "offset": 0,
+            "limit": 100,
+            "next": null,
+            "previous": null,
+            "total": 91
+        },
+        "errors": []
+    }
+}
