@@ -22,7 +22,6 @@ class SoundchartsAPIClient:
             return {'error': f"API request failed: {e}"}
 
     def search_artist(self, artist_name: str) -> Dict[str, Any]:
-        """Finds an artist by name and returns their UUID."""
         encoded_artist_name = urllib.parse.quote(artist_name)
         url = f"{self.BASE_URL}/v2/artist/search/{encoded_artist_name}"
         search_data = self._request(url, params={'limit': '1'})
@@ -31,47 +30,63 @@ class SoundchartsAPIClient:
         return {'uuid': search_data['items'][0]['uuid']}
 
     def get_artist_metadata(self, artist_uuid: str) -> Dict[str, Any]:
-        """Fetches the main metadata document for an artist."""
         url = f"{self.BASE_URL}/v2.9/artist/{artist_uuid}"
         return self._request(url)
+
+    def get_artist_albums(self, artist_uuid: str, start_date=None, end_date=None) -> Dict[str, Any]:
+        """Fetches albums, optionally filtered by release date."""
+        url = f"{self.BASE_URL}/v2.34/artist/{artist_uuid}/albums"
+        params = {'offset': '0', 'limit': '100'}
+        if start_date: params['releaseDateStart'] = str(start_date)
+        if end_date: params['releaseDateEnd'] = str(end_date)
+        return self._request(url, params=params)
+
+    def get_album_tracks(self, album_uuid: str) -> Dict[str, Any]:
+        url = f"{self.BASE_URL}/v2.26/album/{album_uuid}/tracks"
+        return self._request(url)
+
+    def get_album_metadata(self, album_uuid: str) -> Dict[str, Any]:
+        url = f"{self.BASE_URL}/v2.36/album/by-uuid/{album_uuid}"
+        return self._request(url)
         
-    def get_artist_audience(self, artist_uuid: str, platform: str, start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series audience data (listeners, followers)."""
-        url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/audience/{platform}/"
+    def get_song_metadata(self, song_uuid: str) -> Dict[str, Any]:
+        url = f"{self.BASE_URL}/v2.25/song/{song_uuid}"
+        return self._request(url)
+
+    def get_artist_playlist_entries(self, artist_uuid: str, start_date=None, end_date=None, platform: str = "spotify") -> Dict[str, Any]:
+        """Fetches playlist entries for an artist, filtered by date."""
+        url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/entries/{platform}"
         params = {}
         if start_date: params['startDate'] = str(start_date)
         if end_date: params['endDate'] = str(end_date)
         return self._request(url, params=params)
 
-    def get_artist_albums(self, artist_uuid: str) -> Dict[str, Any]:
-        """Fetches the list of albums for an artist."""
-        url = f"{self.BASE_URL}/v2.34/artist/{artist_uuid}/albums"
-        return self._request(url, params={'offset': '0', 'limit': '100'})
-
-    def get_artist_playlists(self, artist_uuid: str, platform: str = "spotify") -> Dict[str, Any]:
-        """Fetches the list of playlists an artist is currently featured on."""
-        url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/current/{platform}"
-        return self._request(url)
-
-    def fetch_static_artist_data(self, artist_name: str) -> Dict[str, Any]:
-        """
-        Finds an artist and fetches only their main metadata document.
-        """
+    def fetch_full_artist_data(self, artist_name: str, start_date=None, end_date=None) -> Dict[str, Any]:
         artist_info = self.search_artist(artist_name)
         if 'error' in artist_info: return artist_info
         
         artist_uuid = artist_info['uuid']
         result = {'artist_uuid': artist_uuid, 'artist_name': artist_name}
-        result['metadata'] = self.get_artist_metadata(artist_uuid)
-        return result
 
-    def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
-        """
-        Fetches secondary data like albums and playlists for a given artist UUID.
-        This is the function that was missing from your local file.
-        """
-        result = {}
-        result['albums'] = self.get_artist_albums(artist_uuid)
-        result['playlists'] = self.get_artist_playlists(artist_uuid)
-        # Note: We no longer fetch all track/song/album metadata here, as that was inefficient.
+        result['metadata'] = self.get_artist_metadata(artist_uuid)
+        # Pass dates to the album and playlist fetchers
+        result['albums'] = self.get_artist_albums(artist_uuid, start_date, end_date)
+        result['playlists'] = self.get_artist_playlist_entries(artist_uuid, start_date, end_date)
+
+        if 'albums' in result and result.get('albums', {}).get('items'):
+            result['tracklists'] = {}
+            result['album_metadata'] = {}
+            result['song_metadata'] = {}
+            
+            for album in result['albums']['items']:
+                album_uuid = album['uuid']
+                tracklist_data = self.get_album_tracks(album_uuid)
+                result['tracklists'][album_uuid] = tracklist_data
+                result['album_metadata'][album_uuid] = self.get_album_metadata(album_uuid)
+
+                if 'items' in tracklist_data:
+                    result['song_metadata'][album_uuid] = {}
+                    for item in tracklist_data['items']:
+                        if song_uuid := item.get('song', {}).get('uuid'):
+                            result['song_metadata'][album_uuid][song_uuid] = self.get_song_metadata(song_uuid)
         return result
