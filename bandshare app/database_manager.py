@@ -2,15 +2,13 @@
 
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any
 import re
-from datetime import datetime
 
 class DatabaseManager:
     """Manages all interactions with the MongoDB database."""
 
     def __init__(self, mongo_uri: str, db_name: str):
-        """Initializes the database manager and connects to MongoDB."""
         try:
             self.client = MongoClient(mongo_uri)
             self.client.admin.command('ismaster')
@@ -20,68 +18,73 @@ class DatabaseManager:
                 'albums': self.db['albums'],
                 'tracklists': self.db['album_tracklist'],
                 'songs': self.db['songs'],
-                'playlists': self.db['playlists'], # Handles playlists
+                'playlists': self.db['playlists'], # Added
             }
             print(f"Successfully connected to MongoDB database '{db_name}'")
         except ConnectionFailure as e:
+            print(f"Failed to connect to MongoDB at {mongo_uri}.")
             raise e
 
     def close_connection(self):
-        """Closes the MongoDB connection."""
         self.client.close()
+        print("MongoDB connection closed.")
 
-    def search_artist_by_name(self, artist_name: str) -> Optional[Dict[str, Any]]:
-        """Finds an artist by name in the local database."""
-        if not artist_name: return None
-        search_regex = re.compile(f"^{re.escape(artist_name)}$", re.IGNORECASE)
-        return self.collections['artists'].find_one({'$or': [{'name': search_regex}, {'object.name': search_regex}]})
-
-    def store_static_artist_data(self, data: Dict[str, Any]) -> Dict[str, str]:
-        """Upserts the main artist metadata document."""
+    def store_artist_data(self, data: Dict[str, Any]) -> Dict[str, str]:
         if 'error' in data: return {'status': 'error', 'message': data['error']}
         try:
             artist_uuid = data['artist_uuid']
+            
+            # Upsert artist
             if 'metadata' in data:
                 self.collections['artists'].update_one({'artist_uuid': artist_uuid}, {'$set': data['metadata']}, upsert=True)
-            return {'status': 'success', 'message': 'Static data stored.'}
-        except OperationFailure as e:
-            return {'status': 'error', 'message': f"DB error: {e}"}
 
-    def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
-        """
-        Stores albums and playlists, using a delete-and-insert strategy for freshness.
-        This ensures that if an album or playlist is removed, it is reflected in the DB.
-        """
-        try:
-            # Store albums
+            # Upsert albums with merged metadata
             if 'albums' in data and 'items' in data.get('albums', {}):
-                self.collections['albums'].delete_many({'artist_uuid': artist_uuid})
-                albums_to_insert = [d | {'album_uuid': d['uuid'], 'artist_uuid': artist_uuid} for d in data['albums']['items']]
-                if albums_to_insert:
-                    self.collections['albums'].insert_many(albums_to_insert)
-            
-            # Store playlists
-            if 'playlists' in data and 'items' in data.get('playlists', {}):
-                self.collections['playlists'].delete_many({'artist_uuid': artist_uuid})
-                playlists_to_insert = [p | {'artist_uuid': artist_uuid} for p in data['playlists']['items']]
-                if playlists_to_insert:
-                    self.collections['playlists'].insert_many(playlists_to_insert)
+                all_album_metadata = data.get('album_metadata', {})
+                for album_summary in data['albums']['items']:
+                    if album_uuid := album_summary.get('uuid'):
+                        album_doc = album_summary.copy()
+                        detailed_metadata = all_album_metadata.get(album_uuid, {})
+                        album_doc.update(detailed_metadata.get('object', detailed_metadata))
+                        album_doc.update({'album_uuid': album_uuid, 'artist_uuid': artist_uuid})
+                        self.collections['albums'].update_one({'album_uuid': album_uuid}, {'$set': album_doc}, upsert=True)
 
+            # Delete and insert for tracklists, songs, and playlists to ensure freshness
+            sub_collections = {
+                'tracklists': ('tracklists', 'album_uuid'),
+                'songs': ('song_metadata', 'song_uuid'),
+                'playlists': ('playlists', 'playlist.uuid') # Assuming playlist object has a uuid
+            }
+
+            for coll_name, (data_key, id_key_path) in sub_collections.items():
+                self.collections[coll_name].delete_many({'artist_uuid': artist_uuid})
+                docs_to_insert = []
+                if data_key in data:
+                    if coll_name == 'songs':
+                        docs_to_insert = [meta | {'song_uuid': suuid, 'album_uuid': auuid, 'artist_uuid': artist_uuid} for auuid, songs in data[data_key].items() for suuid, meta in songs.items() if 'error' not in meta]
+                    elif coll_name == 'tracklists':
+                        docs_to_insert = [d | {'album_uuid': uuid, 'artist_uuid': artist_uuid} for uuid, d in data[data_key].items() if 'error' not in d]
+                    elif coll_name == 'playlists':
+                        docs_to_insert = [p | {'artist_uuid': artist_uuid} for p in data[data_key].get('items', [])]
+                
+                if docs_to_insert:
+                    self.collections[coll_name].insert_many(docs_to_insert)
+                    print(f"Stored {len(docs_to_insert)} documents in '{coll_name}'.")
+
+            return {'status': 'success', 'message': f'Data for artist {artist_uuid} stored/updated.'}
         except OperationFailure as e:
-            print(f"Error storing secondary data: {e}")
+            return {'status': 'error', 'message': f"Database operation failed: {e}"}
 
     def delete_artist_data(self, artist_uuid: str) -> Dict[str, str]:
-        """Deletes all documents related to a specific artist_uuid from all collections."""
-        if not artist_uuid:
-            return {'status': 'error', 'message': 'Artist UUID cannot be empty.'}
+        if not artist_uuid: return {'status': 'error', 'message': 'Artist UUID cannot be empty.'}
         try:
-            query_filter = {'artist_uuid': artist_uuid}
-            # Only delete from collections that exist in this version
-            collections_to_delete_from = ['artists', 'albums', 'tracklists', 'songs', 'playlists']
-            results = {name: self.collections[name].delete_many(query_filter).deleted_count for name in collections_to_delete_from}
-            total = sum(results.values())
-            print(f"Deletion report: {results}")
-            return {'status': 'success', 'message': f"Successfully deleted {total} total documents for artist {artist_uuid}."}
+            results = {name: col.delete_many({'artist_uuid': artist_uuid}).deleted_count for name, col in self.collections.items()}
+            return {'status': 'success', 'message': f"Successfully deleted {sum(results.values())} documents."}
         except OperationFailure as e:
             return {'status': 'error', 'message': f"Database deletion failed: {e}"}
 
+    def search_artist_by_name(self, artist_name: str) -> Dict[str, Any] | None:
+        if not artist_name: return None
+        search_regex = re.compile(f"^{re.escape(artist_name)}$", re.IGNORECASE)
+        query = {'$or': [{'name': search_regex}, {'object.name': search_regex}]}
+        return self.collections['artists'].find_one(query)
