@@ -1,8 +1,10 @@
 # streamlit_ui.py
 
 import streamlit as st
+import pandas as pd
 from streamlit_caching import get_song_details
 from datetime import datetime, date
+import random
 
 def display_artist_metadata(metadata):
     """Displays artist's metadata in a structured layout."""
@@ -11,28 +13,20 @@ def display_artist_metadata(metadata):
         return
     metadata_obj = metadata.get('object', metadata)
     
+    st.subheader(f"Data for: {metadata_obj.get('name', 'Unknown Artist')}")
     if image_url := metadata_obj.get("imageUrl"):
-        st.image(image_url, width=150, caption=metadata_obj.get("name", "Unknown Artist"))
+        st.image(image_url, width=150)
+    
     col1, col2, col3 = st.columns(3)
     col1.metric("Country", metadata_obj.get("countryCode", "N/A"))
     col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
     col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
 
-    if genres := metadata_obj.get("genres", []):
-        sub_genres = [g.get('sub', []) for g in genres]
-        flat_genres = [item for sublist in sub_genres for item in sublist]
-        st.write("**Genres:** " + ", ".join(g.capitalize() for g in flat_genres))
-
-    if biography := metadata_obj.get("biography"):
-        with st.expander("Show Biography"):
-            st.markdown(biography)
-
 def display_playlists(playlist_items):
     """Displays a list of playlists in a user-friendly format."""
     st.subheader("Featured On Playlists (Spotify)")
-    
     if not playlist_items:
-        st.info("No playlist entries found for this artist.")
+        st.info("No playlist data available for this artist.")
         return
 
     display_data = []
@@ -51,31 +45,23 @@ def display_playlists(playlist_items):
     
     st.dataframe(
         display_data,
-        column_config={
-            "Subscribers": st.column_config.NumberColumn(format="%d"),
-            "Tracks": st.column_config.NumberColumn(),
-            "Position": st.column_config.NumberColumn(),
-            "Peak": st.column_config.NumberColumn(),
-        },
-        use_container_width=True,
-        hide_index=True
+        column_config={ "Subscribers": st.column_config.NumberColumn(format="%d") },
+        use_container_width=True, hide_index=True
     )
 
 def display_album_and_tracks(db_manager, album_data, tracklist_data):
     """
-    Displays album and tracklist data from the database.
-    This version correctly handles the stored data structure.
+    Displays album and tracklist data from the database, reading from the corrected structure.
     """
     if not album_data:
         st.warning("No album data available."); return
 
-    # FIX: Logic is now simplified and robust. It looks for metadata in the nested 
-    # 'object' field but falls back to the main document. This correctly handles
-    # the structure of your stored album documents.
-    unified_meta = album_data.get('object', album_data)
+    # FIX: Correctly reads the album details from the nested 'album_metadata' field,
+    # which matches how the database_manager stores the document.
+    unified_meta = album_data.get('album_metadata', {})
     album_uuid = unified_meta.get('album_uuid', unified_meta.get('uuid'))
     
-    # --- Display Album Metrics ---
+    # Display Album Metrics
     col1, col2, col3 = st.columns(3)
     col1.metric("Release Date", str(unified_meta.get('releaseDate', 'N/A'))[:10])
     col2.metric("Tracks", unified_meta.get('totalTracks', 'N/A'))
@@ -83,7 +69,7 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data):
     st.write(f"**UPC:** `{unified_meta.get('upc', 'N/A')}`")
     st.markdown("---")
 
-    # --- Display Interactive Tracklist ---
+    # Display Interactive Tracklist
     st.write("**Tracklist:**")
     if not tracklist_data:
         st.info("Tracklist not available."); return
@@ -92,7 +78,7 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data):
     if not items_list:
         st.info("Tracklist is empty."); return
 
-    for item in items_list:
+    for i, item in enumerate(items_list):
         song = item.get('song', {})
         song_uuid = song.get('uuid')
         song_name = song.get('name', 'Unknown Track')
@@ -101,13 +87,17 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data):
         track_col.write(f"**{item.get('number', '#')}.** {song_name}")
 
         if song_uuid:
-            if button_col.button("Details", key=f"btn_{album_uuid}_{song_uuid}", use_container_width=True):
-                 st.session_state[f"show_{album_uuid}_{song_uuid}"] = not st.session_state.get(f"show_{album_uuid}_{song_uuid}", False)
+            button_key = f"btn_{album_uuid or 'unknown'}_{song_uuid}_{i}"
+            
+            if button_col.button("Details", key=button_key, use_container_width=True):
+                 session_key = f"show_{album_uuid}_{song_uuid}"
+                 st.session_state[session_key] = not st.session_state.get(session_key, False)
 
             if st.session_state.get(f"show_{album_uuid}_{song_uuid}", False):
                 song_metadata = get_song_details(db_manager, song_uuid)
                 if song_metadata:
                     with st.container(border=True):
+                        # RESTORED: Full song metadata display
                         meta_obj = song_metadata.get('object', song_metadata)
                         st.write(f"##### Details for **{meta_obj.get('name', song_name)}**")
                         sc1, sc2, sc3 = st.columns(3)
@@ -121,3 +111,65 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data):
                         st.write(f"**Producers:** {', '.join(meta_obj.get('producers', ['N/A']))}")
                 else:
                     st.warning(f"No metadata found for {song_name}")
+
+def display_audience_chart(audience_data):
+    """Displays processed audience chart data as a table for debugging."""
+    st.subheader("Audience on Spotify")
+    if not audience_data:
+        st.info("No audience data available for the selected period.")
+        return
+        
+    # Process the nested JSON to flatten the data for charting
+    chart_data = []
+    for entry in audience_data:
+        chart_data.append({
+            'date': entry.get('date'),
+            'followerCount': entry.get('followerCount')
+        })
+
+    df = pd.DataFrame(chart_data)
+    
+    if 'date' not in df.columns or df['date'].isnull().all():
+        st.error("Audience data is missing valid 'date' information.")
+        return
+
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.set_index('date')
+    
+    # Plot the 'followerCount' column
+    if 'followerCount' in df.columns:
+        st.line_chart(df[['followerCount']])
+    else:
+        st.warning("Could not find 'followerCount' data to plot.")
+
+
+def display_popularity_chart(popularity_data):
+    """Displays processed popularity chart data as a table for debugging."""
+    st.subheader("Popularity on Spotify")
+    if not popularity_data:
+        st.info("No popularity data available for the selected period.")
+        return
+        
+    # Process the nested JSON to flatten the data for charting
+    chart_data = []
+    for entry in popularity_data:
+        chart_data.append({
+            'date': entry.get('date'),
+            'value': entry.get('value')
+        })
+        
+    df = pd.DataFrame(chart_data)
+    
+
+    if 'date' not in df.columns or df['date'].isnull().all():
+        st.error("Popularity data is missing the required 'date' information.")
+        return
+        
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.set_index('date')
+
+    # Plot the 'value' column
+    if 'value' in df.columns:
+        st.line_chart(df['value'])
+    else:
+        st.warning("Could not find 'value' data to plot.")
