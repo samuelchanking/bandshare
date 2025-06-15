@@ -44,3 +44,21 @@ def get_artist_playlists_from_db(_db_manager, artist_uuid: str):
     if 'playlists' in _db_manager.collections:
         return list(_db_manager.collections['playlists'].find({'artist_uuid': artist_uuid}))
     return []
+
+# --- ADDED: Caching functions for time-series data ---
+
+@st.cache_data
+def get_audience_data(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
+    """Gets audience data for a given date range from the database."""
+    if not all([artist_uuid, platform, start_date, end_date]):
+        return []
+    query_filter = {'artist_uuid': artist_uuid, 'platform': platform}
+    return _db_manager.get_timeseries_data_for_display('audience', query_filter, start_date, end_date)
+
+@st.cache_data
+def get_popularity_data(_db_manager, artist_uuid: str, source: str, start_date, end_date):
+    """Gets popularity data for a given date range from the database."""
+    if not all([artist_uuid, source, start_date, end_date]):
+        return []
+    query_filter = {'artist_uuid': artist_uuid, 'source': source}
+    return _db_manager.get_timeseries_data_for_display('popularity', query_filter, start_date, end_date)
