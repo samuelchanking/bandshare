@@ -23,15 +23,12 @@ class DatabaseManager:
                 'playlists': self.db['playlists'],
                 'audience': self.db['audience'],
                 'popularity': self.db['popularity'],
-                # ADDED: collection for streaming audience
                 'streaming_audience': self.db['streaming_audience'] 
             }
             # Create indexes for efficient queries
             self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['popularity'].create_index([("artist_uuid", ASCENDING), ("source", ASCENDING)])
-            # ADDED: index for streaming audience
             self.collections['streaming_audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            print(f"Successfully connected to MongoDB database '{db_name}'")
         except ConnectionFailure as e:
             raise e
 
@@ -45,106 +42,84 @@ class DatabaseManager:
         search_regex = re.compile(f"^{re.escape(artist_name)}$", re.IGNORECASE)
         return self.collections['artists'].find_one({'$or': [{'name': search_regex}, {'object.name': search_regex}]})
 
-    def store_static_artist_data(self, data: Dict[str, Any]) -> Dict[str, str]:
+    # --- UPDATED: The old store_artist_data function is now split into these two. ---
+
+    def store_static_artist_data(self, artist_uuid: str, data: Dict[str, Any]) -> Dict[str, str]:
         """Upserts the main artist metadata document."""
         if 'error' in data: return {'status': 'error', 'message': data['error']}
+        
         try:
-            artist_uuid = data['artist_uuid']
             if 'metadata' in data:
-                self.collections['artists'].update_one({'artist_uuid': artist_uuid}, {'$set': data['metadata']}, upsert=True)
+                self.collections['artists'].update_one(
+                    {'artist_uuid': artist_uuid},
+                    {'$set': data['metadata']},
+                    upsert=True
+                )
             return {'status': 'success', 'message': 'Static data stored.'}
         except OperationFailure as e:
             return {'status': 'error', 'message': f"DB error: {e}"}
 
     def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
-        Stores or updates albums, playlists, and streaming data using an 'upsert' strategy.
+        Stores or updates albums, tracklists, songs, and playlists.
         """
         try:
-            # Upsert albums
-            if 'albums' in data and 'items' in data.get('albums', {}):
-                all_album_metadata = data.get('album_metadata', {})
-                for album_summary in data['albums']['items']:
-                    album_uuid_val = album_summary.get('uuid')
-                    if not album_uuid_val: continue
-
-                    combined_meta = album_summary.copy()
-                    detailed_metadata = all_album_metadata.get(album_uuid_val, {})
-                    combined_meta.update(detailed_metadata.get('object', detailed_metadata))
-
-                    album_doc = {
-                        'artist_uuid': artist_uuid,
-                        'album_uuid': album_uuid_val,
-                        'album_metadata': combined_meta
-                    }
-                    
-                    self.collections['albums'].update_one(
-                        {'album_uuid': album_uuid_val},
-                        {'$set': album_doc},
-                        upsert=True
-                    )
-                    
-            # --- ADDED: Logic to correctly store song metadata ---
-            if 'song_metadata' in data:
-                for album_uuid, songs in data['song_metadata'].items():
-                    for song_uuid, song_meta in songs.items():
-                        if 'error' not in song_meta:
-                            document_to_store = song_meta | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid, 'song_uuid': song_uuid}
-                            self.collections['songs'].update_one(
-                                {'song_uuid': song_uuid},
-                                {'$set': document_to_store},
-                                upsert=True
-                            )
-
+            # Intelligent "ADD ONLY" logic for albums, tracklists, and songs
+            new_album_uuids = {album.get('uuid') for album in data.get('albums', {}).get('items', []) if album.get('uuid')}
+            existing_albums_cursor = self.collections['albums'].find({'artist_uuid': artist_uuid}, {'album_uuid': 1})
+            existing_album_uuids = {album['album_uuid'] for album in existing_albums_cursor}
             
-            # Upsert playlists
+            missing_album_uuids = new_album_uuids - existing_album_uuids
+
+            if missing_album_uuids:
+                print(f"Found {len(missing_album_uuids)} new album(s) for artist {artist_uuid}. Adding them.")
+                
+                albums_to_insert, tracklists_to_insert, songs_to_insert = [], [], []
+                all_album_metadata = data.get('album_metadata', {})
+                all_tracklists = data.get('tracklists', {})
+                all_song_metadata = data.get('song_metadata', {})
+                missing_albums_data = [album for album in data.get('albums', {}).get('items', []) if album.get('uuid') in missing_album_uuids]
+
+                for album_summary in missing_albums_data:
+                    album_uuid_val = album_summary.get('uuid')
+                    combined_meta = album_summary | all_album_metadata.get(album_uuid_val, {})
+                    album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': combined_meta}
+                    albums_to_insert.append(album_doc)
+
+                    if tracklist_data := all_tracklists.get(album_uuid_val):
+                        if 'error' not in tracklist_data:
+                            tracklists_to_insert.append(tracklist_data | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val})
+                    
+                    if songs := all_song_metadata.get(album_uuid_val):
+                        for song_uuid, song_meta in songs.items():
+                             if 'error' not in song_meta:
+                                songs_to_insert.append(song_meta | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid})
+
+                if albums_to_insert: self.collections['albums'].insert_many(albums_to_insert)
+                if tracklists_to_insert: self.collections['tracklists'].insert_many(tracklists_to_insert)
+                if songs_to_insert: self.collections['songs'].insert_many(songs_to_insert)
+            else:
+                print(f"Album list for artist {artist_uuid} is unchanged.")
+
+            # "Upsert" logic for Playlists
             if 'playlists' in data and 'items' in data.get('playlists', {}):
                 for playlist_item in data['playlists']['items']:
-                    playlist_doc = playlist_item.get('playlist', {})
-                    playlist_uuid = playlist_doc.get('uuid')
+                    playlist_uuid = playlist_item.get('playlist', {}).get('uuid')
                     if not playlist_uuid: continue
                     document_to_store = playlist_item | {'artist_uuid': artist_uuid}
-                    self.collections['playlists'].update_one(
-                        {'playlist.uuid': playlist_uuid, 'artist_uuid': artist_uuid},
-                        {'$set': document_to_store},
-                        upsert=True
-                    )
-            
-            # --- ADDED: Logic to correctly store tracklist data ---
-            if 'tracklists' in data:
-                for album_uuid, tracklist_data in data['tracklists'].items():
-                    if 'error' not in tracklist_data:
-                        document_to_store = tracklist_data | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid}
-                        self.collections['tracklists'].update_one(
-                            {'album_uuid': album_uuid},
-                            {'$set': document_to_store},
-                            upsert=True
-                        )
-                        
-            # --- ADDED: Upsert streaming audience data ---
-            if 'streaming_audience' in data and 'items' in data.get('streaming_audience', {}):
-                for item in data['streaming_audience']['items']:
-                    # Use artist_uuid and date as a unique key for each data point
-                    if item_date := item.get('date'):
-                        document_to_store = item | {'artist_uuid': artist_uuid}
-                        self.collections['streaming_audience'].update_one(
-                            {'artist_uuid': artist_uuid, 'date': item_date},
-                            {'$set': document_to_store},
-                            upsert=True
-                        )
-
+                    self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': document_to_store}, upsert=True)
+        
         except OperationFailure as e:
             print(f"Error storing secondary data: {e}")
+
 
     def get_timeseries_data_range(self, collection_name: str, query_filter: Dict) -> Tuple[Optional[datetime], Optional[datetime]]:
         """Finds the earliest and latest date for a given time-series document."""
         pipeline = [{'$match': query_filter}, {'$unwind': '$history'}, {'$group': {'_id': '$_id', 'minDate': {'$min': '$history.date'}, 'maxDate': {'$max': '$history.date'}}}]
         result = list(self.collections[collection_name].aggregate(pipeline))
         if not result: return None, None
-        min_date_str = result[0].get('minDate')
-        max_date_str = result[0].get('maxDate')
-        min_date = datetime.fromisoformat(min_date_str.replace('Z', '+00:00')) if min_date_str else None
-        max_date = datetime.fromisoformat(max_date_str.replace('Z', '+00:00')) if max_date_str else None
+        min_date = datetime.fromisoformat(result[0]['minDate'].replace('Z', '+00:00')) if result[0].get('minDate') else None
+        max_date = datetime.fromisoformat(result[0]['maxDate'].replace('Z', '+00:00')) if result[0].get('maxDate') else None
         return min_date, max_date
 
     def append_timeseries_data(self, collection_name: str, query_filter: Dict, new_data_points: List[Dict]):
