@@ -173,3 +173,27 @@ def display_popularity_chart(popularity_data):
         st.line_chart(df['value'])
     else:
         st.warning("Could not find 'value' data to plot.")
+        
+def display_streaming_audience_chart(streaming_data):
+    """Displays streaming audience data in a line chart."""
+    st.subheader("Streaming Audience (Spotify)")
+    if not streaming_data:
+        st.info("No streaming audience data available for the selected period.")
+        return
+
+    # UPDATED: Parse the 'value' from the nested 'data' dictionary, similar to popularity
+    chart_data = [{'date': entry.get('date'), 'value': entry.get('value')} for entry in streaming_data]
+    df = pd.DataFrame(chart_data)
+
+    if 'date' not in df.columns or df['date'].isnull().all():
+        st.error("Streaming audience data is missing valid 'date' information.")
+        return
+        
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.set_index('date')
+
+    # UPDATED: Plot the single 'value' column
+    if 'value' in df.columns:
+        st.line_chart(df['value'])
+    else:
+        st.warning("Could not find 'value' data in the streaming audience response.")
