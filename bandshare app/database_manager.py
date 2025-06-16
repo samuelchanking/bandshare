@@ -1,147 +1,161 @@
-# soundcharts_client.py
+# database_manager.py
 
-import requests
-import urllib.parse
-from typing import Dict, Any
-import json # Added for debugging
+from pymongo import MongoClient, ASCENDING
+from pymongo.errors import ConnectionFailure, OperationFailure
+from typing import Dict, Any, List, Tuple, Optional
+import re
+from datetime import datetime
 
-class SoundchartsAPIClient:
-    """A client to interact with the Soundcharts API."""
-    BASE_URL = "https://customer.api.soundcharts.com/api"
+class DatabaseManager:
+    """Manages all interactions with the MongoDB database."""
 
-    def __init__(self, app_id: str, api_key: str):
-        if not app_id or not api_key:
-            raise ValueError("API App ID and Key cannot be empty.")
-        self._headers = {'x-app-id': app_id, 'x-api-key': api_key}
-
-    def _request(self, url: str, params: Dict = None) -> Dict[str, Any]:
+    def __init__(self, mongo_uri: str, db_name: str):
+        """Initializes the database manager and connects to MongoDB."""
         try:
-            response = requests.get(url, params=params, headers=self._headers)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            return {'error': f"API request failed: {e}"}
+            self.client = MongoClient(mongo_uri)
+            self.client.admin.command('ismaster')
+            self.db = self.client[db_name]
+            self.collections = {
+                'artists': self.db['artists'],
+                'albums': self.db['albums'],
+                'tracklists': self.db['album_tracklist'],
+                'songs': self.db['songs'],
+                'playlists': self.db['playlists'],
+                'audience': self.db['audience'],
+                'popularity': self.db['popularity'],
+                # ADDED: collection for streaming audience
+                'streaming_audience': self.db['streaming_audience'] 
+            }
+            # Create indexes for efficient queries
+            self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
+            self.collections['popularity'].create_index([("artist_uuid", ASCENDING), ("source", ASCENDING)])
+            # ADDED: index for streaming audience
+            self.collections['streaming_audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
+            print(f"Successfully connected to MongoDB database '{db_name}'")
+        except ConnectionFailure as e:
+            raise e
 
-    def search_artist(self, artist_name: str) -> Dict[str, Any]:
-        """Finds an artist by name and returns their UUID."""
-        encoded_artist_name = urllib.parse.quote(artist_name)
-        url = f"{self.BASE_URL}/v2/artist/search/{encoded_artist_name}"
-        search_data = self._request(url, params={'limit': '1'})
-        if 'error' in search_data: return search_data
-        if not search_data.get('items'): return {'error': f"No artists found for '{artist_name}'"}
-        return {'uuid': search_data['items'][0]['uuid']}
+    def close_connection(self):
+        """Closes the MongoDB connection."""
+        self.client.close()
 
-    def get_artist_metadata(self, artist_uuid: str) -> Dict[str, Any]:
-        """Fetches the main metadata document for an artist."""
-        url = f"{self.BASE_URL}/v2.9/artist/{artist_uuid}"
-        return self._request(url)
-        
-    def get_artist_audience(self, artist_uuid: str, platform: str, start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series audience data (listeners, followers)."""
-        url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/audience/{platform}/"
-        params = {}
-        if start_date: params['startDate'] = str(start_date)
-        if end_date: params['endDate'] = str(end_date)
-        return self._request(url, params=params)
+    def search_artist_by_name(self, artist_name: str) -> Optional[Dict[str, Any]]:
+        """Finds an artist by name in the local database."""
+        if not artist_name: return None
+        search_regex = re.compile(f"^{re.escape(artist_name)}$", re.IGNORECASE)
+        return self.collections['artists'].find_one({'$or': [{'name': search_regex}, {'object.name': search_regex}]})
 
-    def get_artist_popularity(self, artist_uuid: str, source: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series popularity data."""
-        url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/popularity/{source}"
-        params = {}
-        if start_date: params['startDate'] = str(start_date)
-        if end_date: params['endDate'] = str(end_date)
-        return self._request(url, params=params)
+    def store_static_artist_data(self, data: Dict[str, Any]) -> Dict[str, str]:
+        """Upserts the main artist metadata document."""
+        if 'error' in data: return {'status': 'error', 'message': data['error']}
+        try:
+            artist_uuid = data['artist_uuid']
+            if 'metadata' in data:
+                self.collections['artists'].update_one({'artist_uuid': artist_uuid}, {'$set': data['metadata']}, upsert=True)
+            return {'status': 'success', 'message': 'Static data stored.'}
+        except OperationFailure as e:
+            return {'status': 'error', 'message': f"DB error: {e}"}
 
-    def get_artist_albums(self, artist_uuid: str) -> Dict[str, Any]:
-        """Fetches the list of albums for an artist."""
-        url = f"{self.BASE_URL}/v2.34/artist/{artist_uuid}/albums"
-        return self._request(url, params={'offset': '0', 'limit': '100'})
-        
-    # --- ADDED: The missing get_album_metadata function ---
-    def get_album_metadata(self, album_uuid: str) -> Dict[str, Any]:
-        """Fetches detailed metadata for a single album."""
-        url = f"{self.BASE_URL}/v2.36/album/by-uuid/{album_uuid}"
-        return self._request(url)
-
-    def get_artist_playlists(self, artist_uuid: str, platform: str = "spotify") -> Dict[str, Any]:
-        """Fetches the list of playlists an artist is currently featured on."""
-        url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/current/{platform}"
-        return self._request(url)
-
-    def fetch_static_artist_data(self, artist_name: str) -> Dict[str, Any]:
+    def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
-        Finds an artist and fetches only their main metadata document.
+        Stores or updates albums, playlists, and streaming data using an 'upsert' strategy.
         """
-        artist_info = self.search_artist(artist_name)
-        if 'error' in artist_info: return artist_info
-        
-        artist_uuid = artist_info['uuid']
-        result = {'artist_uuid': artist_uuid, 'artist_name': artist_name}
-        result['metadata'] = self.get_artist_metadata(artist_uuid)
-        return result
+        try:
+            # Upsert albums
+            if 'albums' in data and 'items' in data.get('albums', {}):
+                all_album_metadata = data.get('album_metadata', {})
+                for album_summary in data['albums']['items']:
+                    album_uuid_val = album_summary.get('uuid')
+                    if not album_uuid_val: continue
 
-    def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
-        """
-        Fetches secondary data like albums and playlists, including detailed
-        metadata for each album.
-        """
-        result = {}
-        result['albums'] = self.get_artist_albums(artist_uuid)
-        result['playlists'] = self.get_artist_playlists(artist_uuid)
-        
-        # --- ADDED: Fetch detailed metadata for each album ---
-        if 'albums' in result and 'items' in result.get('albums', {}):
-            result['album_metadata'] = {}
-            for album_summary in result['albums']['items']:
-                album_uuid_val = album_summary.get('uuid')
-                if album_uuid_val:
-                    result['album_metadata'][album_uuid_val] = self.get_album_metadata(album_uuid_val)
+                    combined_meta = album_summary.copy()
+                    detailed_metadata = all_album_metadata.get(album_uuid_val, {})
+                    combined_meta.update(detailed_metadata.get('object', detailed_metadata))
+
+                    album_doc = {
+                        'artist_uuid': artist_uuid,
+                        'album_uuid': album_uuid_val,
+                        'album_metadata': combined_meta
+                    }
                     
-        return result
+                    self.collections['albums'].update_one(
+                        {'album_uuid': album_uuid_val},
+                        {'$set': album_doc},
+                        upsert=True
+                    )
+                    
+            # --- ADDED: Logic to correctly store song metadata ---
+            if 'song_metadata' in data:
+                for album_uuid, songs in data['song_metadata'].items():
+                    for song_uuid, song_meta in songs.items():
+                        if 'error' not in song_meta:
+                            document_to_store = song_meta | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid, 'song_uuid': song_uuid}
+                            self.collections['songs'].update_one(
+                                {'song_uuid': song_uuid},
+                                {'$set': document_to_store},
+                                upsert=True
+                            )
 
-    # --- Debugging function ---
-    def debug_fetch_secondary_artist_data(self, artist_uuid: str, filename="debug_secondary_data_output.json"):
-        """
-        Calls fetch_secondary_artist_data and saves the raw JSON response to a file.
-        This helps diagnose issues with the structure of album and playlist data.
-        """
-        print(f"--- [DEBUG] Fetching secondary data for artist UUID: {artist_uuid} ---")
-        response_data = self.fetch_secondary_artist_data(artist_uuid)
-
-        try:
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(response_data, f, ensure_ascii=False, indent=4)
-            print(f"--- [SUCCESS] Raw JSON response saved to '{filename}' ---")
             
-            if 'error' in response_data:
-                print("--- [DIAGNOSIS] The API returned an error.")
-            elif 'albums' in response_data and 'items' in response_data.get('albums', {}):
-                print(f"--- [DIAGNOSIS] Found {len(response_data['albums']['items'])} album(s). Check the JSON file for their structure.")
-                if 'album_metadata' in response_data:
-                    print("--- [DIAGNOSIS] Successfully fetched detailed 'album_metadata'.")
-                else:
-                    print("--- [WARNING] Detailed 'album_metadata' key is missing.")
-            else:
-                 print("--- [DIAGNOSIS] The response structure is unexpected. Please review the JSON file's contents.")
+            # Upsert playlists
+            if 'playlists' in data and 'items' in data.get('playlists', {}):
+                for playlist_item in data['playlists']['items']:
+                    playlist_doc = playlist_item.get('playlist', {})
+                    playlist_uuid = playlist_doc.get('uuid')
+                    if not playlist_uuid: continue
+                    document_to_store = playlist_item | {'artist_uuid': artist_uuid}
+                    self.collections['playlists'].update_one(
+                        {'playlist.uuid': playlist_uuid, 'artist_uuid': artist_uuid},
+                        {'$set': document_to_store},
+                        upsert=True
+                    )
+            
+            # --- ADDED: Logic to correctly store tracklist data ---
+            if 'tracklists' in data:
+                for album_uuid, tracklist_data in data['tracklists'].items():
+                    if 'error' not in tracklist_data:
+                        document_to_store = tracklist_data | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid}
+                        self.collections['tracklists'].update_one(
+                            {'album_uuid': album_uuid},
+                            {'$set': document_to_store},
+                            upsert=True
+                        )
+                        
+            # --- ADDED: Upsert streaming audience data ---
+            if 'streaming_audience' in data and 'items' in data.get('streaming_audience', {}):
+                for item in data['streaming_audience']['items']:
+                    # Use artist_uuid and date as a unique key for each data point
+                    if item_date := item.get('date'):
+                        document_to_store = item | {'artist_uuid': artist_uuid}
+                        self.collections['streaming_audience'].update_one(
+                            {'artist_uuid': artist_uuid, 'date': item_date},
+                            {'$set': document_to_store},
+                            upsert=True
+                        )
 
-        except Exception as e:
-            print(f"--- [ERROR] Failed to save JSON file: {e} ---")
-        
-        return response_data
+        except OperationFailure as e:
+            print(f"Error storing secondary data: {e}")
 
-# --- Main execution block for direct debugging ---
-if __name__ == '__main__':
-    # This block allows you to run this file directly to debug a specific function.
-    import config 
+    def get_timeseries_data_range(self, collection_name: str, query_filter: Dict) -> Tuple[Optional[datetime], Optional[datetime]]:
+        """Finds the earliest and latest date for a given time-series document."""
+        pipeline = [{'$match': query_filter}, {'$unwind': '$history'}, {'$group': {'_id': '$_id', 'minDate': {'$min': '$history.date'}, 'maxDate': {'$max': '$history.date'}}}]
+        result = list(self.collections[collection_name].aggregate(pipeline))
+        if not result: return None, None
+        min_date_str = result[0].get('minDate')
+        max_date_str = result[0].get('maxDate')
+        min_date = datetime.fromisoformat(min_date_str.replace('Z', '+00:00')) if min_date_str else None
+        max_date = datetime.fromisoformat(max_date_str.replace('Z', '+00:00')) if max_date_str else None
+        return min_date, max_date
 
-    # --- Configuration for Debugging ---
-    # PASTE THE ARTIST UUID YOU WANT TO TEST HERE
-    TEST_ARTIST_UUID = '11e81bd1-a865-34aa-b1fa-a0369fe50396'
+    def append_timeseries_data(self, collection_name: str, query_filter: Dict, new_data_points: List[Dict]):
+        """Appends new data points to a time-series document's history array."""
+        if new_data_points:
+            self.collections[collection_name].update_one(query_filter, {'$addToSet': {'history': {'$each': new_data_points}}}, upsert=True)
 
-    if not TEST_ARTIST_UUID or TEST_ARTIST_UUID == 'YOUR_ARTIST_UUID_HERE':
-        print("\nERROR: Please open soundcharts_client.py and set the TEST_ARTIST_UUID at the bottom of the file.")
-    else:
-        print("\n--- Running Secondary Artist Data Debugger ---")
-        client = SoundchartsAPIClient(app_id=config.APP_ID, api_key=config.API_KEY)
-        client.debug_fetch_secondary_artist_data(TEST_ARTIST_UUID)
-        print("--- Debug script finished. ---")
+    def get_timeseries_data_for_display(self, collection_name: str, query_filter: Dict, start_date, end_date) -> List[Dict]:
+        """Gets the final time-series data within a specific date range for display."""
+        start_iso = datetime.combine(start_date, datetime.min.time()).isoformat() + "Z"
+        end_iso = datetime.combine(end_date, datetime.max.time()).isoformat() + "Z"
+        pipeline = [{'$match': query_filter}, {'$project': {'history': {'$filter': {'input': '$history', 'as': 'item', 'cond': {'$and': [{'$gte': ['$$item.date', start_iso]}, {'$lte': ['$$item.date', end_iso]}]}}}}}]
+        result = list(self.collections[collection_name].aggregate(pipeline))
+        return result[0]['history'] if result and 'history' in result[0] else []
