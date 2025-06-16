@@ -61,10 +61,28 @@ class SoundchartsAPIClient:
         url = f"{self.BASE_URL}/v2.36/album/by-uuid/{album_uuid}"
         return self._request(url)
 
+    def get_album_tracks(self, album_uuid: str) -> Dict[str, Any]:
+        """Fetches the tracklist for a given album UUID."""
+        url = f"{self.BASE_URL}/v2.26/album/{album_uuid}/tracks"
+        return self._request(url)
+    
+    def get_song_metadata(self, song_uuid: str) -> Dict[str, Any]:
+        """Fetches detailed metadata for a single song."""
+        url = f"{self.BASE_URL}/v2.25/song/{song_uuid}"
+        return self._request(url)
+
     def get_artist_playlists(self, artist_uuid: str, platform: str = "spotify") -> Dict[str, Any]:
         """Fetches the list of playlists an artist is currently featured on."""
         url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/current/{platform}"
         return self._request(url)
+
+    def get_artist_streaming_audience(self, artist_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
+        url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/streaming/{platform}/listening"
+        params = {}
+        if start_date: params['startDate'] = str(start_date)
+        if end_date: params['endDate'] = str(end_date)
+        return self._request(url, params=params)
+    
 
     def fetch_static_artist_data(self, artist_name: str) -> Dict[str, Any]:
         """
@@ -80,8 +98,8 @@ class SoundchartsAPIClient:
 
     def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
         """
-        Fetches secondary data like albums and playlists, including detailed
-        metadata for each album.
+        Fetches secondary data like albums, playlists, including detailed
+        metadata for each album and song.
         """
         result = {}
         result['albums'] = self.get_artist_albums(artist_uuid)
@@ -89,9 +107,25 @@ class SoundchartsAPIClient:
         
         if 'albums' in result and 'items' in result.get('albums', {}):
             result['album_metadata'] = {}
+            result['tracklists'] = {}
+            # Initialize song_metadata dictionary
+            result['song_metadata'] = {}
+            
             for album_summary in result['albums']['items']:
                 album_uuid_val = album_summary.get('uuid')
                 if album_uuid_val:
+                    # Fetch detailed album metadata
                     result['album_metadata'][album_uuid_val] = self.get_album_metadata(album_uuid_val)
                     
+                    # Fetch tracklist for the album
+                    tracklist_data = self.get_album_tracks(album_uuid_val)
+                    result['tracklists'][album_uuid_val] = tracklist_data
+
+                    # --- FIXED: Fetch metadata for each song in the tracklist ---
+                    if 'items' in tracklist_data:
+                        result['song_metadata'][album_uuid_val] = {}
+                        for item in tracklist_data['items']:
+                            if song_uuid := item.get('song', {}).get('uuid'):
+                                result['song_metadata'][album_uuid_val][song_uuid] = self.get_song_metadata(song_uuid)
+                                
         return result
