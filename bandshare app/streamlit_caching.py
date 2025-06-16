@@ -62,3 +62,11 @@ def get_popularity_data(_db_manager, artist_uuid: str, source: str, start_date, 
         return []
     query_filter = {'artist_uuid': artist_uuid, 'source': source}
     return _db_manager.get_timeseries_data_for_display('popularity', query_filter, start_date, end_date)
+
+@st.cache_data
+def get_streaming_audience_from_db(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
+    """Gets streaming audience data for a given date range from the database."""
+    if not all([artist_uuid, platform, start_date, end_date]): return []
+    # This assumes streaming data is stored similarly to other time-series data
+    query_filter = {'artist_uuid': artist_uuid, 'platform': platform}
+    return _db_manager.get_timeseries_data_for_display('streaming_audience', query_filter, start_date, end_date)
