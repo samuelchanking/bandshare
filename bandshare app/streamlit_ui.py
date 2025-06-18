@@ -8,6 +8,21 @@ import matplotlib.pyplot as plt
 import random
 import matplotlib.dates as mdates # <--- ADD THIS LINE
 import plotly.express as px  # <--- ADD THIS LINE
+import json
+
+
+def display_demographics(local_audience):
+    """Displays local audience data in raw JSON format."""
+    st.subheader("Demographics")
+    with st.expander("Local Audience (Instagram)"):
+        if local_audience:
+            # Clean up the MongoDB internal ID before displaying
+            if '_id' in local_audience:
+                del local_audience['_id']
+            st.json(local_audience)
+        else:
+            st.info("No local audience data available.")
+
 
 def display_artist_metadata(metadata):
     """Displays artist's metadata in a structured layout."""
@@ -317,3 +332,85 @@ def display_streaming_audience_chart(streaming_data):
         st.line_chart(df['value'])
     else:
         st.warning("Could not find 'value' data in the streaming audience response.")
+
+
+def display_local_streaming_plots(local_streaming_data):
+    """
+    Creates interactive dropdowns for country and city to plot time-series streaming data.
+    """
+    st.subheader("Local Streaming Performance")
+    if not local_streaming_data:
+        st.info("No local streaming data available for this period.")
+        return
+
+    # --- Data Preparation ---
+    all_countries = set()
+    country_to_cities = {}
+    plot_data = []
+
+    for daily_entry in local_streaming_data:
+        date = daily_entry.get('date')
+        # Plot country data
+        for country_plot in daily_entry.get('countryPlots', []):
+            country_name = country_plot.get('countryName')
+            if country_name:
+                all_countries.add(country_name)
+                plot_data.append({
+                    'date': date,
+                    'country': country_name,
+                    'city': None,
+                    'streams': country_plot.get('value')
+                })
+        # Plot city data
+        for city_plot in daily_entry.get('cityPlots', []):
+            country_name = city_plot.get('countryName')
+            city_name = city_plot.get('cityName')
+
+            if country_name and city_name:
+                all_countries.add(country_name)
+                if country_name not in country_to_cities:
+                    country_to_cities[country_name] = set()
+                country_to_cities[country_name].add(city_name)
+                plot_data.append({
+                    'date': date,
+                    'country': country_name,
+                    'city': city_name,
+                    'streams': city_plot.get('value')
+                })
+    
+    if not plot_data:
+        st.info("Could not find any stream data in the local breakdown.")
+        return
+        
+    df = pd.DataFrame(plot_data)
+    df['date'] = pd.to_datetime(df['date'])
+
+    # --- UI Selectors ---
+    sorted_countries = sorted(list(all_countries))
+    selected_country = st.selectbox("Select a Country", sorted_countries)
+
+    if selected_country:
+        cities = sorted(list(country_to_cities.get(selected_country, [])))
+        city_options = ["All Cities"] + cities
+        selected_city = st.selectbox("Select a City", city_options)
+
+        # --- Filtering and Plotting ---
+        title = f"Daily Streams in {selected_country}"
+        if selected_city and selected_city != "All Cities":
+            # Filter for the specific city
+            filtered_df = df[(df['country'] == selected_country) & (df['city'] == selected_city)]
+            title = f"Daily Streams in {selected_city}, {selected_country}"
+        else:
+            # Filter for the country total (where city is None)
+            filtered_df = df[(df['country'] == selected_country) & (df['city'].isnull())]
+        
+        if not filtered_df.empty:
+            fig = px.line(
+                filtered_df,
+                x='date',
+                y='streams',
+                title=title
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info(f"No streaming data found for the selected location.")
