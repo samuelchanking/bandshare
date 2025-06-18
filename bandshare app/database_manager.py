@@ -23,12 +23,15 @@ class DatabaseManager:
                 'playlists': self.db['playlists'],
                 'audience': self.db['audience'],
                 'popularity': self.db['popularity'],
-                'streaming_audience': self.db['streaming_audience'] 
+                'streaming_audience': self.db['streaming_audience'],
+                'songs_audience': self.db['songs_audience'],
             }
             # Create indexes for efficient queries
             self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['popularity'].create_index([("artist_uuid", ASCENDING), ("source", ASCENDING)])
             self.collections['streaming_audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
+            # MODIFIED: Create a compound index for song-playlist specific data
+            self.collections['songs_audience'].create_index([("song_uuid", ASCENDING), ("playlist_uuid", ASCENDING)])
         except ConnectionFailure as e:
             raise e
 
@@ -41,8 +44,6 @@ class DatabaseManager:
         if not artist_name: return None
         search_regex = re.compile(f"^{re.escape(artist_name)}$", re.IGNORECASE)
         return self.collections['artists'].find_one({'$or': [{'name': search_regex}, {'object.name': search_regex}]})
-
-    # --- UPDATED: The old store_artist_data function is now split into these two. ---
 
     def store_static_artist_data(self, artist_uuid: str, data: Dict[str, Any]) -> Dict[str, str]:
         """Upserts the main artist metadata document."""
@@ -61,57 +62,81 @@ class DatabaseManager:
 
     def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
-        Stores or updates albums, tracklists, songs, and playlists.
+        Stores or updates all secondary data, including song-specific time-series data
+        for each playlist appearance.
         """
         try:
-            # Intelligent "ADD ONLY" logic for albums, tracklists, and songs
-            new_album_uuids = {album.get('uuid') for album in data.get('albums', {}).get('items', []) if album.get('uuid')}
-            existing_albums_cursor = self.collections['albums'].find({'artist_uuid': artist_uuid}, {'album_uuid': 1})
-            existing_album_uuids = {album['album_uuid'] for album in existing_albums_cursor}
-            
-            missing_album_uuids = new_album_uuids - existing_album_uuids
-
-            if missing_album_uuids:
-                print(f"Found {len(missing_album_uuids)} new album(s) for artist {artist_uuid}. Adding them.")
-                
-                albums_to_insert, tracklists_to_insert, songs_to_insert = [], [], []
+            # Upsert Albums, Tracklists, Songs, Playlists (no changes here)
+            if 'albums' in data and 'items' in data.get('albums', {}):
                 all_album_metadata = data.get('album_metadata', {})
-                all_tracklists = data.get('tracklists', {})
-                all_song_metadata = data.get('song_metadata', {})
-                missing_albums_data = [album for album in data.get('albums', {}).get('items', []) if album.get('uuid') in missing_album_uuids]
+                for album_summary in data['albums']['items']:
+                    if album_uuid_val := album_summary.get('uuid'):
+                        combined_meta = album_summary | all_album_metadata.get(album_uuid_val, {})
+                        album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': combined_meta}
+                        self.collections['albums'].update_one({'album_uuid': album_uuid_val}, {'$set': album_doc}, upsert=True)
 
-                for album_summary in missing_albums_data:
-                    album_uuid_val = album_summary.get('uuid')
-                    combined_meta = album_summary | all_album_metadata.get(album_uuid_val, {})
-                    album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': combined_meta}
-                    albums_to_insert.append(album_doc)
+            if 'tracklists' in data:
+                for album_uuid_val, tracklist_data in data['tracklists'].items():
+                    if 'error' not in tracklist_data:
+                        doc_to_store = tracklist_data | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val}
+                        self.collections['tracklists'].update_one({'album_uuid': album_uuid_val}, {'$set': doc_to_store}, upsert=True)
+            
+            if 'song_metadata' in data:
+                for album_uuid_val, songs in data['song_metadata'].items():
+                    for song_uuid, song_meta in songs.items():
+                        if 'error' not in song_meta:
+                            doc_to_store = song_meta | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid}
+                            self.collections['songs'].update_one({'song_uuid': song_uuid}, {'$set': doc_to_store}, upsert=True)
 
-                    if tracklist_data := all_tracklists.get(album_uuid_val):
-                        if 'error' not in tracklist_data:
-                            tracklists_to_insert.append(tracklist_data | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val})
-                    
-                    if songs := all_song_metadata.get(album_uuid_val):
-                        for song_uuid, song_meta in songs.items():
-                             if 'error' not in song_meta:
-                                songs_to_insert.append(song_meta | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid})
-
-                if albums_to_insert: self.collections['albums'].insert_many(albums_to_insert)
-                if tracklists_to_insert: self.collections['tracklists'].insert_many(tracklists_to_insert)
-                if songs_to_insert: self.collections['songs'].insert_many(songs_to_insert)
-            else:
-                print(f"Album list for artist {artist_uuid} is unchanged.")
-
-            # "Upsert" logic for Playlists
             if 'playlists' in data and 'items' in data.get('playlists', {}):
                 for playlist_item in data['playlists']['items']:
-                    playlist_uuid = playlist_item.get('playlist', {}).get('uuid')
-                    if not playlist_uuid: continue
-                    document_to_store = playlist_item | {'artist_uuid': artist_uuid}
-                    self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': document_to_store}, upsert=True)
-        
+                    if playlist_uuid := playlist_item.get('playlist', {}).get('uuid'):
+                        document_to_store = playlist_item | {'artist_uuid': artist_uuid}
+                        self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': document_to_store}, upsert=True)
+            
+            # --- MODIFIED: Store song streaming data for each playlist entry ---
+            if 'song_streaming_data' in data:
+                # data['song_streaming_data'] is now a list of dicts
+                for item in data['song_streaming_data']:
+                    song_uuid = item['song_uuid']
+                    playlist_uuid = item['playlist_uuid']
+                    audience_data = item['data']
+
+                    if 'items' in audience_data:
+                        # The document now includes playlist_uuid for unique identification
+                        doc = {
+                            'song_uuid': song_uuid,
+                            'playlist_uuid': playlist_uuid,
+                            'artist_uuid': artist_uuid,
+                            'history': audience_data['items'],
+                            'last_updated': datetime.utcnow()
+                        }
+                        # The filter for update_one now uses both UUIDs
+                        self.collections['songs_audience'].update_one(
+                            {'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid},
+                            {'$set': doc},
+                            upsert=True
+                        )
+
         except OperationFailure as e:
             print(f"Error storing secondary data: {e}")
 
+    def store_timeseries_data(self, artist_uuid: str, data: Dict[str, Any]):
+        """
+        Appends new time-series data points to the database for ARTIST-LEVEL collections.
+        """
+        try:
+            for coll_name, data_key, platform_key in [
+                ('audience', 'audience', 'platform'), 
+                ('popularity', 'popularity', 'source'), 
+                ('streaming_audience', 'streaming_audience', 'platform')
+            ]:
+                if data_key in data and 'items' in data.get(data_key, {}):
+                    platform = data[data_key].get(platform_key, 'spotify')
+                    query_filter = {'artist_uuid': artist_uuid, platform_key: platform}
+                    self.append_timeseries_data(coll_name, query_filter, data[data_key]['items'])
+        except OperationFailure as e:
+            print(f"Error storing time-series data: {e}")
 
     def get_timeseries_data_range(self, collection_name: str, query_filter: Dict) -> Tuple[Optional[datetime], Optional[datetime]]:
         """Finds the earliest and latest date for a given time-series document."""
@@ -125,7 +150,11 @@ class DatabaseManager:
     def append_timeseries_data(self, collection_name: str, query_filter: Dict, new_data_points: List[Dict]):
         """Appends new data points to a time-series document's history array."""
         if new_data_points:
-            self.collections[collection_name].update_one(query_filter, {'$addToSet': {'history': {'$each': new_data_points}}}, upsert=True)
+            self.collections[collection_name].update_one(
+                query_filter, 
+                {'$addToSet': {'history': {'$each': new_data_points}}}, 
+                upsert=True
+            )
 
     def get_timeseries_data_for_display(self, collection_name: str, query_filter: Dict, start_date, end_date) -> List[Dict]:
         """Gets the final time-series data within a specific date range for display."""
