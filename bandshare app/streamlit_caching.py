@@ -46,6 +46,21 @@ def get_artist_playlists_from_db(_db_manager, artist_uuid: str):
     return []
 
 @st.cache_data
+def get_local_audience_from_db(_db_manager, artist_uuid: str, platform: str):
+    """Gets local audience data from the database."""
+    if not all([artist_uuid, platform]):
+        return None
+    return _db_manager.collections['demographic_followers'].find_one({'artist_uuid': artist_uuid, 'platform': platform})
+
+@st.cache_data
+def get_local_streaming_history_from_db(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
+    """Gets local streaming history data for a given date range from the database."""
+    if not all([artist_uuid, platform, start_date, end_date]): return []
+    query_filter = {'artist_uuid': artist_uuid, 'platform': platform}
+    return _db_manager.get_timeseries_data_for_display('local_streaming_history', query_filter, start_date, end_date)
+
+
+@st.cache_data
 def get_audience_data(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
     """Gets audience data for a given date range from the database."""
     if not all([artist_uuid, platform, start_date, end_date]):
