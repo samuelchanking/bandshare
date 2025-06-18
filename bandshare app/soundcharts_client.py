@@ -3,6 +3,8 @@
 import requests
 import urllib.parse
 from typing import Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timedelta
 
 class SoundchartsAPIClient:
     """A client to interact with the Soundcharts API."""
@@ -34,7 +36,7 @@ class SoundchartsAPIClient:
         """Fetches the main metadata document for an artist."""
         url = f"{self.BASE_URL}/v2.9/artist/{artist_uuid}"
         return self._request(url)
-        
+
     def get_artist_audience(self, artist_uuid: str, platform: str, start_date=None, end_date=None) -> Dict[str, Any]:
         """Fetches time-series audience data (listeners, followers)."""
         url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/audience/{platform}/"
@@ -55,7 +57,7 @@ class SoundchartsAPIClient:
         """Fetches the list of albums for an artist."""
         url = f"{self.BASE_URL}/v2.34/artist/{artist_uuid}/albums"
         return self._request(url, params={'offset': '0', 'limit': '100'})
-        
+
     def get_album_metadata(self, album_uuid: str) -> Dict[str, Any]:
         """Fetches detailed metadata for a single album."""
         url = f"{self.BASE_URL}/v2.36/album/by-uuid/{album_uuid}"
@@ -65,7 +67,7 @@ class SoundchartsAPIClient:
         """Fetches the tracklist for a given album UUID."""
         url = f"{self.BASE_URL}/v2.26/album/{album_uuid}/tracks"
         return self._request(url)
-    
+
     def get_song_metadata(self, song_uuid: str) -> Dict[str, Any]:
         """Fetches detailed metadata for a single song."""
         url = f"{self.BASE_URL}/v2.25/song/{song_uuid}"
@@ -82,7 +84,23 @@ class SoundchartsAPIClient:
         if start_date: params['startDate'] = str(start_date)
         if end_date: params['endDate'] = str(end_date)
         return self._request(url, params=params)
-    
+
+    def get_song_streaming_audience(self, song_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
+        """
+        Fetches the time-series streaming audience data for a specific song.
+        """
+        if not song_uuid:
+            return {'error': 'Song UUID must be provided.'}
+
+        url = f"{self.BASE_URL}/v2/song/{song_uuid}/audience/{platform}"
+        params = {}
+        if start_date:
+            params['startDate'] = str(start_date)
+        if end_date:
+            params['endDate'] = str(end_date)
+
+        return self._request(url, params=params)
+
 
     def fetch_static_artist_data(self, artist_name: str) -> Dict[str, Any]:
         """
@@ -90,42 +108,94 @@ class SoundchartsAPIClient:
         """
         artist_info = self.search_artist(artist_name)
         if 'error' in artist_info: return artist_info
-        
+
         artist_uuid = artist_info['uuid']
         result = {'artist_uuid': artist_uuid, 'artist_name': artist_name}
         result['metadata'] = self.get_artist_metadata(artist_uuid)
         return result
 
-    def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
+    def fetch_secondary_artist_data(self, artist_uuid: str, start_date=None, end_date=None) -> Dict[str, Any]:
         """
-        Fetches secondary data like albums, playlists, including detailed
-        metadata for each album and song.
+        Fetches all song metadata from albums and fetches streaming data for EACH playlist entry.
         """
         result = {}
         result['albums'] = self.get_artist_albums(artist_uuid)
         result['playlists'] = self.get_artist_playlists(artist_uuid)
-        
+
+        # --- Fetch metadata for ALL songs on ALL albums ---
+        result['album_metadata'] = {}
+        result['tracklists'] = {}
+        result['song_metadata'] = {}
         if 'albums' in result and 'items' in result.get('albums', {}):
-            result['album_metadata'] = {}
-            result['tracklists'] = {}
-            # Initialize song_metadata dictionary
-            result['song_metadata'] = {}
-            
             for album_summary in result['albums']['items']:
                 album_uuid_val = album_summary.get('uuid')
                 if album_uuid_val:
-                    # Fetch detailed album metadata
                     result['album_metadata'][album_uuid_val] = self.get_album_metadata(album_uuid_val)
-                    
-                    # Fetch tracklist for the album
                     tracklist_data = self.get_album_tracks(album_uuid_val)
                     result['tracklists'][album_uuid_val] = tracklist_data
 
-                    # --- FIXED: Fetch metadata for each song in the tracklist ---
                     if 'items' in tracklist_data:
                         result['song_metadata'][album_uuid_val] = {}
                         for item in tracklist_data['items']:
                             if song_uuid := item.get('song', {}).get('uuid'):
                                 result['song_metadata'][album_uuid_val][song_uuid] = self.get_song_metadata(song_uuid)
-                                
+
+        # --- MODIFIED: Prepare to fetch streaming data for EACH song on EACH playlist ---
+        playlist_items = result.get('playlists', {}).get('items', [])
+        tasks_to_run = []
+        processed_playlist_uuids = set() #<-- ADD: Create a set to track unique playlists
+
+        if playlist_items:
+            for item in playlist_items:
+                song_uuid = item.get('song', {}).get('uuid')
+                playlist_uuid = item.get('playlist', {}).get('uuid')
+                entry_date_str = item.get('entryDate')
+
+                # --- MODIFICATION ---
+                # Process this item only if we haven't seen its playlist_uuid before
+                if playlist_uuid and playlist_uuid not in processed_playlist_uuids:
+                    if all([song_uuid, entry_date_str]):
+                        try:
+                            entry_date = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
+                            start_date_for_song = entry_date - timedelta(days=90)
+                            end_date_for_song = entry_date
+
+                            # Append a task for this unique playlist entry
+                            tasks_to_run.append({
+                                'song_uuid': song_uuid,
+                                'playlist_uuid': playlist_uuid, 
+                                'start': start_date_for_song,
+                                'end': end_date_for_song
+                            })
+                            # ADD: Add the playlist_uuid to the set to prevent duplicates
+                            processed_playlist_uuids.add(playlist_uuid)
+                        except ValueError:
+                            continue
+        
+        # --- MODIFIED: Execute parallel fetch for each unique playlist song entry ---
+        song_streaming_data = [] 
+        if tasks_to_run:
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_task = {
+                    executor.submit(self.get_song_streaming_audience, task['song_uuid'], "spotify", task['start'], task['end']): task
+                    for task in tasks_to_run
+                }
+                
+                # This print statement will now correctly show the count of unique playlists (e.g., 68)
+                print(f"Fetching streaming data for {len(future_to_task)} unique playlist entries...")
+                for future in as_completed(future_to_task):
+                    task_info = future_to_task[future]
+                    try:
+                        data = future.result()
+                        # Append a result dict containing all necessary info for storage
+                        if 'error' not in data and 'items' in data:
+                            song_streaming_data.append({
+                                'song_uuid': task_info['song_uuid'],
+                                'playlist_uuid': task_info['playlist_uuid'],
+                                'data': data
+                            })
+                    except Exception as e:
+                        print(f"Task {task_info} generated an exception during fetch: {e}")
+
+        result['song_streaming_data'] = song_streaming_data
         return result
