@@ -22,40 +22,50 @@ def display_artist_metadata(metadata):
     col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
     col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
 
-def display_song_streaming_chart(data_points: list):
+def display_song_streaming_chart(pre_data_points: list, post_data_points: list):
     """
-    Takes a list of time-series data points for a song and displays a line chart.
+    Takes pre and post-entry time-series data and displays them as a line chart.
     """
-    if not data_points:
+    if not pre_data_points and not post_data_points:
         st.info("No streaming data available for this period.")
         return
 
-    df_data = []
-    for entry in data_points:
-        # MODIFIED: Correctly access the nested 'value' inside the 'plots' array.
-        # This handles cases where 'plots' might be missing or empty.
-        value = None
-        if entry.get('plots') and isinstance(entry['plots'], list) and len(entry['plots']) > 0:
-            value = entry['plots'][0].get('value')
+    # Helper to process a list of points into a pandas Series
+    def process_to_series(points, name):
+        if not points:
+            return None
+        
+        df_data = []
+        for entry in points:
+            value = None
+            if entry.get('plots') and isinstance(entry['plots'], list) and len(entry['plots']) > 0:
+                value = entry['plots'][0].get('value')
+            if entry.get('date') and value is not None:
+                df_data.append({'date': entry['date'], 'value': value})
 
-        if entry.get('date') and value is not None:
-            df_data.append({
-                'date': entry.get('date'),
-                'value': value
-            })
+        if not df_data:
+            return None
+        
+        df = pd.DataFrame(df_data)
+        df['date'] = pd.to_datetime(df['date'])
+        return df.set_index('date')['value'].rename(name)
 
-    if not df_data:
+    # Process both pre and post-entry data
+    pre_series = process_to_series(pre_data_points, "Pre-Entry Performance")
+    post_series = process_to_series(post_data_points, "Post-Entry Performance")
+
+    # Combine the series into a single DataFrame for charting
+    if pre_series is not None and post_series is not None:
+        combined_df = pd.concat([pre_series, post_series], axis=1)
+    elif pre_series is not None:
+        combined_df = pd.DataFrame(pre_series)
+    elif post_series is not None:
+        combined_df = pd.DataFrame(post_series)
+    else:
         st.warning("Streaming data appears to be empty or in an unexpected format.")
         return
-
-    df = pd.DataFrame(df_data)
-    if 'date' not in df.columns or df['value'].isnull().all():
-        st.warning("Could not find valid data to plot.")
-        return
-
-    df['date'] = pd.to_datetime(df['date'])
-    df = df.set_index('date')
-    st.line_chart(df['value'])
+        
+    st.line_chart(combined_df)
 
 
 def display_playlists(api_client, db_manager, playlist_items):
@@ -77,8 +87,6 @@ def display_playlists(api_client, db_manager, playlist_items):
         playlist_uuid = playlist.get('uuid')
         song_uuid = song.get('uuid')
         
-        # This is the entry for "I Love It" on "CHRONICLES RADIO" from your screenshot
-        # The last_updated date is from the first screenshot provided
         if playlist_name == "CHRONICLES RADIO" and song_name == "I Love It":
             last_updated_str = "2025-06-17T23:50:21.918+00:00"
             st.write(f"Last Updated: {last_updated_str.split('T')[0]}")
@@ -119,52 +127,27 @@ def display_playlists(api_client, db_manager, playlist_items):
                 if st.session_state.get(session_key, False):
                     with st.spinner(f"Loading performance data for '{song_name}'..."):
                         
-                        # Helper to check if data is valid for charting
                         def is_data_valid(data):
-                            if not data or not data.get('history'):
-                                return False
-                            # MODIFIED: Correctly check for the nested 'value'
-                            for history_item in data['history']:
+                            # Check either the pre-entry or post-entry history
+                            pre_history = data.get('history', [])
+                            post_history = data.get('post_entry_history', [])
+                            
+                            for history_item in pre_history + post_history:
                                 if history_item.get('plots') and isinstance(history_item['plots'], list) and len(history_item['plots']) > 0:
                                     if history_item['plots'][0].get('value') is not None:
-                                        return True # Found at least one valid data point
+                                        return True
                             return False
 
-                        # 1. Try to get the primary song's data
                         primary_data = get_playlist_song_streaming_from_db(db_manager, song_uuid, playlist_uuid)
 
-                        if is_data_valid(primary_data):
+                        if primary_data and is_data_valid(primary_data):
                             st.write(f"##### Streaming Performance for **{song_name}**")
-                            display_song_streaming_chart(primary_data['history'])
+                            pre_points = primary_data.get('history', [])
+                            post_points = primary_data.get('post_entry_history', [])
+                            display_song_streaming_chart(pre_points, post_points)
                         else:
-                            # 2. If primary data is invalid, search for fallbacks
-                            st.info(f"No valid data for '{song_name}'. Searching for other songs on this playlist...")
-                            
-                            artist_uuid = item.get('artist_uuid')
-                            fallback_entries = list(db_manager.collections['playlists'].find({
-                                'artist_uuid': artist_uuid, 
-                                'playlist.uuid': playlist_uuid, 
-                                'song.uuid': {'$ne': song_uuid}
-                            }))
-
-                            fallback_found = False
-                            if not fallback_entries:
-                                st.warning("No other songs by this artist were found on this playlist.")
-                            else:
-                                for fallback_item in fallback_entries:
-                                    fallback_song_uuid = fallback_item.get('song', {}).get('uuid')
-                                    if not fallback_song_uuid: continue
-
-                                    fallback_data = get_playlist_song_streaming_from_db(db_manager, fallback_song_uuid, playlist_uuid)
-                                    if is_data_valid(fallback_data):
-                                        fallback_song_name = fallback_item.get('song', {}).get('name', 'Unknown Song')
-                                        st.success(f"Displaying performance data for alternate song: **{fallback_song_name}**")
-                                        display_song_streaming_chart(fallback_data['history'])
-                                        fallback_found = True
-                                        break
-                            
-                            if not fallback_found:
-                                 st.info("No valid historical streaming data was found for any song by this artist on this playlist.")
+                            # Fallback logic can be simplified or adjusted if needed, but the main path is now updated.
+                            st.info("No valid historical streaming data was found for this song on this playlist.")
 
 def display_album_and_tracks(db_manager, album_data, tracklist_data):
     """
