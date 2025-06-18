@@ -4,7 +4,10 @@ import streamlit as st
 import pandas as pd
 from streamlit_caching import get_song_details, get_playlist_song_streaming_from_db
 from datetime import datetime, date, timedelta
+import matplotlib.pyplot as plt
 import random
+import matplotlib.dates as mdates # <--- ADD THIS LINE
+import plotly.express as px  # <--- ADD THIS LINE
 
 def display_artist_metadata(metadata):
     """Displays artist's metadata in a structured layout."""
@@ -22,50 +25,71 @@ def display_artist_metadata(metadata):
     col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
     col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
 
-def display_song_streaming_chart(pre_data_points: list, post_data_points: list):
+def display_song_streaming_chart(pre_data_points: list, post_data_points: list, entry_date_str: str):
     """
-    Takes pre and post-entry time-series data and displays them as a line chart.
+    Takes pre and post-entry data, combines them into a single line,
+    and adds a vertical marker for the entry date using Plotly for an interactive chart.
     """
-    if not pre_data_points and not post_data_points:
+    all_points = pre_data_points + post_data_points
+    if not all_points:
         st.info("No streaming data available for this period.")
         return
 
-    # Helper to process a list of points into a pandas Series
-    def process_to_series(points, name):
-        if not points:
-            return None
-        
-        df_data = []
-        for entry in points:
-            value = None
-            if entry.get('plots') and isinstance(entry['plots'], list) and len(entry['plots']) > 0:
-                value = entry['plots'][0].get('value')
-            if entry.get('date') and value is not None:
-                df_data.append({'date': entry['date'], 'value': value})
+    df_data = []
+    for entry in all_points:
+        value = None
+        if entry.get('plots') and isinstance(entry['plots'], list) and len(entry['plots']) > 0:
+            value = entry['plots'][0].get('value')
+        if entry.get('date') and value is not None:
+            df_data.append({'date': entry['date'], 'value': value})
 
-        if not df_data:
-            return None
-        
-        df = pd.DataFrame(df_data)
-        df['date'] = pd.to_datetime(df['date'])
-        return df.set_index('date')['value'].rename(name)
-
-    # Process both pre and post-entry data
-    pre_series = process_to_series(pre_data_points, "Pre-Entry Performance")
-    post_series = process_to_series(post_data_points, "Post-Entry Performance")
-
-    # Combine the series into a single DataFrame for charting
-    if pre_series is not None and post_series is not None:
-        combined_df = pd.concat([pre_series, post_series], axis=1)
-    elif pre_series is not None:
-        combined_df = pd.DataFrame(pre_series)
-    elif post_series is not None:
-        combined_df = pd.DataFrame(post_series)
-    else:
+    if not df_data:
         st.warning("Streaming data appears to be empty or in an unexpected format.")
         return
+
+    df = pd.DataFrame(df_data)
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values(by='date').reset_index(drop=True)
+
+    # --- Plotly Express Charting Logic ---
+    fig = px.line(
+        df,
+        x='date',
+        y='value',
+        title="Song Performance Before and After Playlist Entry",
+        labels={'date': 'Date', 'value': 'Daily Streams'},
+        # MODIFIED: markers=True has been removed to show only a line.
+    )
+
+    if entry_date_str:
+        entry_date = pd.to_datetime(entry_date_str)
         
-    st.line_chart(combined_df)
+        fig.add_vline(
+            x=entry_date,
+            line_width=2,
+            line_dash="dash",
+            line_color="red"
+        )
+        
+        fig.add_annotation(
+            x=entry_date,
+            y=df['value'].max(),
+            text="Playlist Entry",
+            showarrow=False,  # MODIFIED: The arrow has been removed.
+            yshift=15 # Adjust text position
+        )
+
+    # Customize layout and hover text
+    fig.update_layout(
+        showlegend=False,
+        hovermode="x unified",
+        yaxis_tickformat=",.0f"  # MODIFIED: Format y-axis as a complete number with comma.
+    )
+    fig.update_traces(
+        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,}'
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def display_playlists(api_client, db_manager, playlist_items):
@@ -87,6 +111,8 @@ def display_playlists(api_client, db_manager, playlist_items):
         playlist_uuid = playlist.get('uuid')
         song_uuid = song.get('uuid')
         
+        # This is the entry for "I Love It" on "CHRONICLES RADIO" from your screenshot
+        # The last_updated date is from the first screenshot provided
         if playlist_name == "CHRONICLES RADIO" and song_name == "I Love It":
             last_updated_str = "2025-06-17T23:50:21.918+00:00"
             st.write(f"Last Updated: {last_updated_str.split('T')[0]}")
@@ -114,8 +140,8 @@ def display_playlists(api_client, db_manager, playlist_items):
 
             col1, col2, col3 = st.columns(3)
             col1.metric("Playlist Subscribers", f"{subscribers:,}" if subscribers else "N/A")
-            col2.metric("Entry Date", str(entry_date)[:10] if entry_date else "N/A")
-            col3.metric("Peak Date", str(peak_date)[:10] if peak_date else "N/A")
+            col1.metric("Entry Date", str(entry_date)[:10] if entry_date else "N/A")
+            col1.metric("Peak Date", str(peak_date)[:10] if peak_date else "N/A")
 
             if song_uuid and playlist_uuid:
                 graph_button_key = f"graph_btn_{playlist_uuid}_{song_uuid}_{i}"
@@ -128,7 +154,6 @@ def display_playlists(api_client, db_manager, playlist_items):
                     with st.spinner(f"Loading performance data for '{song_name}'..."):
                         
                         def is_data_valid(data):
-                            # Check either the pre-entry or post-entry history
                             pre_history = data.get('history', [])
                             post_history = data.get('post_entry_history', [])
                             
@@ -144,9 +169,8 @@ def display_playlists(api_client, db_manager, playlist_items):
                             st.write(f"##### Streaming Performance for **{song_name}**")
                             pre_points = primary_data.get('history', [])
                             post_points = primary_data.get('post_entry_history', [])
-                            display_song_streaming_chart(pre_points, post_points)
+                            display_song_streaming_chart(pre_points, post_points, entry_date)
                         else:
-                            # Fallback logic can be simplified or adjusted if needed, but the main path is now updated.
                             st.info("No valid historical streaming data was found for this song on this playlist.")
 
 def display_album_and_tracks(db_manager, album_data, tracklist_data):
