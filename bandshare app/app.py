@@ -8,13 +8,17 @@ from streamlit_caching import (
     get_artist_details, get_album_details, 
     get_artist_playlists_from_db,
     get_audience_data, get_popularity_data,
-    get_streaming_audience_from_db
+    get_streaming_audience_from_db,
+    get_local_audience_from_db,
+    get_local_streaming_history_from_db
 )
 from streamlit_ui import (
     display_artist_metadata, display_album_and_tracks, 
     display_playlists, display_audience_chart, 
     display_popularity_chart,
-    display_streaming_audience_chart
+    display_streaming_audience_chart,
+    display_demographics,
+    display_local_streaming_plots
 )
 from datetime import date, timedelta, datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -55,6 +59,13 @@ def fetch_and_store_all_data(artist_name):
         else:
              st.warning(f"Could not fetch secondary data: {secondary_data['error']}")
     
+    with st.spinner("Fetching demographic data..."):
+        demographic_data = {
+            'local_audience': api_client.get_local_audience(artist_uuid),
+        }
+        db_manager.store_demographic_data(artist_uuid, demographic_data)
+
+
     # --- Fetch and store time-series data for a default range ---
     start_date = date.today() - timedelta(days=90)
     end_date = date.today()
@@ -62,7 +73,8 @@ def fetch_and_store_all_data(artist_name):
         time_series_data = {
             'audience': api_client.get_artist_audience(artist_uuid, 'spotify', start_date, end_date),
             'popularity': api_client.get_artist_popularity(artist_uuid, 'spotify', start_date, end_date),
-            'streaming_audience': api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start_date, end_date)
+            'streaming_audience': api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start_date, end_date),
+            'local_streaming_audience': api_client.get_local_streaming_audience(artist_uuid, 'spotify', start_date, end_date)
         }
         # --- Store time-series data ---
         db_manager.store_timeseries_data(artist_uuid, time_series_data)
@@ -88,17 +100,17 @@ def update_static_data(artist_uuid):
 
 def update_timeseries_data(artist_uuid, start_date, end_date):
     """Intelligently fetches and appends only missing time-series data."""
-    # (This logic remains largely the same, but now calls the dedicated store function)
     with st.spinner("Checking and updating time-series data..."):
-        # This part could be refactored to fetch in parallel if desired
         time_series_to_fetch = {
-            'audience': api_client.get_artist_audience,
-            'popularity': api_client.get_artist_popularity,
-            'streaming_audience': api_client.get_artist_streaming_audience
+            'audience': lambda: api_client.get_artist_audience(artist_uuid, 'spotify', start_date, end_date),
+            'popularity': lambda: api_client.get_artist_popularity(artist_uuid, 'spotify', start_date, end_date),
+            'streaming_audience': lambda: api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start_date, end_date),
+            'local_streaming_audience': lambda: api_client.get_local_streaming_audience(artist_uuid, 'spotify', start_date, end_date)
         }
+        
         full_ts_data = {}
         for name, func in time_series_to_fetch.items():
-            new_data = func(artist_uuid, 'spotify', start_date, end_date)
+            new_data = func()
             if 'error' not in new_data:
                 full_ts_data[name] = new_data
 
@@ -147,8 +159,13 @@ if st.session_state.artist_uuid:
             if st.button(f"Update Artist Info (Albums/Playlists)", use_container_width=True):
                 update_static_data(st.session_state.artist_uuid)
 
+            # Display Demographics
+            local_audience = get_local_audience_from_db(db_manager, st.session_state.artist_uuid, "instagram")
+            display_demographics(local_audience)
+
+
             st.markdown("### Time-Series Data")
-            start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=30))
+            start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=90))
             end_date_filter = st.date_input("Chart End Date", date.today())
             
             if st.button("Get/Update Chart Data", use_container_width=True, type="primary"):
@@ -157,10 +174,12 @@ if st.session_state.artist_uuid:
             audience_data = get_audience_data(db_manager, st.session_state.artist_uuid, "spotify", start_date_filter, end_date_filter)
             popularity_data = get_popularity_data(db_manager, st.session_state.artist_uuid, "spotify", start_date_filter, end_date_filter)
             streaming_data = get_streaming_audience_from_db(db_manager, st.session_state.artist_uuid, "spotify", start_date_filter, end_date_filter)
+            local_streaming_data = get_local_streaming_history_from_db(db_manager, st.session_state.artist_uuid, "spotify", start_date_filter, end_date_filter)
 
             display_audience_chart(audience_data)
             display_popularity_chart(popularity_data)
             display_streaming_audience_chart(streaming_data)
+            display_local_streaming_plots(local_streaming_data)
 
         with right_col:
             st.subheader("Albums")
