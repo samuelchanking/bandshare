@@ -62,11 +62,10 @@ class DatabaseManager:
 
     def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
-        Stores or updates all secondary data, including song-specific time-series data
-        for each playlist appearance.
+        Stores or updates all secondary data, including pre and post-entry song audience data.
         """
         try:
-            # Upsert Albums, Tracklists, Songs, Playlists (no changes here)
+            # ... (storage for albums, tracklists, songs, playlists remains the same) ...
             if 'albums' in data and 'items' in data.get('albums', {}):
                 all_album_metadata = data.get('album_metadata', {})
                 for album_summary in data['albums']['items']:
@@ -93,34 +92,39 @@ class DatabaseManager:
                     if playlist_uuid := playlist_item.get('playlist', {}).get('uuid'):
                         document_to_store = playlist_item | {'artist_uuid': artist_uuid}
                         self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': document_to_store}, upsert=True)
-            
-            # --- MODIFIED: Store song streaming data for each playlist entry ---
+
+
+            # --- MODIFIED: Store both pre and post entry song streaming data ---
             if 'song_streaming_data' in data:
-                # data['song_streaming_data'] is now a list of dicts
                 for item in data['song_streaming_data']:
                     song_uuid = item['song_uuid']
                     playlist_uuid = item['playlist_uuid']
-                    audience_data = item['data']
+                    
+                    doc_to_set = {'last_updated': datetime.utcnow()}
+                    
+                    # Add pre-entry history if it exists
+                    pre_entry_data = item.get('pre_entry_data')
+                    if pre_entry_data and 'items' in pre_entry_data:
+                        doc_to_set['history'] = pre_entry_data['items']
 
-                    if 'items' in audience_data:
-                        # The document now includes playlist_uuid for unique identification
-                        doc = {
-                            'song_uuid': song_uuid,
-                            'playlist_uuid': playlist_uuid,
-                            'artist_uuid': artist_uuid,
-                            'history': audience_data['items'],
-                            'last_updated': datetime.utcnow()
-                        }
-                        # The filter for update_one now uses both UUIDs
+                    # Add post-entry history if it exists
+                    post_entry_data = item.get('post_entry_data')
+                    if post_entry_data and 'items' in post_entry_data:
+                        doc_to_set['post_entry_history'] = post_entry_data['items']
+
+                    # Only update the database if there is at least some history to store
+                    if 'history' in doc_to_set or 'post_entry_history' in doc_to_set:
                         self.collections['songs_audience'].update_one(
                             {'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid},
-                            {'$set': doc},
+                            {
+                                '$set': doc_to_set,
+                                '$setOnInsert': {'artist_uuid': artist_uuid, 'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid}
+                            },
                             upsert=True
                         )
 
         except OperationFailure as e:
             print(f"Error storing secondary data: {e}")
-
     def store_timeseries_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
         Appends new time-series data points to the database for ARTIST-LEVEL collections.
