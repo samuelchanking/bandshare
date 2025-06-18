@@ -25,12 +25,15 @@ class DatabaseManager:
                 'popularity': self.db['popularity'],
                 'streaming_audience': self.db['streaming_audience'],
                 'songs_audience': self.db['songs_audience'],
+                'demographic_followers': self.db['demographic_followers'],
+                'local_streaming_history': self.db['local_streaming_history'],
             }
             # Create indexes for efficient queries
             self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['popularity'].create_index([("artist_uuid", ASCENDING), ("source", ASCENDING)])
             self.collections['streaming_audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            # MODIFIED: Create a compound index for song-playlist specific data
+            self.collections['demographic_followers'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
+            self.collections['local_streaming_history'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['songs_audience'].create_index([("song_uuid", ASCENDING), ("playlist_uuid", ASCENDING)])
         except ConnectionFailure as e:
             raise e
@@ -125,6 +128,22 @@ class DatabaseManager:
 
         except OperationFailure as e:
             print(f"Error storing secondary data: {e}")
+
+    def store_demographic_data(self, artist_uuid: str, data: Dict[str, Any]):
+        """Stores demographic data for followers."""
+        try:
+            if 'local_audience' in data and 'error' not in data['local_audience']:
+                platform = data['local_audience'].get('platform', 'instagram')
+                query_filter = {'artist_uuid': artist_uuid, 'platform': platform}
+                self.collections['demographic_followers'].update_one(
+                    query_filter,
+                    {'$set': data['local_audience']},
+                    upsert=True
+                )
+        except OperationFailure as e:
+            print(f"Error storing demographic data: {e}")
+
+
     def store_timeseries_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
         Appends new time-series data points to the database for ARTIST-LEVEL collections.
@@ -133,7 +152,8 @@ class DatabaseManager:
             for coll_name, data_key, platform_key in [
                 ('audience', 'audience', 'platform'), 
                 ('popularity', 'popularity', 'source'), 
-                ('streaming_audience', 'streaming_audience', 'platform')
+                ('streaming_audience', 'streaming_audience', 'platform'),
+                ('local_streaming_history', 'local_streaming_audience', 'platform')
             ]:
                 if data_key in data and 'items' in data.get(data_key, {}):
                     platform = data[data_key].get(platform_key, 'spotify')
