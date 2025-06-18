@@ -4,7 +4,7 @@ import requests
 import urllib.parse
 from typing import Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 class SoundchartsAPIClient:
     """A client to interact with the Soundcharts API."""
@@ -114,15 +114,16 @@ class SoundchartsAPIClient:
         result['metadata'] = self.get_artist_metadata(artist_uuid)
         return result
 
-    def fetch_secondary_artist_data(self, artist_uuid: str, start_date=None, end_date=None) -> Dict[str, Any]:
+    def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
         """
-        Fetches all song metadata from albums and fetches streaming data for EACH playlist entry.
+        Fetches song metadata and streaming data for EACH UNIQUE playlist entry,
+        including data for 90 days before and 90 days after the entry date.
         """
         result = {}
         result['albums'] = self.get_artist_albums(artist_uuid)
         result['playlists'] = self.get_artist_playlists(artist_uuid)
 
-        # --- Fetch metadata for ALL songs on ALL albums ---
+        # ... (album and song metadata fetching remains the same) ...
         result['album_metadata'] = {}
         result['tracklists'] = {}
         result['song_metadata'] = {}
@@ -140,62 +141,67 @@ class SoundchartsAPIClient:
                             if song_uuid := item.get('song', {}).get('uuid'):
                                 result['song_metadata'][album_uuid_val][song_uuid] = self.get_song_metadata(song_uuid)
 
-        # --- MODIFIED: Prepare to fetch streaming data for EACH song on EACH playlist ---
+        # --- MODIFIED: Create two tasks (pre and post entry) for each unique playlist ---
         playlist_items = result.get('playlists', {}).get('items', [])
         tasks_to_run = []
-        processed_playlist_uuids = set() #<-- ADD: Create a set to track unique playlists
+        processed_playlist_uuids = set()
 
         if playlist_items:
+            today = date.today()
             for item in playlist_items:
                 song_uuid = item.get('song', {}).get('uuid')
                 playlist_uuid = item.get('playlist', {}).get('uuid')
-                entry_date_str = item.get('entryDate')
-
-                # --- MODIFICATION ---
-                # Process this item only if we haven't seen its playlist_uuid before
+                
                 if playlist_uuid and playlist_uuid not in processed_playlist_uuids:
-                    if all([song_uuid, entry_date_str]):
+                    if song_uuid and (entry_date_str := item.get('entryDate')):
                         try:
-                            entry_date = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
-                            start_date_for_song = entry_date - timedelta(days=90)
-                            end_date_for_song = entry_date
+                            entry_date_dt = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
+                            
+                            # Task 1: 90 days BEFORE entry
+                            pre_start_date = entry_date_dt - timedelta(days=90)
+                            tasks_to_run.append({'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid, 'start': pre_start_date, 'end': entry_date_dt, 'type': 'pre_entry'})
+                            
+                            # Task 2: 90 days AFTER entry (up to today)
+                            post_start_date = entry_date_dt + timedelta(days=1)
+                            if post_start_date <= today:
+                                post_end_date = post_start_date + timedelta(days=89)
+                                if post_end_date > today:
+                                    post_end_date = today
+                                tasks_to_run.append({'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid, 'start': post_start_date, 'end': post_end_date, 'type': 'post_entry'})
 
-                            # Append a task for this unique playlist entry
-                            tasks_to_run.append({
-                                'song_uuid': song_uuid,
-                                'playlist_uuid': playlist_uuid, 
-                                'start': start_date_for_song,
-                                'end': end_date_for_song
-                            })
-                            # ADD: Add the playlist_uuid to the set to prevent duplicates
                             processed_playlist_uuids.add(playlist_uuid)
                         except ValueError:
                             continue
         
-        # --- MODIFIED: Execute parallel fetch for each unique playlist song entry ---
-        song_streaming_data = [] 
+        # --- MODIFIED: Execute parallel fetches and group results ---
+        grouped_results = {}
         if tasks_to_run:
             with ThreadPoolExecutor(max_workers=10) as executor:
-                future_to_task = {
-                    executor.submit(self.get_song_streaming_audience, task['song_uuid'], "spotify", task['start'], task['end']): task
-                    for task in tasks_to_run
-                }
+                future_to_task = {executor.submit(self.get_song_streaming_audience, task['song_uuid'], "spotify", task['start'], task['end']): task for task in tasks_to_run}
                 
-                # This print statement will now correctly show the count of unique playlists (e.g., 68)
-                print(f"Fetching streaming data for {len(future_to_task)} unique playlist entries...")
+                print(f"Fetching {len(future_to_task)} data slices for unique playlist entries...")
                 for future in as_completed(future_to_task):
                     task_info = future_to_task[future]
+                    key = (task_info['song_uuid'], task_info['playlist_uuid'])
+                    
+                    # Initialize the dictionary for this song/playlist combo if it doesn't exist
+                    grouped_results.setdefault(key, {'pre_entry_data': None, 'post_entry_data': None})
+                    
                     try:
                         data = future.result()
-                        # Append a result dict containing all necessary info for storage
-                        if 'error' not in data and 'items' in data:
-                            song_streaming_data.append({
-                                'song_uuid': task_info['song_uuid'],
-                                'playlist_uuid': task_info['playlist_uuid'],
-                                'data': data
-                            })
+                        if 'error' not in data:
+                            if task_info['type'] == 'pre_entry':
+                                grouped_results[key]['pre_entry_data'] = data
+                            elif task_info['type'] == 'post_entry':
+                                grouped_results[key]['post_entry_data'] = data
                     except Exception as e:
                         print(f"Task {task_info} generated an exception during fetch: {e}")
+        
+        # MODIFIED: Unpack the grouped results into a list for the database manager
+        final_song_data = [
+            {'song_uuid': k[0], 'playlist_uuid': k[1], **v}
+            for k, v in grouped_results.items()
+        ]
 
-        result['song_streaming_data'] = song_streaming_data
+        result['song_streaming_data'] = final_song_data
         return result
