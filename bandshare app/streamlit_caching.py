@@ -45,8 +45,6 @@ def get_artist_playlists_from_db(_db_manager, artist_uuid: str):
         return list(_db_manager.collections['playlists'].find({'artist_uuid': artist_uuid}))
     return []
 
-# --- ADDED: Caching functions for time-series data ---
-
 @st.cache_data
 def get_audience_data(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
     """Gets audience data for a given date range from the database."""
@@ -67,6 +65,16 @@ def get_popularity_data(_db_manager, artist_uuid: str, source: str, start_date, 
 def get_streaming_audience_from_db(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
     """Gets streaming audience data for a given date range from the database."""
     if not all([artist_uuid, platform, start_date, end_date]): return []
-    # This assumes streaming data is stored similarly to other time-series data
     query_filter = {'artist_uuid': artist_uuid, 'platform': platform}
     return _db_manager.get_timeseries_data_for_display('streaming_audience', query_filter, start_date, end_date)
+
+# MODIFIED: This function now gets data for a specific song-playlist combo
+@st.cache_data
+def get_playlist_song_streaming_from_db(_db_manager, song_uuid: str, playlist_uuid: str):
+    """Fetches stored time-series streaming data for a single song on a specific playlist."""
+    if not song_uuid or not playlist_uuid: return None
+    # Use the compound key to find the specific document
+    return _db_manager.collections['songs_audience'].find_one({
+        'song_uuid': song_uuid,
+        'playlist_uuid': playlist_uuid
+    })
