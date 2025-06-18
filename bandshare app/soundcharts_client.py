@@ -45,6 +45,19 @@ class SoundchartsAPIClient:
         if end_date: params['endDate'] = str(end_date)
         return self._request(url, params=params)
 
+    def get_local_audience(self, artist_uuid: str, platform: str = "instagram") -> Dict[str, Any]:
+        """Fetches local audience data for a given platform. This is not a time-series."""
+        url = f"{self.BASE_URL}/v2.37/artist/{artist_uuid}/social/{platform}/followers/"
+        return self._request(url)
+
+    def get_local_streaming_audience(self, artist_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
+        """Fetches local streaming audience data for a given platform."""
+        url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/streaming/{platform}"
+        params = {}
+        if start_date: params['startDate'] = str(start_date)
+        if end_date: params['endDate'] = str(end_date)
+        return self._request(url, params=params)
+
     def get_artist_popularity(self, artist_uuid: str, source: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
         """Fetches time-series popularity data."""
         url = f"{self.BASE_URL}/v2/artist/{artist_uuid}/popularity/{source}"
