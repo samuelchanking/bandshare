@@ -1,5 +1,6 @@
 # streamlit_caching.py
 
+import requests
 import streamlit as st
 from database_manager import DatabaseManager
 from soundcharts_client import SoundchartsAPIClient
@@ -88,3 +89,19 @@ def get_song_centric_streaming_from_db(_db_manager, song_uuid: str):
     """Fetches the aggregated time-series streaming data for a single song across all playlists."""
     if not song_uuid: return None
     return _db_manager.collections['songs_aggregate_audience'].find_one({'song_uuid': song_uuid})
+
+@st.cache_data(show_spinner=False)
+def download_image_bytes(url: str):
+    """
+    Downloads an image from a URL and returns its content in bytes.
+    The result is cached by Streamlit.
+    """
+    if not url:
+        return None
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            return response.content
+    except requests.exceptions.RequestException:
+        return None
+    return None
