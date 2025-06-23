@@ -83,13 +83,17 @@ def get_streaming_audience_from_db(_db_manager, artist_uuid: str, platform: str,
     query_filter = {'artist_uuid': artist_uuid, 'platform': platform}
     return _db_manager.get_timeseries_data_for_display('streaming_audience', query_filter, start_date, end_date)
 
-# MODIFIED: This function now gets data for a specific song-playlist combo
 @st.cache_data
 def get_playlist_song_streaming_from_db(_db_manager, song_uuid: str, playlist_uuid: str):
     """Fetches stored time-series streaming data for a single song on a specific playlist."""
     if not song_uuid or not playlist_uuid: return None
-    # Use the compound key to find the specific document
     return _db_manager.collections['songs_audience'].find_one({
         'song_uuid': song_uuid,
         'playlist_uuid': playlist_uuid
     })
+
+@st.cache_data
+def get_song_centric_streaming_from_db(_db_manager, song_uuid: str):
+    """Fetches the aggregated time-series streaming data for a single song across all playlists."""
+    if not song_uuid: return None
+    return _db_manager.collections['songs_aggregate_audience'].find_one({'song_uuid': song_uuid})
