@@ -108,34 +108,60 @@ def update_static_data(artist_uuid):
         else:
             st.warning(f"Could not update secondary data: {secondary_data['error']}")
 
-def update_timeseries_data(artist_uuid, start_date, end_date):
-    """Fetches and appends missing time-series data in parallel."""
-    with st.spinner("Checking and updating time-series data..."):
-        tasks = {
-            'audience': lambda: api_client.get_artist_audience(artist_uuid, 'spotify', start_date, end_date),
-            'popularity': lambda: api_client.get_artist_popularity(artist_uuid, 'spotify', start_date, end_date),
-            'streaming_audience': lambda: api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start_date, end_date),
-            'local_streaming_audience': lambda: api_client.get_local_streaming_audience(artist_uuid, 'spotify', start_date, end_date)
-        }
-        
-        full_ts_data = {}
-        with ThreadPoolExecutor() as executor:
-            future_to_name = {executor.submit(func): name for name, func in tasks.items()}
+def update_timeseries_data(artist_uuid, start_date_filter, end_date_filter):
+    """
+    Fetches and appends missing artist-level time-series data in parallel,
+    including backfilling historical data. Includes robust error handling.
+    """
+    try: # --- Start of new error handling block ---
+        with st.spinner("Checking and updating artist time-series data..."):
+            tasks = {
+                'audience': (lambda start, end: api_client.get_artist_audience(artist_uuid, 'spotify', start, end), 'audience'),
+                'popularity': (lambda start, end: api_client.get_artist_popularity(artist_uuid, 'spotify', start, end), 'popularity'),
+                'streaming_audience': (lambda start, end: api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start, end), 'streaming_audience'),
+                'local_streaming_audience': (lambda start, end: api_client.get_local_streaming_audience(artist_uuid, 'spotify', start, end), 'local_streaming_history')
+            }
             
-            for future in as_completed(future_to_name):
-                name = future_to_name[future]
-                try:
-                    data = future.result()
-                    if 'error' not in data:
-                        full_ts_data[name] = data
-                except Exception as exc:
-                    st.warning(f'{name} data fetching generated an exception: {exc}')
+            full_ts_data = {}
+            
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_name = {}
+                for name, (func, coll_name) in tasks.items():
+                    query_filter = {'artist_uuid': artist_uuid, ('source' if name == 'popularity' else 'platform'): 'spotify'}
+                    min_db_date, max_db_date = db_manager.get_timeseries_data_range(coll_name, query_filter)
 
-        db_manager.store_timeseries_data(artist_uuid, full_ts_data)
-        
-    st.cache_data.clear()
-    st.success("Chart data updated.")
-    st.rerun()
+                    if min_db_date and start_date_filter < min_db_date.date():
+                        backfill_end_date = min_db_date.date() - timedelta(days=1)
+                        future_to_name[executor.submit(func, start_date_filter, backfill_end_date)] = name
+
+                    forward_start_date = max_db_date.date() + timedelta(days=1) if max_db_date else start_date_filter
+                    if forward_start_date <= end_date_filter:
+                         future_to_name[executor.submit(func, forward_start_date, end_date_filter)] = name
+                
+                for future in as_completed(future_to_name):
+                    name = future_to_name[future]
+                    try:
+                        data = future.result()
+                        if 'error' not in data and 'items' in data and data['items']:
+                            if name not in full_ts_data:
+                                platform_or_source = 'source' if name == 'popularity' else 'platform'
+                                full_ts_data[name] = {'items': [], platform_or_source: data.get(platform_or_source)}
+                            full_ts_data[name]['items'].extend(data['items'])
+                    except Exception as exc:
+                        st.warning(f'{name} data fetching generated an exception: {exc}')
+
+            if full_ts_data:
+                db_manager.store_timeseries_data(artist_uuid, full_ts_data)
+                st.cache_data.clear()
+                st.success("Artist chart data updated successfully.")
+                st.rerun()
+            else:
+                st.info("No new artist data to update for the selected range.")
+
+    except Exception as e:
+        # --- This will catch any unexpected error and display it in the app ---
+        st.error(f"An unexpected error occurred during the update process: {e}")
+        st.error("Please check the console where Streamlit is running for a full traceback.")
 
 
 # --- Main App UI ---
@@ -174,7 +200,7 @@ if st.session_state.artist_uuid:
         with left_col:
             display_artist_metadata(artist_details.get('metadata'))
             
-            if st.button(f"Update Artist Info (Albums/Playlists)", use_container_width=True):
+            if st.button(f"Update Artist Info (Albums/Playlists)", use_container_width=True, help="Refreshes album and playlist data from the API. This will also backfill missing playlist follower counts for existing entries."):
                 update_static_data(st.session_state.artist_uuid)
 
             local_audience = get_local_audience_from_db(db_manager, st.session_state.artist_uuid, "instagram")
@@ -182,7 +208,7 @@ if st.session_state.artist_uuid:
 
 
             st.markdown("### Time-Series Data")
-            start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=90))
+            start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=365))
             end_date_filter = st.date_input("Chart End Date", date.today())
             
             if st.button("Get/Update Chart Data", use_container_width=True, type="primary"):
