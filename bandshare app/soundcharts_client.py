@@ -27,7 +27,7 @@ class SoundchartsAPIClient:
         """Helper to fetch data for a date range > 90 days by splitting into chunks."""
         all_items = []
         current_start = start_date
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=20) as executor:
             futures = []
             while current_start <= end_date:
                 current_end = current_start + timedelta(days=89)
@@ -150,12 +150,43 @@ class SoundchartsAPIClient:
         result['metadata'] = self.get_artist_metadata(artist_uuid)
         return result
 
+    def _fetch_and_process_song_data(self, song_uuid: str, data: dict) -> dict:
+        """Helper function to fetch, clean, and structure data for a single song."""
+        if not data['entry_dates']: return {}
+
+        earliest_entry = min(data['entry_dates'])
+        latest_entry = max(data['entry_dates'])
+        
+        # Define fetch period: 90 days before the first entry to 90 days after the last
+        fetch_start_date = earliest_entry - timedelta(days=90)
+        fetch_end_date = latest_entry + timedelta(days=90)
+        
+        # Ensure we don't try to fetch data from the future
+        if fetch_end_date > date.today():
+            fetch_end_date = date.today()
+        
+        # Fetch the complete history for the calculated range
+        full_history = self._fetch_song_streaming_in_chunks(song_uuid, fetch_start_date, fetch_end_date)
+        
+        # The API can sometimes return duplicate dates, so we clean them.
+        seen_dates = set()
+        unique_history = []
+        # Sort by date to ensure chronological order before de-duping
+        for item in sorted(full_history, key=lambda x: x['date']):
+            if item['date'] not in seen_dates:
+                unique_history.append(item)
+                seen_dates.add(item['date'])
+        
+        return {
+            'song_uuid': song_uuid,
+            'history': unique_history,
+            'playlists': data['playlists']
+        }
+
     def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
         """
         Fetches albums, playlists, and all related song metadata.
-        NOW INCLUDES two types of song streaming data:
-        1. song_streaming_data: Pre/post data for individual playlist entries (existing).
-        2. song_centric_streaming: Aggregated data for unique songs across all their playlists.
+        NOW INCLUDES only song-centric aggregated streaming data.
         """
         result = {}
         result['albums'] = self.get_artist_albums(artist_uuid)
@@ -165,68 +196,38 @@ class SoundchartsAPIClient:
         result['tracklists'] = {}
         result['song_metadata'] = {}
         if 'albums' in result and 'items' in result.get('albums', {}):
-            for album_summary in result['albums']['items']:
-                album_uuid_val = album_summary.get('uuid')
-                if album_uuid_val:
-                    result['album_metadata'][album_uuid_val] = self.get_album_metadata(album_uuid_val)
-                    tracklist_data = self.get_album_tracks(album_uuid_val)
-                    result['tracklists'][album_uuid_val] = tracklist_data
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                album_futures = {
+                    executor.submit(self.get_album_metadata, album.get('uuid')): album.get('uuid')
+                    for album in result['albums']['items'] if album.get('uuid')
+                }
+                for future in as_completed(album_futures):
+                    album_uuid_val = album_futures[future]
+                    result['album_metadata'][album_uuid_val] = future.result()
 
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                tracklist_futures = {
+                    executor.submit(self.get_album_tracks, album.get('uuid')): album.get('uuid')
+                    for album in result['albums']['items'] if album.get('uuid')
+                }
+                for future in as_completed(tracklist_futures):
+                    album_uuid_val = tracklist_futures[future]
+                    tracklist_data = future.result()
+                    result['tracklists'][album_uuid_val] = tracklist_data
                     if 'items' in tracklist_data:
                         result['song_metadata'][album_uuid_val] = {}
-                        for item in tracklist_data['items']:
-                            if song_uuid := item.get('song', {}).get('uuid'):
-                                result['song_metadata'][album_uuid_val][song_uuid] = self.get_song_metadata(song_uuid)
+                        with ThreadPoolExecutor(max_workers=20) as song_executor:
+                            song_futures = {
+                                song_executor.submit(self.get_song_metadata, item.get('song', {}).get('uuid')): item.get('song', {}).get('uuid')
+                                for item in tracklist_data['items'] if item.get('song', {}).get('uuid')
+                            }
+                            for song_future in as_completed(song_futures):
+                                song_uuid_val = song_futures[song_future]
+                                result['song_metadata'][album_uuid_val][song_uuid_val] = song_future.result()
 
         playlist_items = result.get('playlists', {}).get('items', [])
         
-        # --- BLOCK 1: Per-Playlist-Entry Data (Existing Logic) ---
-        tasks_to_run_individual = []
-        processed_playlist_uuids = set()
-
-        if playlist_items:
-            today = date.today()
-            for item in playlist_items:
-                song_uuid = item.get('song', {}).get('uuid')
-                playlist_uuid = item.get('playlist', {}).get('uuid')
-                
-                if playlist_uuid and playlist_uuid not in processed_playlist_uuids:
-                    if song_uuid and (entry_date_str := item.get('entryDate')):
-                        try:
-                            entry_date_dt = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
-                            
-                            pre_start_date = entry_date_dt - timedelta(days=90)
-                            tasks_to_run_individual.append({'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid, 'start': pre_start_date, 'end': entry_date_dt, 'type': 'pre_entry'})
-                            
-                            post_start_date = entry_date_dt + timedelta(days=1)
-                            if post_start_date <= today:
-                                post_end_date = post_start_date + timedelta(days=89)
-                                if post_end_date > today: post_end_date = today
-                                tasks_to_run_individual.append({'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid, 'start': post_start_date, 'end': post_end_date, 'type': 'post_entry'})
-
-                            processed_playlist_uuids.add(playlist_uuid)
-                        except ValueError:
-                            continue
-        
-        grouped_results_individual = {}
-        if tasks_to_run_individual:
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                future_to_task = {executor.submit(self.get_song_streaming_audience, task['song_uuid'], "spotify", task['start'], task['end']): task for task in tasks_to_run_individual}
-                for future in as_completed(future_to_task):
-                    task_info = future_to_task[future]
-                    key = (task_info['song_uuid'], task_info['playlist_uuid'])
-                    grouped_results_individual.setdefault(key, {'pre_entry_data': None, 'post_entry_data': None})
-                    try:
-                        data = future.result()
-                        if 'error' not in data:
-                            if task_info['type'] == 'pre_entry': grouped_results_individual[key]['pre_entry_data'] = data
-                            elif task_info['type'] == 'post_entry': grouped_results_individual[key]['post_entry_data'] = data
-                    except Exception as e:
-                        print(f"Task {task_info} generated an exception during fetch: {e}")
-        
-        result['song_streaming_data'] = [{'song_uuid': k[0], 'playlist_uuid': k[1], **v} for k, v in grouped_results_individual.items()]
-
-        # --- BLOCK 2: Song-Centric Aggregated Data (New Logic) ---
+        # --- Consolidated Song-Centric Aggregated Data Fetch ---
         songs_to_process = {}
         for item in playlist_items:
             song_uuid = item.get('song', {}).get('uuid')
@@ -236,43 +237,30 @@ class SoundchartsAPIClient:
                 songs_to_process[song_uuid] = {'entry_dates': [], 'playlists': []}
             
             try:
-                entry_date = datetime.fromisoformat(item['entryDate'].replace('Z', '+00:00')).date()
-                songs_to_process[song_uuid]['entry_dates'].append(entry_date)
+                entry_date_dt = datetime.fromisoformat(item['entryDate'].replace('Z', '+00:00')).date()
+                songs_to_process[song_uuid]['entry_dates'].append(entry_date_dt)
                 songs_to_process[song_uuid]['playlists'].append({
                     'name': item.get('playlist', {}).get('name', 'N/A'),
-                    'entryDate': str(entry_date)
+                    'entryDate': str(entry_date_dt),
+                    'subscribers': item.get('playlist', {}).get('latestSubscriberCount', 0)
                 })
             except (ValueError, KeyError):
                 continue
 
         song_centric_results = []
-        for song_uuid, data in songs_to_process.items():
-            if not data['entry_dates']: continue
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            future_to_song = {
+                executor.submit(self._fetch_and_process_song_data, song_uuid, data): song_uuid
+                for song_uuid, data in songs_to_process.items()
+            }
+            
+            for future in as_completed(future_to_song):
+                try:
+                    if song_result := future.result():
+                        song_centric_results.append(song_result)
+                except Exception as e:
+                    print(f"Failed to process song {future_to_song[future]}: {e}")
 
-            earliest_entry = min(data['entry_dates'])
-            latest_entry = max(data['entry_dates'])
-            
-            fetch_start_date = earliest_entry - timedelta(days=90)
-            fetch_end_date = latest_entry + timedelta(days=90)
-            
-            if fetch_end_date > date.today():
-                fetch_end_date = date.today()
-            
-            full_history = self._fetch_song_streaming_in_chunks(song_uuid, fetch_start_date, fetch_end_date)
-            
-            seen_dates = set()
-            unique_history = []
-            for item in sorted(full_history, key=lambda x: x['date']):
-                if item['date'] not in seen_dates:
-                    unique_history.append(item)
-                    seen_dates.add(item['date'])
-            
-            song_centric_results.append({
-                'song_uuid': song_uuid,
-                'history': unique_history,
-                'playlists': data['playlists']
-            })
-            
         result['song_centric_streaming'] = song_centric_results
         
         return result
