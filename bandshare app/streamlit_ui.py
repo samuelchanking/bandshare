@@ -525,6 +525,8 @@ def display_local_streaming_plots(local_streaming_data):
             filtered_df = df[(df['country'] == selected_country) & (df['city'].isnull())]
         
         if not filtered_df.empty:
+            # Sort the DataFrame by date before plotting to ensure a clean line chart.
+            filtered_df = filtered_df.sort_values(by='date').reset_index(drop=True)
             fig = px.line(filtered_df, x='date', y='streams', title=title)
             st.plotly_chart(fig, use_container_width=True)
         else:
