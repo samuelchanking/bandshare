@@ -68,27 +68,28 @@ def display_full_song_streaming_chart(history_data: list, entry_points: list, ch
         labels={'date': 'Date', 'value': 'Daily Streams'}
     )
 
-    # Sort entry points by date to handle overlaps systematically
     sorted_entry_points = sorted(entry_points, key=lambda x: x.get('entryDate', ''))
 
     last_entry_date = None
-    y_shift_offset = 15  # Starting y-shift
+    y_shift_offset = 15
 
     for entry in sorted_entry_points:
         try:
             entry_date = pd.to_datetime(entry['entryDate']).date()
 
-            # Check if the current entry is too close to the last one
             if last_entry_date and (entry_date - last_entry_date) < timedelta(days=30):
-                y_shift_offset += 35  # Increase shift to stack annotations
+                y_shift_offset += 35
             else:
-                y_shift_offset = 15  # Reset for non-overlapping annotations
+                y_shift_offset = 15
 
             fig.add_vline(x=entry_date, line_width=2, line_dash="dash", line_color="red")
             
             playlist_name = entry.get('name', 'N/A')
-            subscribers = entry.get('subscribers', 0)
-            subscribers_formatted = f"{subscribers:,}" if subscribers else "N/A"
+            entry_subscribers = entry.get('entrySubscribers')
+            latest_subscribers = entry.get('subscribers', 0)
+            
+            subscribers_to_show = entry_subscribers if entry_subscribers is not None else latest_subscribers
+            subscribers_formatted = f"{subscribers_to_show:,}" if subscribers_to_show else "N/A"
             
             annotation_text = f"{playlist_name}<br>{subscribers_formatted} subs"
             hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date.strftime('%Y-%m-%d')}"
