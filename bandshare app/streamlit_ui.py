@@ -40,7 +40,7 @@ def display_artist_metadata(metadata):
     col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
     col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
 
-def display_song_streaming_chart(pre_data_points: list, post_data_points: list, entry_date_str: str):
+def display_song_streaming_chart(pre_data_points: list, post_data_points: list, entry_date_str: str, chart_key: str):
     """
     Takes pre and post-entry data, combines them into a single line,
     and adds a vertical marker for the entry date using Plotly for an interactive chart.
@@ -104,7 +104,7 @@ def display_song_streaming_chart(pre_data_points: list, post_data_points: list, 
         hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,}'
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 
 def display_playlists(api_client, db_manager, playlist_items):
@@ -184,7 +184,8 @@ def display_playlists(api_client, db_manager, playlist_items):
                             st.write(f"##### Streaming Performance for **{song_name}**")
                             pre_points = primary_data.get('history', [])
                             post_points = primary_data.get('post_entry_history', [])
-                            display_song_streaming_chart(pre_points, post_points, entry_date)
+                            unique_chart_key = f"chart_{playlist_uuid}_{song_uuid}"
+                            display_song_streaming_chart(pre_points, post_points, entry_date, chart_key=unique_chart_key)
                         else:
                             st.info("No valid historical streaming data was found for this song on this playlist.")
 
