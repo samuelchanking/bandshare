@@ -52,7 +52,7 @@ def fetch_and_store_all_data(artist_name):
              st.error("Could not retrieve artist UUID."); return
     
     # --- Step 2: Parallel calls for everything else ---
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         with st.spinner("Fetching all artist data in parallel..."):
             # Create futures for all independent API calls
             future_static = executor.submit(api_client.get_artist_metadata, artist_uuid)
@@ -120,10 +120,8 @@ def update_timeseries_data(artist_uuid, start_date, end_date):
         
         full_ts_data = {}
         with ThreadPoolExecutor() as executor:
-            # Submit all tasks to the executor
             future_to_name = {executor.submit(func): name for name, func in tasks.items()}
             
-            # Collect results
             for future in as_completed(future_to_name):
                 name = future_to_name[future]
                 try:
@@ -179,7 +177,6 @@ if st.session_state.artist_uuid:
             if st.button(f"Update Artist Info (Albums/Playlists)", use_container_width=True):
                 update_static_data(st.session_state.artist_uuid)
 
-            # Display Demographics
             local_audience = get_local_audience_from_db(db_manager, st.session_state.artist_uuid, "instagram")
             display_demographics(local_audience)
 
@@ -213,7 +210,7 @@ if st.session_state.artist_uuid:
             
             st.markdown("---")
             playlist_details = get_artist_playlists_from_db(db_manager, st.session_state.artist_uuid)
-            display_playlists(api_client, db_manager, playlist_details) # Pass both clients
+            display_playlists(db_manager, playlist_details)
     else:
         st.warning(f"Could not load details for artist UUID: {st.session_state.artist_uuid}.")
 
