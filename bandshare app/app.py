@@ -52,7 +52,7 @@ def fetch_and_store_all_data(artist_name):
              st.error("Could not retrieve artist UUID."); return
     
     # --- Step 2: Parallel calls for everything else ---
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=20) as executor:
         with st.spinner("Fetching all artist data in parallel..."):
             # Create futures for all independent API calls
             future_static = executor.submit(api_client.get_artist_metadata, artist_uuid)
