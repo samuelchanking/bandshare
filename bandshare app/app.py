@@ -38,46 +38,56 @@ if 'show_metadata' not in st.session_state: st.session_state.show_metadata = {}
 # --- Helper Functions ---
 
 def fetch_and_store_all_data(artist_name):
-    """Fetches all data for a new artist and stores it using the split DB functions."""
+    """Fetches all data for a new artist in parallel after getting the UUID."""
     st.info(f"Fetching full dataset for new artist '{artist_name}'...")
     
-    with st.spinner("Fetching primary artist data..."):
-        static_data = api_client.fetch_static_artist_data(artist_name)
-        if 'error' in static_data:
-            st.error(f"API Error: {static_data['error']}"); return
-        artist_uuid = static_data.get('artist_uuid')
+    # --- Step 1: Sequential call to get the essential UUID ---
+    with st.spinner("Searching for artist..."):
+        # Simplified initial search to just get the UUID
+        artist_info = api_client.search_artist(artist_name)
+        if 'error' in artist_info:
+            st.error(f"API Error: {artist_info['error']}"); return
+        artist_uuid = artist_info.get('uuid')
         if not artist_uuid:
              st.error("Could not retrieve artist UUID."); return
-        # --- Store static data ---
-        db_manager.store_static_artist_data(artist_uuid, static_data)
-
-    with st.spinner("Fetching secondary data (albums, playlists)..."):
-        secondary_data = api_client.fetch_secondary_artist_data(artist_uuid)
-        if 'error' not in secondary_data:
-             # --- Store secondary data ---
-             db_manager.store_secondary_artist_data(artist_uuid, secondary_data)
-        else:
-             st.warning(f"Could not fetch secondary data: {secondary_data['error']}")
     
-    with st.spinner("Fetching demographic data..."):
-        demographic_data = {
-            'local_audience': api_client.get_local_audience(artist_uuid),
-        }
-        db_manager.store_demographic_data(artist_uuid, demographic_data)
+    # --- Step 2: Parallel calls for everything else ---
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        with st.spinner("Fetching all artist data in parallel..."):
+            # Create futures for all independent API calls
+            future_static = executor.submit(api_client.get_artist_metadata, artist_uuid)
+            future_secondary = executor.submit(api_client.fetch_secondary_artist_data, artist_uuid)
+            future_demographic = executor.submit(api_client.get_local_audience, artist_uuid)
+            
+            start_date = date.today() - timedelta(days=90)
+            end_date = date.today()
+            future_audience = executor.submit(api_client.get_artist_audience, artist_uuid, 'spotify', start_date, end_date)
+            future_popularity = executor.submit(api_client.get_artist_popularity, artist_uuid, 'spotify', start_date, end_date)
+            future_streaming = executor.submit(api_client.get_artist_streaming_audience, artist_uuid, 'spotify', start_date, end_date)
+            future_local_streaming = executor.submit(api_client.get_local_streaming_audience, artist_uuid, 'spotify', start_date, end_date)
 
+            # --- Step 3: Store results as they complete ---
+            # Store static data
+            static_data = {'metadata': future_static.result()}
+            db_manager.store_static_artist_data(artist_uuid, static_data)
 
-    # --- Fetch and store time-series data for a default range ---
-    start_date = date.today() - timedelta(days=90)
-    end_date = date.today()
-    with st.spinner("Fetching time-series data..."):
-        time_series_data = {
-            'audience': api_client.get_artist_audience(artist_uuid, 'spotify', start_date, end_date),
-            'popularity': api_client.get_artist_popularity(artist_uuid, 'spotify', start_date, end_date),
-            'streaming_audience': api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start_date, end_date),
-            'local_streaming_audience': api_client.get_local_streaming_audience(artist_uuid, 'spotify', start_date, end_date)
-        }
-        # --- Store time-series data ---
-        db_manager.store_timeseries_data(artist_uuid, time_series_data)
+            # Store secondary data
+            secondary_data = future_secondary.result()
+            if 'error' not in secondary_data:
+                db_manager.store_secondary_artist_data(artist_uuid, secondary_data)
+
+            # Store demographic data
+            demographic_data = {'local_audience': future_demographic.result()}
+            db_manager.store_demographic_data(artist_uuid, demographic_data)
+
+            # Store time-series data
+            time_series_data = {
+                'audience': future_audience.result(),
+                'popularity': future_popularity.result(),
+                'streaming_audience': future_streaming.result(),
+                'local_streaming_audience': future_local_streaming.result()
+            }
+            db_manager.store_timeseries_data(artist_uuid, time_series_data)
 
     st.success("Database updated successfully!")
     st.session_state.artist_uuid = artist_uuid
@@ -99,9 +109,9 @@ def update_static_data(artist_uuid):
             st.warning(f"Could not update secondary data: {secondary_data['error']}")
 
 def update_timeseries_data(artist_uuid, start_date, end_date):
-    """Intelligently fetches and appends only missing time-series data."""
+    """Fetches and appends missing time-series data in parallel."""
     with st.spinner("Checking and updating time-series data..."):
-        time_series_to_fetch = {
+        tasks = {
             'audience': lambda: api_client.get_artist_audience(artist_uuid, 'spotify', start_date, end_date),
             'popularity': lambda: api_client.get_artist_popularity(artist_uuid, 'spotify', start_date, end_date),
             'streaming_audience': lambda: api_client.get_artist_streaming_audience(artist_uuid, 'spotify', start_date, end_date),
@@ -109,12 +119,22 @@ def update_timeseries_data(artist_uuid, start_date, end_date):
         }
         
         full_ts_data = {}
-        for name, func in time_series_to_fetch.items():
-            new_data = func()
-            if 'error' not in new_data:
-                full_ts_data[name] = new_data
+        with ThreadPoolExecutor() as executor:
+            # Submit all tasks to the executor
+            future_to_name = {executor.submit(func): name for name, func in tasks.items()}
+            
+            # Collect results
+            for future in as_completed(future_to_name):
+                name = future_to_name[future]
+                try:
+                    data = future.result()
+                    if 'error' not in data:
+                        full_ts_data[name] = data
+                except Exception as exc:
+                    st.warning(f'{name} data fetching generated an exception: {exc}')
 
         db_manager.store_timeseries_data(artist_uuid, full_ts_data)
+        
     st.cache_data.clear()
     st.success("Chart data updated.")
     st.rerun()
