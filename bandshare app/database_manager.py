@@ -25,6 +25,7 @@ class DatabaseManager:
                 'popularity': self.db['popularity'],
                 'streaming_audience': self.db['streaming_audience'],
                 'songs_audience': self.db['songs_audience'],
+                'songs_aggregate_audience': self.db['songs_aggregate_audience'],
                 'demographic_followers': self.db['demographic_followers'],
                 'local_streaming_history': self.db['local_streaming_history'],
             }
@@ -35,6 +36,7 @@ class DatabaseManager:
             self.collections['demographic_followers'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['local_streaming_history'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['songs_audience'].create_index([("song_uuid", ASCENDING), ("playlist_uuid", ASCENDING)])
+            self.collections['songs_aggregate_audience'].create_index([("song_uuid", ASCENDING)])
         except ConnectionFailure as e:
             raise e
 
@@ -65,10 +67,9 @@ class DatabaseManager:
 
     def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
-        Stores or updates all secondary data, including pre and post-entry song audience data.
+        Stores or updates all secondary data, including pre/post and aggregated song audience data.
         """
         try:
-            # ... (storage for albums, tracklists, songs, playlists remains the same) ...
             if 'albums' in data and 'items' in data.get('albums', {}):
                 all_album_metadata = data.get('album_metadata', {})
                 for album_summary in data['albums']['items']:
@@ -97,7 +98,6 @@ class DatabaseManager:
                         self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': document_to_store}, upsert=True)
 
 
-            # --- MODIFIED: Store both pre and post entry song streaming data ---
             if 'song_streaming_data' in data:
                 for item in data['song_streaming_data']:
                     song_uuid = item['song_uuid']
@@ -105,17 +105,14 @@ class DatabaseManager:
                     
                     doc_to_set = {'last_updated': datetime.utcnow()}
                     
-                    # Add pre-entry history if it exists
                     pre_entry_data = item.get('pre_entry_data')
                     if pre_entry_data and 'items' in pre_entry_data:
                         doc_to_set['history'] = pre_entry_data['items']
 
-                    # Add post-entry history if it exists
                     post_entry_data = item.get('post_entry_data')
                     if post_entry_data and 'items' in post_entry_data:
                         doc_to_set['post_entry_history'] = post_entry_data['items']
 
-                    # Only update the database if there is at least some history to store
                     if 'history' in doc_to_set or 'post_entry_history' in doc_to_set:
                         self.collections['songs_audience'].update_one(
                             {'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid},
@@ -123,6 +120,22 @@ class DatabaseManager:
                                 '$set': doc_to_set,
                                 '$setOnInsert': {'artist_uuid': artist_uuid, 'song_uuid': song_uuid, 'playlist_uuid': playlist_uuid}
                             },
+                            upsert=True
+                        )
+
+            if 'song_centric_streaming' in data:
+                for song_data in data['song_centric_streaming']:
+                    if song_uuid := song_data.get('song_uuid'):
+                        doc_to_store = {
+                            'artist_uuid': artist_uuid,
+                            'song_uuid': song_uuid,
+                            'history': song_data.get('history', []),
+                            'playlists': song_data.get('playlists', []),
+                            'last_updated': datetime.utcnow()
+                        }
+                        self.collections['songs_aggregate_audience'].update_one(
+                            {'song_uuid': song_uuid},
+                            {'$set': doc_to_store},
                             upsert=True
                         )
 
