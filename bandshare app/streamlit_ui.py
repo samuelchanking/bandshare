@@ -21,20 +21,57 @@ def display_demographics(local_audience):
 
 
 def display_artist_metadata(metadata):
-    """Displays artist's metadata in a structured layout."""
+    """
+    Displays artist's metadata in a structured layout, now with additional details.
+    """
     if not metadata:
         st.warning("No artist metadata available.")
         return
+    # The main data is inside the 'object' field
     metadata_obj = metadata.get('object', metadata)
 
-    st.subheader(f"Data for: {metadata_obj.get('name', 'Unknown Artist')}")
-    if image_url := metadata_obj.get("imageUrl"):
-        st.image(image_url, width=150)
+    st.header(f"Artist Overview: {metadata_obj.get('name', 'Unknown Artist')}")
+    st.markdown("---")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Country", metadata_obj.get("countryCode", "N/A"))
-    col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
-    col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
+    # --- Main Content Columns ---
+    col1, col2 = st.columns([1, 4])
+
+    with col1:
+        if image_url := metadata_obj.get("imageUrl"):
+            st.image(image_url, width=150)
+
+    with col2:
+        # Metrics
+        m_col1, m_col2, m_col3 = st.columns(3)
+        m_col1.metric("Country", metadata_obj.get("countryCode", "N/A"))
+        m_col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
+        m_col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
+        st.write("") # Spacer
+
+        # Genres
+        genres = metadata_obj.get('genres', [])
+        if genres:
+            genre_tags = []
+            for genre_info in genres:
+                root_genre = genre_info.get('root', '').capitalize()
+                sub_genres = [g.capitalize() for g in genre_info.get('sub', [])]
+                if root_genre:
+                    genre_tags.append(root_genre)
+                genre_tags.extend(sub_genres)
+            
+            # Display genres as plain text with a bold label
+            st.write(f"**Genres:** {', '.join(genre_tags)}")
+
+
+    # --- Biography Section (Full Width) ---
+    biography = metadata_obj.get('biography')
+    if biography:
+        st.markdown("---")
+        st.subheader("Biography")
+        st.markdown(biography)
+    
+    st.markdown("---")
+
 
 def display_full_song_streaming_chart(history_data: list, entry_points: list, chart_key: str):
     """
