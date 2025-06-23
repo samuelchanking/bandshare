@@ -2,7 +2,7 @@
 
 import streamlit as st
 import pandas as pd
-from streamlit_caching import get_song_details, get_playlist_song_streaming_from_db, get_song_centric_streaming_from_db
+from streamlit_caching import get_song_details, get_song_centric_streaming_from_db
 from datetime import datetime, date, timedelta
 import plotly.express as px
 import json
@@ -80,23 +80,29 @@ def display_full_song_streaming_chart(history_data: list, entry_points: list, ch
 
             # Check if the current entry is too close to the last one
             if last_entry_date and (entry_date - last_entry_date) < timedelta(days=30):
-                y_shift_offset += 25  # Increase shift to stack annotations
+                y_shift_offset += 35  # Increase shift to stack annotations
             else:
                 y_shift_offset = 15  # Reset for non-overlapping annotations
 
             fig.add_vline(x=entry_date, line_width=2, line_dash="dash", line_color="red")
             
             playlist_name = entry.get('name', 'N/A')
+            subscribers = entry.get('subscribers', 0)
+            subscribers_formatted = f"{subscribers:,}" if subscribers else "N/A"
+            
+            annotation_text = f"{playlist_name}<br>{subscribers_formatted} subs"
+            hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date.strftime('%Y-%m-%d')}"
+
             fig.add_annotation(
                 x=entry_date,
                 y=df['value'].max(),
-                text=playlist_name,  # Use shortened text
+                text=annotation_text,
                 showarrow=False,
-                yshift=y_shift_offset, # Use the calculated offset
+                yshift=y_shift_offset,
                 font=dict(color="white"),
                 bgcolor="rgba(255, 0, 0, 0.6)",
                 borderpad=4,
-                hovertext=f"Added to '{playlist_name}' on {entry_date.strftime('%Y-%m-%d')}"
+                hovertext=hover_text
             )
             
             last_entry_date = entry_date
@@ -154,7 +160,7 @@ def display_song_streaming_chart(pre_data_points: list, post_data_points: list, 
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 def display_by_playlist_view(db_manager, playlist_items):
-    """The original logic for displaying playlist entries."""
+    """Displays playlist entries, filtering aggregated song data for the view."""
     for i, item in enumerate(playlist_items):
         playlist = item.get('playlist', {})
         song = item.get('song', {})
@@ -200,15 +206,37 @@ def display_by_playlist_view(db_manager, playlist_items):
 
                 if st.session_state.get(session_key, False):
                     with st.spinner(f"Loading performance data for '{song_name}'..."):
-                        primary_data = get_playlist_song_streaming_from_db(db_manager, song_uuid, playlist_uuid)
-                        if primary_data and (primary_data.get('history') or primary_data.get('post_entry_history')):
-                            st.write(f"##### Streaming Performance for **{song_name}**")
-                            display_song_streaming_chart(
-                                primary_data.get('history', []),
-                                primary_data.get('post_entry_history', []),
-                                entry_date,
-                                chart_key=f"chart_{playlist_uuid}_{song_uuid}"
-                            )
+                        aggregated_data = get_song_centric_streaming_from_db(db_manager, song_uuid)
+                        
+                        if aggregated_data and aggregated_data.get('history') and entry_date:
+                            all_history = aggregated_data.get('history', [])
+                            try:
+                                entry_date_dt = datetime.fromisoformat(entry_date.replace('Z', '+00:00')).date()
+                                
+                                pre_period_start = entry_date_dt - timedelta(days=90)
+                                post_period_end = entry_date_dt + timedelta(days=90)
+                                
+                                pre_data = [
+                                    d for d in all_history 
+                                    if pre_period_start <= datetime.fromisoformat(d['date'].replace('Z', '+00:00')).date() <= entry_date_dt
+                                ]
+                                post_data = [
+                                    d for d in all_history 
+                                    if entry_date_dt < datetime.fromisoformat(d['date'].replace('Z', '+00:00')).date() <= post_period_end
+                                ]
+
+                                if pre_data or post_data:
+                                    st.write(f"##### Streaming Performance for **{song_name}**")
+                                    display_song_streaming_chart(
+                                        pre_data,
+                                        post_data,
+                                        entry_date,
+                                        chart_key=f"chart_{playlist_uuid}_{song_uuid}"
+                                    )
+                                else:
+                                    st.info("No streaming data found within the 90-day window around the playlist entry date.")
+                            except (ValueError, TypeError):
+                                st.error("Could not parse the entry date to display performance graph.")
                         else:
                             st.info("No valid historical streaming data was found for this song on this playlist.")
 
@@ -225,7 +253,8 @@ def display_by_song_view(db_manager, playlist_items):
         
         songs[song_uuid]['playlists'].append({
             'name': item.get('playlist', {}).get('name', 'N/A'),
-            'entryDate': item.get('entryDate')
+            'entryDate': item.get('entryDate'),
+            'subscribers': item.get('playlist', {}).get('latestSubscriberCount', 0)
         })
 
     if not songs:
