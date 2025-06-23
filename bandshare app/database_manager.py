@@ -41,6 +41,11 @@ class DatabaseManager:
     def close_connection(self):
         """Closes the MongoDB connection."""
         self.client.close()
+        
+    def get_all_song_uuids_for_artist(self, artist_uuid):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT song_uuid FROM artist_songs WHERE artist_uuid = ?", (artist_uuid,))
+        return [row[0] for row in cursor.fetchall()]
 
     def search_artist_by_name(self, artist_name: str) -> Optional[Dict[str, Any]]:
         """Finds an artist by name in the local database."""
@@ -143,8 +148,15 @@ class DatabaseManager:
                 ('local_streaming_history', 'local_streaming_audience', 'platform')
             ]:
                 if data_key in data and 'items' in data.get(data_key, {}):
-                    platform = data[data_key].get(platform_key, 'spotify')
-                    query_filter = {'artist_uuid': artist_uuid, platform_key: platform}
+                    # --- Start of corrected block ---
+                    # Robustly get the platform/source value, providing a fallback.
+                    # This prevents 'None' from being used in the query filter.
+                    platform_or_source_value = data[data_key].get(platform_key)
+                    if not platform_or_source_value:
+                        platform_or_source_value = 'spotify' # Default fallback
+                    
+                    query_filter = {'artist_uuid': artist_uuid, platform_key: platform_or_source_value}
+                    # --- End of corrected block ---
                     self.append_timeseries_data(coll_name, query_filter, data[data_key]['items'])
         except OperationFailure as e:
             print(f"Error storing time-series data: {e}")
