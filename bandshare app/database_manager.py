@@ -27,6 +27,8 @@ class DatabaseManager:
                 'songs_aggregate_audience': self.db['songs_aggregate_audience'],
                 'demographic_followers': self.db['demographic_followers'],
                 'local_streaming_history': self.db['local_streaming_history'],
+                'album_audience': self.db['album_audience'],
+                'song_audience': self.db['song_audience'],
             }
             # Create indexes for efficient queries
             self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
@@ -35,6 +37,8 @@ class DatabaseManager:
             self.collections['demographic_followers'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['local_streaming_history'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['songs_aggregate_audience'].create_index([("song_uuid", ASCENDING)])
+            self.collections['album_audience'].create_index([("album_uuid", ASCENDING), ("platform", ASCENDING)])
+            self.collections['song_audience'].create_index([("song_uuid", ASCENDING), ("platform", ASCENDING)])
         except ConnectionFailure as e:
             raise e
 
@@ -42,10 +46,19 @@ class DatabaseManager:
         """Closes the MongoDB connection."""
         self.client.close()
         
-    def get_all_song_uuids_for_artist(self, artist_uuid):
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT song_uuid FROM artist_songs WHERE artist_uuid = ?", (artist_uuid,))
-        return [row[0] for row in cursor.fetchall()]
+    def get_all_songs_for_artist(self, artist_uuid: str) -> List[Dict[str, str]]:
+        """Retrieves all songs (UUID and name) for a given artist."""
+        songs_cursor = self.collections['songs'].find(
+            {'artist_uuid': artist_uuid},
+            {'song_uuid': 1, 'object.name': 1, 'name': 1, '_id': 0}
+        )
+        songs = []
+        for song in songs_cursor:
+            # The song name can be in 'object.name' or 'name'
+            name = song.get('object', {}).get('name') or song.get('name')
+            if name and song.get('song_uuid'):
+                songs.append({'song_uuid': song['song_uuid'], 'name': name})
+        return songs
 
     def search_artist_by_name(self, artist_name: str) -> Optional[Dict[str, Any]]:
         """Finds an artist by name in the local database."""
@@ -134,6 +147,36 @@ class DatabaseManager:
                 )
         except OperationFailure as e:
             print(f"Error storing demographic data: {e}")
+
+    def store_album_audience_data(self, album_uuid: str, data: Dict[str, Any]):
+        """
+        Appends new time-series data points to the database for ALBUM-LEVEL audience.
+        """
+        try:
+            if 'error' in data or 'items' not in data or not data['items']:
+                return
+
+            platform = data.get('platform', 'spotify')
+            query_filter = {'album_uuid': album_uuid, 'platform': platform}
+            self.append_timeseries_data('album_audience', query_filter, data['items'])
+
+        except OperationFailure as e:
+            print(f"Error storing album audience data: {e}")
+
+    def store_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
+        """
+        Appends new time-series data points to the database for SONG-LEVEL audience.
+        """
+        try:
+            if 'error' in data or 'items' not in data or not data['items']:
+                return
+
+            platform = data.get('platform', 'spotify')
+            query_filter = {'song_uuid': song_uuid, 'platform': platform}
+            self.append_timeseries_data('song_audience', query_filter, data['items'])
+
+        except OperationFailure as e:
+            print(f"Error storing song audience data: {e}")
 
 
     def store_timeseries_data(self, artist_uuid: str, data: Dict[str, Any]):
