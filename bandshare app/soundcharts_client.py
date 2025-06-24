@@ -91,6 +91,13 @@ class SoundchartsAPIClient:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date))
 
+    def get_album_audience(self, album_uuid: str, platform: str, start_date=None, end_date=None) -> Dict[str, Any]:
+        """Fetches time-series audience data for a single album. Supports chunking."""
+        url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/album/{album_uuid}/audience/{platform}"
+        if start_date and end_date:
+            return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
+        return self._request(url_builder(start_date, end_date))
+
     def get_local_audience(self, artist_uuid: str, platform: str = "instagram") -> Dict[str, Any]:
         """Fetches local audience data for a given platform. This is not a time-series."""
         url = f"{self.BASE_URL}/v2.37/artist/{artist_uuid}/social/{platform}/followers/"
