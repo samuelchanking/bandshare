@@ -3,8 +3,8 @@
 import streamlit as st
 import config
 from pymongo.errors import ConnectionFailure
+from client_setup import initialize_clients
 from streamlit_caching import (
-    initialize_clients,
     get_artist_details,
     get_album_details,
     get_artist_playlists_from_db,
@@ -54,7 +54,7 @@ def fetch_and_store_all_data(artist_name):
             future_secondary = executor.submit(api_client.fetch_secondary_artist_data, artist_uuid)
             future_demographic = executor.submit(api_client.get_local_audience, artist_uuid)
             
-            start_date = date.today() - timedelta(days=90)
+            start_date = date.today() - timedelta(days=365)
             end_date = date.today()
             future_audience = executor.submit(api_client.get_artist_audience, artist_uuid, 'spotify', start_date, end_date)
             future_popularity = executor.submit(api_client.get_artist_popularity, artist_uuid, 'spotify', start_date, end_date)
