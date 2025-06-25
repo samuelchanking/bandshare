@@ -4,13 +4,21 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from streamlit_caching import (
-    get_song_details, get_song_centric_streaming_from_db, download_image_bytes,
-    get_song_audience_data
+    get_song_details, get_full_song_data_from_db, download_image_bytes,
+    get_song_audience_data, get_playlist_audience_data
 )
 from datetime import datetime, date, timedelta
 import plotly.express as px
 from itertools import zip_longest
 from concurrent.futures import ThreadPoolExecutor
+from client_setup import initialize_clients 
+import config
+
+# --- Helper to get api_client and db_manager ---
+@st.cache_resource
+def get_clients():
+    api_client, db_manager = initialize_clients(config)
+    return api_client, db_manager
 
 def _get_optimal_y_range(dataframe, columns):
     """Calculates an optimal Y-axis range with padding for a given set of data columns."""
@@ -50,7 +58,8 @@ def display_all_songs_audience_chart(songs_with_data):
     for song_name, audience_data in songs_with_data.items():
         if audience_data:
             parsed_data = []
-            for entry in audience_data:
+            history = audience_data.get('history', audience_data)
+            for entry in history:
                 date_val = entry.get('date')
                 if not date_val: continue
                 
@@ -90,7 +99,7 @@ def display_all_songs_audience_chart(songs_with_data):
         title="Song Audience Over Time", 
         yaxis_range=y_range, 
         yaxis_tickformat=",.0f",
-        hovermode="x unified"  # Use unified hover for easy comparison
+        hovermode="x unified"
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -167,14 +176,15 @@ def display_full_song_streaming_chart(history_data: list, entry_points: list, ch
         if entry.get('plots') and isinstance(entry['plots'], list) and len(entry['plots']) > 0:
             value = entry['plots'][0].get('value')
         if entry.get('date') and value is not None:
-            df_data.append({'date': entry['date'], 'value': value})
+            date_str = entry['date'].replace('Z', '+00:00')
+            df_data.append({'date': datetime.fromisoformat(date_str).date(), 'value': value})
+
 
     if not df_data:
         st.warning("Streaming data for this song appears to be empty or in an unexpected format.")
         return
 
     df = pd.DataFrame(df_data)
-    df['date'] = pd.to_datetime(df['date']).dt.date
     df.sort_values(by='date', inplace=True)
     df = df.drop_duplicates(subset=['date'], keep='last')
 
@@ -190,13 +200,13 @@ def display_full_song_streaming_chart(history_data: list, entry_points: list, ch
 
     for entry in sorted_entry_points:
         try:
-            entry_date = pd.to_datetime(entry['entryDate']).date()
-            if last_entry_date and (entry_date - last_entry_date) < timedelta(days=30):
+            entry_date_val = pd.to_datetime(entry['entryDate']).date()
+            if last_entry_date and (entry_date_val - last_entry_date) < timedelta(days=30):
                 y_shift_offset += 35
             else:
                 y_shift_offset = 15
 
-            fig.add_vline(x=entry_date, line_width=2, line_dash="dash", line_color="red")
+            fig.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
             
             playlist_name = entry.get('name', 'N/A')
             entry_subscribers = entry.get('entrySubscribers')
@@ -204,50 +214,61 @@ def display_full_song_streaming_chart(history_data: list, entry_points: list, ch
             subscribers_to_show = entry_subscribers if entry_subscribers is not None else latest_subscribers
             subscribers_formatted = f"{subscribers_to_show:,}" if subscribers_to_show else "N/A"
             annotation_text = f"{playlist_name}<br>{subscribers_formatted} subs"
-            hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date.strftime('%Y-%m-%d')}"
+            hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date_val.strftime('%Y-%m-%d')}"
 
-            fig.add_annotation(x=entry_date, y=df['value'].max(), text=annotation_text, showarrow=False, yshift=y_shift_offset, font=dict(color="white"), bgcolor="rgba(255, 0, 0, 0.6)", borderpad=4, hovertext=hover_text)
-            last_entry_date = entry_date
+            fig.add_annotation(x=entry_date_val, y=df['value'].max(), text=annotation_text, showarrow=False, yshift=y_shift_offset, font=dict(color="white"), bgcolor="rgba(255, 0, 0, 0.6)", borderpad=4, hovertext=hover_text)
+            last_entry_date = entry_date_val
         except (ValueError, KeyError):
             continue
 
     fig.update_layout(showlegend=False, hovermode="x", yaxis_tickformat=",.0f")
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
-
-def display_song_streaming_chart(pre_data_points: list, post_data_points: list, entry_date_str: str, chart_key: str):
+# --- MODIFIED: This function is now more flexible ---
+def display_playlist_audience_chart(audience_data: list, entry_date_str: str, chart_key: str):
     """
-    Takes pre and post-entry data, combines them into a single line,
-    and adds a vertical marker for the entry date using Plotly.
+    Takes playlist audience data and plots its value (followerCount or value) over time,
+    adding a vertical marker for the song's entry date.
     """
-    all_points = pre_data_points + post_data_points
-    if not all_points:
-        st.info("No streaming data available for this period.")
+    if not audience_data:
+        st.info("No audience data available for this playlist in the selected period.")
         return
 
-    df_data = [{'date': entry['date'], 'value': entry['plots'][0].get('value')} for entry in all_points if entry.get('plots') and isinstance(entry['plots'], list) and len(entry['plots']) > 0 and entry.get('date') and entry['plots'][0].get('value') is not None]
+    # Make parsing more flexible to handle 'followerCount' or 'value' keys.
+    parsed_data = []
+    for entry in audience_data:
+        # Check for 'followerCount' first, then fall back to 'value'.
+        value = entry.get('followerCount')
+        if value is None:
+            value = entry.get('value')
 
-    if not df_data:
-        st.warning("Streaming data appears to be empty or in an unexpected format.")
+        if entry.get('date') and value is not None:
+            parsed_data.append({'date': entry['date'], 'data_value': value})
+
+    if not parsed_data:
+        st.warning("Playlist audience data appears to be empty or in an unexpected format.")
         return
 
-    df = pd.DataFrame(df_data)
+    df = pd.DataFrame(parsed_data)
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df['date'], y=df['value'], mode='lines', name='Streams', connectgaps=False,
-                             hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,.0f}<extra></extra>'))
-    y_range = _get_optimal_y_range(df, ['value'])
-    fig.update_layout(title="Song Performance Before and After Playlist Entry", yaxis_range=y_range)
+    # Use the generic column name 'data_value' for plotting
+    fig.add_trace(go.Scatter(x=df['date'], y=df['data_value'], mode='lines', name='Followers', connectgaps=False,
+                             hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Followers</b>: %{y:,.0f}<extra></extra>'))
+    y_range = _get_optimal_y_range(df, ['data_value'])
+    fig.update_layout(title="Playlist Followers Before and After Song Entry", yaxis_range=y_range)
 
     if entry_date_str:
-        entry_date = pd.to_datetime(entry_date_str)
-        fig.add_vline(x=entry_date, line_width=2, line_dash="dash", line_color="red")
-        fig.add_annotation(x=entry_date, y=df['value'].max(), text="Playlist Entry", showarrow=False, yshift=15)
+        entry_date_val = pd.to_datetime(entry_date_str)
+        fig.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
+        # Use the generic column name for positioning the annotation
+        fig.add_annotation(x=entry_date_val, y=df['data_value'].max(), text="Song Entry Date", showarrow=True, arrowhead=2, ax=0, ay=-40)
 
     fig.update_layout(showlegend=False, hovermode="x", yaxis_tickformat=",.0f")
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
+
 
 def display_playlist_details(db_manager, item):
     """Displays the detailed view for a single playlist entry."""
@@ -276,45 +297,87 @@ def display_playlist_details(db_manager, item):
     subscribers = playlist.get('latestSubscriberCount', 0)
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Playlist Subscribers", f"{subscribers:,}" if subscribers else "N/A")
-    col2.metric("Entry Date", str(entry_date)[:10] if entry_date else "N/A")
-    col3.metric("Peak Date", str(peak_date)[:10] if peak_date else "N/A")
+    col1.metric("Current Playlist Subscribers", f"{subscribers:,}" if subscribers else "N/A")
+    col2.metric("Song Entry Date", str(entry_date)[:10] if entry_date else "N/A")
+    col3.metric("Song Peak Date", str(peak_date)[:10] if peak_date else "N/A")
 
     if song_uuid and playlist_uuid:
         graph_button_key = f"graph_btn_{playlist_uuid}_{song_uuid}"
         session_key = f"show_graph_{playlist_uuid}_{song_uuid}"
-        if st.button("Show Performance In This Playlist", key=graph_button_key, use_container_width=True):
+        if st.button("Update and Show Playlist Audience", key=graph_button_key, use_container_width=True):
             st.session_state[session_key] = not st.session_state.get(session_key, False)
+        
         if st.session_state.get(session_key, False):
-            with st.spinner(f"Loading performance data for '{song_name}'..."):
-                aggregated_data = get_song_centric_streaming_from_db(db_manager, song_uuid)
-                if aggregated_data and aggregated_data.get('history') and entry_date:
-                    all_history = aggregated_data.get('history', [])
+            with st.spinner(f"Updating audience data for playlist '{playlist_name}'..."):
+                if entry_date:
                     try:
+                        api_client, db_manager_local = get_clients()
+                        
                         entry_date_dt = datetime.fromisoformat(entry_date.replace('Z', '+00:00')).date()
-                        pre_period_start = entry_date_dt - timedelta(days=90)
-                        post_period_end = entry_date_dt + timedelta(days=90)
-                        pre_data = [d for d in all_history if pre_period_start <= datetime.fromisoformat(d['date'].replace('Z', '+00:00')).date() <= entry_date_dt]
-                        post_data = [d for d in all_history if entry_date_dt < datetime.fromisoformat(d['date'].replace('Z', '+00:00')).date() <= post_period_end]
-                        if pre_data or post_data:
-                            st.write(f"##### Streaming Performance for **{song_name}**")
-                            display_song_streaming_chart(pre_data, post_data, entry_date, chart_key=f"chart_{playlist_uuid}_{song_uuid}")
-                        else:
-                            st.info("No streaming data found within the 90-day window around the playlist entry date.")
-                    except (ValueError, TypeError):
-                        st.error("Could not parse the entry date to display performance graph.")
+                        start_date_req = entry_date_dt - timedelta(days=90)
+                        end_date_req = entry_date_dt + timedelta(days=90)
+
+                        query_filter = {'playlist_uuid': playlist_uuid}
+                        min_db_date, max_db_date = db_manager_local.get_timeseries_data_range('playlist_audience', query_filter)
+
+                        fetch_needed = False
+                        if not min_db_date or not max_db_date:
+                            fetch_needed = True
+                        elif start_date_req < min_db_date.date() or end_date_req > max_db_date.date():
+                            fetch_needed = True
+                        
+                        if fetch_needed:
+                            new_audience_data = api_client.get_playlist_audience(playlist_uuid, start_date_req, end_date_req)
+                            if new_audience_data and 'error' not in new_audience_data:
+                                db_manager_local.store_playlist_audience_data(playlist_uuid, new_audience_data)
+                                get_playlist_audience_data.clear()
+                                st.success("Playlist audience data updated.")
+                        
+                        audience_data = get_playlist_audience_data(db_manager_local, playlist_uuid, start_date_req, end_date_req)
+                        
+                        st.write(f"##### Follower Growth for **{playlist_name}**")
+                        display_playlist_audience_chart(audience_data, entry_date, chart_key=f"chart_playlist_{playlist_uuid}_{song_uuid}")
+
+                    except (ValueError, TypeError) as e:
+                        st.error(f"Could not process the request. Error: {e}")
                 else:
-                    st.info("No valid historical streaming data was found for this song on this playlist.")
+                    st.info("Cannot display performance graph without a song entry date.")
 
 def display_song_details(db_manager, song_uuid, song_data):
     """Displays the detailed view for a single song."""
     song_metadata = get_song_details(db_manager, song_uuid)
     if song_metadata:
         meta_obj = song_metadata.get('object', song_metadata)
+        
+        st.write(f"**Song UUID:** `{song_uuid}`")
+
+        col1, col2 = st.columns(2)
+        
         release_date = meta_obj.get('releaseDate', 'N/A')
-        st.write(f"**Release Date:** {str(release_date)[:10]}")
+        col1.metric("Release Date", str(release_date)[:10])
+        
+        duration_seconds = meta_obj.get('duration')
+        if duration_seconds is not None:
+            minutes = duration_seconds // 60
+            seconds = duration_seconds % 60
+            col2.metric("Duration", f"{minutes}:{seconds:02d}")
+        else:
+            col2.metric("Duration", "N/A")
+
+        genres_list = meta_obj.get('genres', [])
+        if genres_list:
+            genre_tags = set()
+            for genre_info in genres_list:
+                if root_genre := genre_info.get('root'):
+                    genre_tags.add(root_genre.capitalize())
+                for sub_genre in genre_info.get('sub', []):
+                    genre_tags.add(sub_genre.capitalize())
+            st.write(f"**Genres:** {', '.join(sorted(list(genre_tags)))}")
+        else:
+            st.write("**Genres:** N/A")
+
     else:
-        st.info("Additional song metadata not found in the database.")
+        st.info("Additional song metadata not found in the database. Please update artist data on the homepage.")
     
     st.markdown("---")
     st.write("**Featured in playlists:**")
@@ -328,11 +391,11 @@ def display_song_details(db_manager, song_uuid, song_data):
     
     if st.session_state.get(session_key, False):
         with st.spinner(f"Loading aggregated performance for '{song_data['name']}'..."):
-            aggregated_data = get_song_centric_streaming_from_db(db_manager, song_uuid)
-            if aggregated_data:
-                display_full_song_streaming_chart(aggregated_data.get('history', []), aggregated_data.get('playlists', []), chart_key=f"full_chart_{song_uuid}")
+            song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
+            if song_full_data:
+                display_full_song_streaming_chart(song_full_data.get('history', []), song_full_data.get('playlists', []), chart_key=f"full_chart_{song_uuid}")
             else:
-                st.warning("Aggregated streaming data not found. Please update the artist data to fetch it.")
+                st.warning("Aggregated streaming data not found. Please update the artist data on the homepage to fetch it.")
 
 def display_by_song_view(db_manager, playlist_items):
     """Displays songs in an interactive grid, or a detail view for a selected song."""
@@ -556,7 +619,9 @@ def display_timeseries_chart(chart_data, title=""):
         return
 
     parsed_data = []
-    for entry in chart_data:
+    data_source = chart_data.get('history') if isinstance(chart_data, dict) and 'history' in chart_data else chart_data
+
+    for entry in data_source:
         date_val = entry.get('date')
         if not date_val: continue
         
@@ -672,12 +737,12 @@ def display_local_streaming_plots(local_streaming_data):
     plot_data = []
 
     for daily_entry in local_streaming_data:
-        date = daily_entry.get('date')
+        date_val = daily_entry.get('date')
         for country_plot in daily_entry.get('countryPlots', []):
             country_name = country_plot.get('countryName')
             if country_name:
                 all_countries.add(country_name)
-                plot_data.append({'date': date, 'country': country_name, 'city': None, 'streams': country_plot.get('value')})
+                plot_data.append({'date': date_val, 'country': country_name, 'city': None, 'streams': country_plot.get('value')})
         for city_plot in daily_entry.get('cityPlots', []):
             country_name = city_plot.get('countryName')
             city_name = city_plot.get('cityName')
@@ -685,7 +750,7 @@ def display_local_streaming_plots(local_streaming_data):
                 all_countries.add(country_name)
                 if country_name not in country_to_cities: country_to_cities[country_name] = set()
                 country_to_cities[country_name].add(city_name)
-                plot_data.append({'date': date, 'country': country_name, 'city': city_name, 'streams': city_plot.get('value')})
+                plot_data.append({'date': date_val, 'country': country_name, 'city': city_name, 'streams': city_plot.get('value')})
     
     if not plot_data:
         st.info("Could not find any stream data in the local breakdown.")
