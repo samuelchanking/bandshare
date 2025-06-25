@@ -8,6 +8,10 @@ from streamlit_caching import (
     get_artist_details,
     get_album_details,
     get_artist_playlists_from_db,
+    get_audience_data,
+    get_popularity_data,
+    get_streaming_audience_from_db,
+    get_local_streaming_history_from_db
 )
 from streamlit_ui import (
     display_artist_metadata
@@ -85,19 +89,63 @@ def fetch_and_store_all_data(artist_name):
     st.cache_data.clear()
     st.rerun()
 
-def update_static_data(artist_uuid):
-    """Refreshes secondary data (albums, playlists) for an existing artist."""
-    with st.spinner("Updating album and playlist info..."):
-        secondary_data = api_client.fetch_secondary_artist_data(artist_uuid)
-        if 'error' not in secondary_data:
-            db_manager.store_secondary_artist_data(artist_uuid, secondary_data)
+# --- MODIFIED: Renamed and expanded the update function ---
+def refresh_all_artist_data(artist_uuid):
+    """
+    Refreshes secondary data (albums, playlists) AND all primary time-series data 
+    for an existing artist for the past 365 days.
+    """
+    with st.spinner("Updating all artist data (albums, playlists, charts)..."):
+        secondary_data_updated = False
+        timeseries_data_updated = False
+        
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            # Submit secondary data fetch
+            future_secondary = executor.submit(api_client.fetch_secondary_artist_data, artist_uuid)
+            
+            # Submit all time-series fetches
+            start_date = date.today() - timedelta(days=365)
+            end_date = date.today()
+            future_audience = executor.submit(api_client.get_artist_audience, artist_uuid, 'spotify', start_date, end_date)
+            future_popularity = executor.submit(api_client.get_artist_popularity, artist_uuid, 'spotify', start_date, end_date)
+            future_streaming = executor.submit(api_client.get_artist_streaming_audience, artist_uuid, 'spotify', start_date, end_date)
+            future_local_streaming = executor.submit(api_client.get_local_streaming_audience, artist_uuid, 'spotify', start_date, end_date)
+            
+            # Process secondary data
+            secondary_data = future_secondary.result()
+            if 'error' not in secondary_data:
+                db_manager.store_secondary_artist_data(artist_uuid, secondary_data)
+                secondary_data_updated = True
+            else:
+                st.warning(f"Could not update secondary data: {secondary_data['error']}")
+            
+            # Process time-series data
+            time_series_data = {
+                'audience': future_audience.result(),
+                'popularity': future_popularity.result(),
+                'streaming_audience': future_streaming.result(),
+                'local_streaming_audience': future_local_streaming.result()
+            }
+            
+            # Check if any new time-series data was actually fetched
+            if any(data.get('items') for data in time_series_data.values() if data and 'error' not in data):
+                db_manager.store_timeseries_data(artist_uuid, time_series_data)
+                timeseries_data_updated = True
+
+        if secondary_data_updated or timeseries_data_updated:
+            # Clear all relevant caches
             get_artist_details.clear()
             get_album_details.clear()
             get_artist_playlists_from_db.clear()
-            st.success("Artist info updated.")
+            get_audience_data.clear()
+            get_popularity_data.clear()
+            get_streaming_audience_from_db.clear()
+            get_local_streaming_history_from_db.clear()
+            
+            st.success("Artist info and chart data updated.")
             st.rerun()
         else:
-            st.warning(f"Could not update secondary data: {secondary_data['error']}")
+            st.info("No new data was found to update.")
 
 
 # --- Main App UI ---
@@ -138,14 +186,14 @@ st.markdown("---")
 # --- UI Display Area ---
 if st.session_state.artist_uuid:
     
-    # Corrected st.session_staterun to st.session_state
     artist_details = get_artist_details(db_manager, st.session_state.artist_uuid)
     
     if artist_details and artist_details.get("metadata"):
         display_artist_metadata(artist_details.get('metadata'))
         
-        if st.button(f"Update Artist Info (Albums/Playlists)", use_container_width=True, help="Refreshes album and playlist data from the API."):
-            update_static_data(st.session_state.artist_uuid)
+        # --- MODIFIED: This button now calls the new comprehensive refresh function ---
+        if st.button(f"Update All Artist Data (Info & Charts)", use_container_width=True, help="Refreshes album, playlist, and all time-series chart data from the API for the last year."):
+            refresh_all_artist_data(st.session_state.artist_uuid)
 
         st.info("Select a page from the sidebar to view detailed charts, albums, playlists, and demographics.")
 
