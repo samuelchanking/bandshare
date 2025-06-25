@@ -2,7 +2,7 @@
 
 import requests
 import urllib.parse
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, date
 
@@ -23,6 +23,19 @@ class SoundchartsAPIClient:
         except requests.RequestException as e:
             return {'error': f"API request failed: {e}"}
 
+    def _fetch_paginated_data(self, url: str) -> List[Any]:
+        """Helper to fetch all items from a paginated API endpoint."""
+        all_items = []
+        next_page_url = url
+        while next_page_url:
+            page_data = self._request(next_page_url)
+            if 'error' in page_data:
+                # Stop pagination on error
+                break
+            all_items.extend(page_data.get('items', []))
+            next_page_url = page_data.get('next')
+        return all_items
+
     def _fetch_timeseries_in_chunks(self, url_builder: Callable[[date, date], str], start_date: date, end_date: date) -> Dict[str, Any]:
         """
         Generic helper to fetch time-series data for a date range > 90 days by splitting it into chunks.
@@ -39,7 +52,6 @@ class SoundchartsAPIClient:
                 if current_end > end_date:
                     current_end = end_date
                 
-                # The actual request is now wrapped in a simple function to be executed by the thread
                 def fetch_chunk(start, end):
                     url = url_builder(start, end)
                     params = {'startDate': str(start), 'endDate': str(end)}
@@ -53,7 +65,6 @@ class SoundchartsAPIClient:
                     chunk_result = future.result()
                     if 'error' not in chunk_result and 'items' in chunk_result:
                         all_items.extend(chunk_result['items'])
-                        # Capture platform/source from the first valid chunk
                         if not platform_or_source:
                             if 'platform' in chunk_result:
                                 platform_or_source = {'platform': chunk_result.get('platform')}
@@ -61,10 +72,8 @@ class SoundchartsAPIClient:
                                 platform_or_source = {'source': chunk_result.get('source')}
 
                 except Exception as e:
-                    # You might want to log this error more formally
                     print(f"A chunk fetch failed: {e}")
 
-        # Reconstruct the final response object in the expected format
         final_response = {'items': all_items}
         if platform_or_source:
             final_response.update(platform_or_source)
@@ -84,88 +93,83 @@ class SoundchartsAPIClient:
         url = f"{self.BASE_URL}/v2.9/artist/{artist_uuid}"
         return self._request(url)
 
+    def get_artist_songs(self, artist_uuid: str) -> List[Any]:
+        """Fetches a complete list of all songs for an artist."""
+        url = f"{self.BASE_URL}/v2.21/artist/{artist_uuid}/songs"
+        return self._fetch_paginated_data(url)
+
     def get_artist_audience(self, artist_uuid: str, platform: str, start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series audience data (listeners, followers). Now supports chunking."""
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/artist/{artist_uuid}/audience/{platform}/"
         if start_date and end_date:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date))
 
     def get_album_audience(self, album_uuid: str, platform: str, start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series audience data for a single album. Supports chunking."""
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/album/{album_uuid}/audience/{platform}"
         if start_date and end_date:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date))
 
     def get_local_audience(self, artist_uuid: str, platform: str = "instagram") -> Dict[str, Any]:
-        """Fetches local audience data for a given platform. This is not a time-series."""
         url = f"{self.BASE_URL}/v2.37/artist/{artist_uuid}/social/{platform}/followers/"
         return self._request(url)
 
     def get_local_streaming_audience(self, artist_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches local streaming audience data for a given platform. Now supports chunking."""
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/artist/{artist_uuid}/streaming/{platform}"
         if start_date and end_date:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date))
 
     def get_artist_popularity(self, artist_uuid: str, source: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series popularity data. Now supports chunking."""
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/artist/{artist_uuid}/popularity/{source}"
         if start_date and end_date:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date))
 
     def get_artist_albums(self, artist_uuid: str) -> Dict[str, Any]:
-        """Fetches the list of albums for an artist."""
         url = f"{self.BASE_URL}/v2.34/artist/{artist_uuid}/albums"
         return self._request(url, params={'offset': '0', 'limit': '100'})
 
     def get_album_metadata(self, album_uuid: str) -> Dict[str, Any]:
-        """Fetches detailed metadata for a single album."""
         url = f"{self.BASE_URL}/v2.36/album/by-uuid/{album_uuid}"
         return self._request(url)
 
     def get_album_tracks(self, album_uuid: str) -> Dict[str, Any]:
-        """Fetches the tracklist for a given album UUID."""
         url = f"{self.BASE_URL}/v2.26/album/{album_uuid}/tracks"
         return self._request(url)
 
     def get_song_metadata(self, song_uuid: str) -> Dict[str, Any]:
-        """Fetches detailed metadata for a single song."""
         url = f"{self.BASE_URL}/v2.25/song/{song_uuid}"
         return self._request(url)
 
     def get_artist_playlists(self, artist_uuid: str, platform: str = "spotify") -> Dict[str, Any]:
-        """Fetches the list of playlists an artist is currently featured on."""
         url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/current/{platform}"
         return self._request(url)
 
     def get_playlist_audience(self, playlist_uuid: str, start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series audience data for a playlist."""
-        url = f"{self.BASE_URL}/v2.20/playlist/{playlist_uuid}/audience"
+        """Fetches time-series audience data for a playlist. Now supports chunking."""
+        url_builder = lambda sd, ed: f"{self.BASE_URL}/v2.20/playlist/{playlist_uuid}/audience"
+        if start_date and end_date:
+            return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
+        
         params = {}
         if start_date: params['startDate'] = str(start_date)
         if end_date: params['endDate'] = str(end_date)
-        return self._request(url, params=params)
+        return self._request(url_builder(start_date, end_date), params=params)
 
     def get_artist_streaming_audience(self, artist_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches time-series streaming audience data. Now supports chunking."""
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/artist/{artist_uuid}/streaming/{platform}/listening"
         if start_date and end_date:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date))
 
     def get_song_streaming_audience(self, song_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
-        """Fetches the time-series streaming audience data for a specific song."""
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/song/{song_uuid}/audience/{platform}"
         if start_date and end_date:
             return self._fetch_timeseries_in_chunks(url_builder, start_date, end_date)
         return self._request(url_builder(start_date, end_date), params={'startDate': str(start_date), 'endDate': str(end_date)})
 
     def fetch_static_artist_data(self, artist_name: str) -> Dict[str, Any]:
-        """Finds an artist and fetches only their main metadata document."""
         artist_info = self.search_artist(artist_name)
         if 'error' in artist_info: return artist_info
 
@@ -175,7 +179,6 @@ class SoundchartsAPIClient:
         return result
 
     def _fetch_and_process_song_data(self, song_uuid: str, data: dict) -> dict:
-        """Helper function to fetch, clean, and structure data for a single song."""
         if not data['entry_dates']: return {}
 
         processed_playlists = []
@@ -208,15 +211,14 @@ class SoundchartsAPIClient:
         if fetch_end_date > date.today():
             fetch_end_date = date.today()
         
-        # Use the generic chunking function
         full_history_response = self.get_song_streaming_audience(song_uuid, "spotify", fetch_start_date, fetch_end_date)
         full_history = full_history_response.get('items', [])
         
         seen_dates = set()
         unique_history = []
-        for item in sorted(full_history, key=lambda x: x['date']):
+        for item in sorted(full_history, key=lambda x: x['date'], reverse=True):
             if item['date'] not in seen_dates:
-                unique_history.append(item)
+                unique_history.insert(0, item)
                 seen_dates.add(item['date'])
         
         return {
@@ -225,77 +227,90 @@ class SoundchartsAPIClient:
             'playlists': processed_playlists
         }
 
+    # --- MODIFIED: Simplified the song discovery logic ---
     def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
         """
-        Fetches albums, playlists, and all related song metadata.
-        NOW INCLUDES only song-centric aggregated streaming data.
+        Fetches all secondary artist data. Song discovery now relies solely on the
+        dedicated artist songs endpoint for improved reliability.
         """
         result = {}
-        result['albums'] = self.get_artist_albums(artist_uuid)
-        result['playlists'] = self.get_artist_playlists(artist_uuid)
+        all_song_uuids = set()
 
-        result['album_metadata'] = {}
-        result['tracklists'] = {}
-        result['song_metadata'] = {}
-        if 'albums' in result and 'items' in result.get('albums', {}):
-            with ThreadPoolExecutor(max_workers=20) as executor:
-                album_futures = {
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            # Step 1: Concurrently fetch all primary lists
+            future_albums = executor.submit(self.get_artist_albums, artist_uuid)
+            future_playlists = executor.submit(self.get_artist_playlists, artist_uuid)
+            future_artist_songs = executor.submit(self.get_artist_songs, artist_uuid) # Definitive song list
+
+            result['albums'] = future_albums.result()
+            result['playlists'] = future_playlists.result()
+            artist_songs_list = future_artist_songs.result()
+
+            # Populate the unique song UUID set ONLY from the definitive artist songs endpoint
+            for song_item in artist_songs_list:
+                if song_uuid := song_item.get('uuid'):
+                    all_song_uuids.add(song_uuid)
+
+            # Step 2: Concurrently fetch album metadata and tracklists
+            # We still need these for the UI, but not for song discovery.
+            result['album_metadata'] = {}
+            result['tracklists'] = {}
+            if 'items' in result.get('albums', {}):
+                album_meta_futures = {
                     executor.submit(self.get_album_metadata, album.get('uuid')): album.get('uuid')
                     for album in result['albums']['items'] if album.get('uuid')
                 }
-                for future in as_completed(album_futures):
-                    album_uuid_val = album_futures[future]
-                    result['album_metadata'][album_uuid_val] = future.result()
-
-            with ThreadPoolExecutor(max_workers=20) as executor:
                 tracklist_futures = {
                     executor.submit(self.get_album_tracks, album.get('uuid')): album.get('uuid')
                     for album in result['albums']['items'] if album.get('uuid')
                 }
-                for future in as_completed(tracklist_futures):
-                    album_uuid_val = tracklist_futures[future]
-                    tracklist_data = future.result()
-                    result['tracklists'][album_uuid_val] = tracklist_data
-                    if 'items' in tracklist_data:
-                        result['song_metadata'][album_uuid_val] = {}
-                        with ThreadPoolExecutor(max_workers=20) as song_executor:
-                            song_futures = {
-                                song_executor.submit(self.get_song_metadata, item.get('song', {}).get('uuid')): item.get('song', {}).get('uuid')
-                                for item in tracklist_data['items'] if item.get('song', {}).get('uuid')
-                            }
-                            for song_future in as_completed(song_futures):
-                                song_uuid_val = song_futures[song_future]
-                                result['song_metadata'][album_uuid_val][song_uuid_val] = song_future.result()
 
+                for future in as_completed(album_meta_futures):
+                    album_uuid = album_meta_futures[future]
+                    result['album_metadata'][album_uuid] = future.result()
+                
+                for future in as_completed(tracklist_futures):
+                    album_uuid = tracklist_futures[future]
+                    result['tracklists'][album_uuid] = future.result()
+
+            # Step 3: Fetch metadata for every unique song found, only once
+            result['song_metadata'] = {}
+            song_meta_futures = {
+                executor.submit(self.get_song_metadata, song_uuid): song_uuid
+                for song_uuid in all_song_uuids
+            }
+            for future in as_completed(song_meta_futures):
+                song_uuid = song_meta_futures[future]
+                song_meta = future.result()
+                if 'error' not in song_meta:
+                    result['song_metadata'][song_uuid] = song_meta
+
+        # Step 4: Process playlist data to find songs needing extended history
         playlist_items = result.get('playlists', {}).get('items', [])
-        
         songs_to_process = {}
         for item in playlist_items:
-            song_uuid = item.get('song', {}).get('uuid')
-            if not song_uuid: continue
-            
-            if song_uuid not in songs_to_process:
-                songs_to_process[song_uuid] = {'entry_dates': [], 'playlists': []}
-            
-            try:
-                entry_date_dt = datetime.fromisoformat(item['entryDate'].replace('Z', '+00:00')).date()
-                songs_to_process[song_uuid]['entry_dates'].append(entry_date_dt)
-                songs_to_process[song_uuid]['playlists'].append({
-                    'uuid': item.get('playlist', {}).get('uuid'),
-                    'name': item.get('playlist', {}).get('name', 'N/A'),
-                    'entryDate': str(entry_date_dt),
-                    'subscribers': item.get('playlist', {}).get('latestSubscriberCount', 0)
-                })
-            except (ValueError, KeyError):
-                continue
+            if song_uuid := item.get('song', {}).get('uuid'):
+                if song_uuid not in songs_to_process:
+                    songs_to_process[song_uuid] = {'entry_dates': [], 'playlists': []}
+                try:
+                    entry_date_dt = datetime.fromisoformat(item['entryDate'].replace('Z', '+00:00')).date()
+                    songs_to_process[song_uuid]['entry_dates'].append(entry_date_dt)
+                    songs_to_process[song_uuid]['playlists'].append({
+                        'uuid': item.get('playlist', {}).get('uuid'),
+                        'name': item.get('playlist', {}).get('name', 'N/A'),
+                        'entryDate': str(entry_date_dt),
+                        'subscribers': item.get('playlist', {}).get('latestSubscriberCount', 0)
+                    })
+                except (ValueError, KeyError):
+                    continue
 
+        # Step 5: Fetch extended history for the playlisted songs
         song_centric_results = []
         with ThreadPoolExecutor(max_workers=20) as executor:
             future_to_song = {
                 executor.submit(self._fetch_and_process_song_data, song_uuid, data): song_uuid
                 for song_uuid, data in songs_to_process.items()
             }
-            
             for future in as_completed(future_to_song):
                 try:
                     if song_result := future.result():
