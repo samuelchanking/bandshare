@@ -24,11 +24,11 @@ class DatabaseManager:
                 'audience': self.db['audience'],
                 'popularity': self.db['popularity'],
                 'streaming_audience': self.db['streaming_audience'],
-                'songs_aggregate_audience': self.db['songs_aggregate_audience'],
                 'demographic_followers': self.db['demographic_followers'],
                 'local_streaming_history': self.db['local_streaming_history'],
                 'album_audience': self.db['album_audience'],
                 'song_audience': self.db['song_audience'],
+                'playlist_audience': self.db['playlist_audience'],
             }
             # Create indexes for efficient queries
             self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
@@ -36,9 +36,9 @@ class DatabaseManager:
             self.collections['streaming_audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['demographic_followers'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['local_streaming_history'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['songs_aggregate_audience'].create_index([("song_uuid", ASCENDING)])
             self.collections['album_audience'].create_index([("album_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['song_audience'].create_index([("song_uuid", ASCENDING), ("platform", ASCENDING)])
+            self.collections['playlist_audience'].create_index([("playlist_uuid", ASCENDING)])
         except ConnectionFailure as e:
             raise e
 
@@ -54,7 +54,6 @@ class DatabaseManager:
         )
         songs = []
         for song in songs_cursor:
-            # The song name can be in 'object.name' or 'name'
             name = song.get('object', {}).get('name') or song.get('name')
             if name and song.get('song_uuid'):
                 songs.append({'song_uuid': song['song_uuid'], 'name': name})
@@ -83,53 +82,57 @@ class DatabaseManager:
 
     def store_secondary_artist_data(self, artist_uuid: str, data: Dict[str, Any]):
         """
-        Stores or updates all secondary data, now only using aggregated song audience data.
+        Stores or updates all secondary data with improved error handling.
         """
         try:
             if 'albums' in data and 'items' in data.get('albums', {}):
                 all_album_metadata = data.get('album_metadata', {})
                 for album_summary in data['albums']['items']:
-                    if album_uuid_val := album_summary.get('uuid'):
-                        combined_meta = album_summary | all_album_metadata.get(album_uuid_val, {})
-                        album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': combined_meta}
-                        self.collections['albums'].update_one({'album_uuid': album_uuid_val}, {'$set': album_doc}, upsert=True)
+                    if isinstance(album_summary, dict) and (album_uuid_val := album_summary.get('uuid')):
+                        album_meta = all_album_metadata.get(album_uuid_val, {})
+                        if isinstance(album_meta, dict):
+                            combined_meta = album_summary.copy()
+                            combined_meta.update(album_meta)
+                            album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': combined_meta}
+                            self.collections['albums'].update_one({'album_uuid': album_uuid_val}, {'$set': album_doc}, upsert=True)
 
             if 'tracklists' in data:
-                for album_uuid_val, tracklist_data in data['tracklists'].items():
-                    if 'error' not in tracklist_data:
-                        doc_to_store = tracklist_data | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val}
+                for album_uuid_val, tracklist_data in data.get('tracklists', {}).items():
+                    if isinstance(tracklist_data, dict) and 'error' not in tracklist_data:
+                        doc_to_store = tracklist_data.copy()
+                        doc_to_store.update({'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val})
                         self.collections['tracklists'].update_one({'album_uuid': album_uuid_val}, {'$set': doc_to_store}, upsert=True)
             
             if 'song_metadata' in data:
-                for album_uuid_val, songs in data['song_metadata'].items():
-                    for song_uuid, song_meta in songs.items():
-                        if 'error' not in song_meta:
-                            doc_to_store = song_meta | {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid}
-                            self.collections['songs'].update_one({'song_uuid': song_uuid}, {'$set': doc_to_store}, upsert=True)
+                for song_uuid, song_meta in data.get('song_metadata', {}).items():
+                    if isinstance(song_meta, dict) and 'error' not in song_meta:
+                        album_uuid_val = song_meta.get('album', {}).get('uuid')
+                        doc_to_store = song_meta.copy()
+                        doc_to_store.update({'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid})
+                        self.collections['songs'].update_one({'song_uuid': song_uuid}, {'$set': doc_to_store}, upsert=True)
 
             if 'playlists' in data and 'items' in data.get('playlists', {}):
                 for playlist_item in data['playlists']['items']:
-                    if playlist_uuid := playlist_item.get('playlist', {}).get('uuid'):
-                        document_to_store = playlist_item | {'artist_uuid': artist_uuid}
-                        self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': document_to_store}, upsert=True)
-
-            # The logic for 'song_streaming_data' which populated the old 'songs_audience' collection has been removed.
+                    if isinstance(playlist_item, dict) and (playlist_uuid := playlist_item.get('playlist', {}).get('uuid')):
+                        doc_to_store = playlist_item.copy()
+                        doc_to_store.update({'artist_uuid': artist_uuid})
+                        self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': doc_to_store}, upsert=True)
 
             if 'song_centric_streaming' in data:
-                for song_data in data['song_centric_streaming']:
-                    if song_uuid := song_data.get('song_uuid'):
-                        doc_to_store = {
-                            'artist_uuid': artist_uuid,
-                            'song_uuid': song_uuid,
-                            'history': song_data.get('history', []),
-                            'playlists': song_data.get('playlists', []),
-                            'last_updated': datetime.utcnow()
+                for song_data in data.get('song_centric_streaming', []):
+                    if isinstance(song_data, dict) and (song_uuid := song_data.get('song_uuid')):
+                        update_operation = {
+                            '$set': {
+                                'artist_uuid': artist_uuid,
+                                'song_uuid': song_uuid,
+                                'playlists': song_data.get('playlists', []),
+                                'last_updated': datetime.utcnow()
+                            },
+                            '$addToSet': {
+                                'history': {'$each': song_data.get('history', [])}
+                            }
                         }
-                        self.collections['songs_aggregate_audience'].update_one(
-                            {'song_uuid': song_uuid},
-                            {'$set': doc_to_store},
-                            upsert=True
-                        )
+                        self.collections['song_audience'].update_one({'song_uuid': song_uuid}, update_operation, upsert=True)
 
         except OperationFailure as e:
             print(f"Error storing secondary data: {e}")
@@ -148,6 +151,25 @@ class DatabaseManager:
         except OperationFailure as e:
             print(f"Error storing demographic data: {e}")
 
+    def store_playlist_audience_data(self, playlist_uuid: str, data: Dict[str, Any]):
+        """
+        Appends new time-series data points to the database for PLAYLIST-LEVEL audience.
+        """
+        try:
+            if 'error' in data or 'items' not in data or not data['items']:
+                return
+
+            query_filter = {'playlist_uuid': playlist_uuid}
+            self.collections['playlist_audience'].update_one(
+                query_filter,
+                {'$setOnInsert': {'playlist_uuid': playlist_uuid}},
+                upsert=True
+            )
+            self.append_timeseries_data('playlist_audience', query_filter, data['items'])
+
+        except OperationFailure as e:
+            print(f"Error storing playlist audience data: {e}")
+
     def store_album_audience_data(self, album_uuid: str, data: Dict[str, Any]):
         """
         Appends new time-series data points to the database for ALBUM-LEVEL audience.
@@ -165,7 +187,7 @@ class DatabaseManager:
 
     def store_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
         """
-        Appends new time-series data points to the database for SONG-LEVEL audience.
+        Appends new time-series data points to the database for the unified SONG-LEVEL audience collection.
         """
         try:
             if 'error' in data or 'items' not in data or not data['items']:
@@ -173,6 +195,11 @@ class DatabaseManager:
 
             platform = data.get('platform', 'spotify')
             query_filter = {'song_uuid': song_uuid, 'platform': platform}
+            self.collections['song_audience'].update_one(
+                query_filter,
+                {'$setOnInsert': {'platform': platform, 'song_uuid': song_uuid}},
+                upsert=True
+            )
             self.append_timeseries_data('song_audience', query_filter, data['items'])
 
         except OperationFailure as e:
@@ -191,15 +218,11 @@ class DatabaseManager:
                 ('local_streaming_history', 'local_streaming_audience', 'platform')
             ]:
                 if data_key in data and 'items' in data.get(data_key, {}):
-                    # --- Start of corrected block ---
-                    # Robustly get the platform/source value, providing a fallback.
-                    # This prevents 'None' from being used in the query filter.
                     platform_or_source_value = data[data_key].get(platform_key)
                     if not platform_or_source_value:
-                        platform_or_source_value = 'spotify' # Default fallback
+                        platform_or_source_value = 'spotify' 
                     
                     query_filter = {'artist_uuid': artist_uuid, platform_key: platform_or_source_value}
-                    # --- End of corrected block ---
                     self.append_timeseries_data(coll_name, query_filter, data[data_key]['items'])
         except OperationFailure as e:
             print(f"Error storing time-series data: {e}")
@@ -209,8 +232,10 @@ class DatabaseManager:
         pipeline = [{'$match': query_filter}, {'$unwind': '$history'}, {'$group': {'_id': '$_id', 'minDate': {'$min': '$history.date'}, 'maxDate': {'$max': '$history.date'}}}]
         result = list(self.collections[collection_name].aggregate(pipeline))
         if not result: return None, None
-        min_date = datetime.fromisoformat(result[0]['minDate'].replace('Z', '+00:00')) if result[0].get('minDate') else None
-        max_date = datetime.fromisoformat(result[0]['maxDate'].replace('Z', '+00:00')) if result[0].get('maxDate') else None
+        min_date_str = result[0].get('minDate')
+        max_date_str = result[0].get('maxDate')
+        min_date = datetime.fromisoformat(min_date_str.replace('Z', '+00:00')) if min_date_str else None
+        max_date = datetime.fromisoformat(max_date_str.replace('Z', '+00:00')) if max_date_str else None
         return min_date, max_date
 
     def append_timeseries_data(self, collection_name: str, query_filter: Dict, new_data_points: List[Dict]):
@@ -226,6 +251,22 @@ class DatabaseManager:
         """Gets the final time-series data within a specific date range for display."""
         start_iso = datetime.combine(start_date, datetime.min.time()).isoformat() + "Z"
         end_iso = datetime.combine(end_date, datetime.max.time()).isoformat() + "Z"
-        pipeline = [{'$match': query_filter}, {'$project': {'history': {'$filter': {'input': '$history', 'as': 'item', 'cond': {'$and': [{'$gte': ['$$item.date', start_iso]}, {'$lte': ['$$item.date', end_iso]}]}}}}}]
+        pipeline = [
+            {'$match': query_filter}, 
+            {'$project': {
+                'history': {
+                    '$filter': {
+                        'input': '$history', 
+                        'as': 'item', 
+                        'cond': {
+                            '$and': [
+                                {'$gte': ['$$item.date', start_iso]}, 
+                                {'$lte': ['$$item.date', end_iso]}
+                            ]
+                        }
+                    }
+                }
+            }}
+        ]
         result = list(self.collections[collection_name].aggregate(pipeline))
         return result[0]['history'] if result and 'history' in result[0] else []
