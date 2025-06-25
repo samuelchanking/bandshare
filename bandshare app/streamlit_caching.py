@@ -30,13 +30,19 @@ def get_album_details(_db_manager, album_uuid: str):
     if not album_uuid: return None
     return {"tracklist": _db_manager.collections['tracklists'].find_one({'album_uuid': album_uuid})}
 
+# --- MODIFIED: Made this function more robust ---
 @st.cache_data
 def get_song_details(_db_manager, song_uuid: str):
-    if not song_uuid: return None
+    """
+    Fetches details for a single song from the database.
+    Returns None if not found to prevent caching empty results incorrectly.
+    """
+    if not song_uuid: 
+        return None
     if 'songs' in _db_manager.collections:
-        if song := _db_manager.collections['songs'].find_one({'song_uuid': song_uuid}):
-            return song
-    return {}
+        song = _db_manager.collections['songs'].find_one({'song_uuid': song_uuid})
+        return song  # Returns the document or None
+    return None
 
 @st.cache_data
 def get_artist_playlists_from_db(_db_manager, artist_uuid: str):
@@ -67,6 +73,13 @@ def get_album_audience_data(_db_manager, album_uuid: str, platform: str, start_d
     query_filter = {'album_uuid': album_uuid, 'platform': platform}
     return _db_manager.get_timeseries_data_for_display('album_audience', query_filter, start_date, end_date)
 
+@st.cache_data
+def get_playlist_audience_data(_db_manager, playlist_uuid: str, start_date, end_date):
+    """Gets and caches playlist audience data for a given date range from the DATABASE."""
+    if not all([playlist_uuid, start_date, end_date]): return []
+    query_filter = {'playlist_uuid': playlist_uuid}
+    return _db_manager.get_timeseries_data_for_display('playlist_audience', query_filter, start_date, end_date)
+
 
 @st.cache_data
 def get_audience_data(_db_manager, artist_uuid: str, platform: str, start_date, end_date):
@@ -81,7 +94,7 @@ def get_popularity_data(_db_manager, artist_uuid: str, source: str, start_date, 
     """Gets popularity data for a given date range from the database."""
     if not all([artist_uuid, source, start_date, end_date]):
         return []
-    query_filter = {'artist_uuid': artist_uuid, 'source': source}
+    query_filter = {'source': source, 'artist_uuid': artist_uuid}
     return _db_manager.get_timeseries_data_for_display('popularity', query_filter, start_date, end_date)
 
 @st.cache_data
@@ -99,10 +112,10 @@ def get_song_audience_data(_db_manager, song_uuid: str, platform: str, start_dat
     return _db_manager.get_timeseries_data_for_display('song_audience', query_filter, start_date, end_date)
 
 @st.cache_data
-def get_song_centric_streaming_from_db(_db_manager, song_uuid: str):
-    """Fetches the aggregated time-series streaming data for a single song across all playlists."""
+def get_full_song_data_from_db(_db_manager, song_uuid: str):
+    """Fetches the complete, unified data document for a single song."""
     if not song_uuid: return None
-    return _db_manager.collections['songs_aggregate_audience'].find_one({'song_uuid': song_uuid})
+    return _db_manager.collections['song_audience'].find_one({'song_uuid': song_uuid})
 
 
 @st.cache_data(show_spinner=False)
@@ -114,14 +127,12 @@ def download_image_bytes(url: str):
     if not url:
         return None
 
-    # Add a browser-like User-Agent header to the request
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
         
     try:
         response = requests.get(url, timeout=10, headers=headers)
-        # Check for successful status and that the content is an image
         if response.status_code == 200 and 'image' in response.headers.get('Content-Type', ''):
             return response.content
     except requests.exceptions.RequestException:
