@@ -4,7 +4,7 @@ from pymongo import MongoClient, ASCENDING
 from pymongo.errors import ConnectionFailure, OperationFailure
 from typing import Dict, Any, List, Tuple, Optional
 import re
-from datetime import datetime
+from datetime import datetime, date
 
 class DatabaseManager:
     """Manages all interactions with the MongoDB database."""
@@ -151,28 +151,34 @@ class DatabaseManager:
         except OperationFailure as e:
             print(f"Error storing demographic data: {e}")
 
+    # --- CORRECTED FUNCTION ---
     def store_playlist_audience_data(self, playlist_uuid: str, data: Dict[str, Any]):
         """
-        Appends new time-series data points to the database for PLAYLIST-LEVEL audience.
+        Appends new time-series data points to the database for PLAYLIST-LEVEL audience
+        using a single, atomic operation.
         """
         try:
             if 'error' in data or 'items' not in data or not data['items']:
                 return
 
             query_filter = {'playlist_uuid': playlist_uuid}
+            update_operation = {
+                '$setOnInsert': {'playlist_uuid': playlist_uuid},
+                '$addToSet': {'history': {'$each': data['items']}}
+            }
             self.collections['playlist_audience'].update_one(
                 query_filter,
-                {'$setOnInsert': {'playlist_uuid': playlist_uuid}},
+                update_operation,
                 upsert=True
             )
-            self.append_timeseries_data('playlist_audience', query_filter, data['items'])
-
         except OperationFailure as e:
             print(f"Error storing playlist audience data: {e}")
 
+    # --- CORRECTED FUNCTION ---
     def store_album_audience_data(self, album_uuid: str, data: Dict[str, Any]):
         """
-        Appends new time-series data points to the database for ALBUM-LEVEL audience.
+        Appends new time-series data points to the database for ALBUM-LEVEL audience
+        using a single, atomic operation.
         """
         try:
             if 'error' in data or 'items' not in data or not data['items']:
@@ -180,14 +186,23 @@ class DatabaseManager:
 
             platform = data.get('platform', 'spotify')
             query_filter = {'album_uuid': album_uuid, 'platform': platform}
-            self.append_timeseries_data('album_audience', query_filter, data['items'])
-
+            update_operation = {
+                '$setOnInsert': {'album_uuid': album_uuid, 'platform': platform},
+                '$addToSet': {'history': {'$each': data['items']}}
+            }
+            self.collections['album_audience'].update_one(
+                query_filter,
+                update_operation,
+                upsert=True
+            )
         except OperationFailure as e:
             print(f"Error storing album audience data: {e}")
 
+    # --- CORRECTED FUNCTION ---
     def store_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
         """
-        Appends new time-series data points to the database for the unified SONG-LEVEL audience collection.
+        Appends new time-series data points to the database for the unified SONG-LEVEL
+        audience collection using a single, atomic operation.
         """
         try:
             if 'error' in data or 'items' not in data or not data['items']:
@@ -195,13 +210,15 @@ class DatabaseManager:
 
             platform = data.get('platform', 'spotify')
             query_filter = {'song_uuid': song_uuid, 'platform': platform}
+            update_operation = {
+                '$setOnInsert': {'song_uuid': song_uuid, 'platform': platform},
+                '$addToSet': {'history': {'$each': data['items']}}
+            }
             self.collections['song_audience'].update_one(
                 query_filter,
-                {'$setOnInsert': {'platform': platform, 'song_uuid': song_uuid}},
+                update_operation,
                 upsert=True
             )
-            self.append_timeseries_data('song_audience', query_filter, data['items'])
-
         except OperationFailure as e:
             print(f"Error storing song audience data: {e}")
 
@@ -270,3 +287,39 @@ class DatabaseManager:
         ]
         result = list(self.collections[collection_name].aggregate(pipeline))
         return result[0]['history'] if result and 'history' in result[0] else []
+
+    def get_timeseries_value_for_date(self, collection_name: str, query_filter: Dict, target_date: datetime) -> Optional[int]:
+        """
+        Finds the value for a specific date within a time-series document's history
+        by performing a robust BSON date comparison.
+        """
+        pipeline = [
+            {'$match': query_filter},
+            {'$project': {
+                'matched_item': {
+                    '$filter': {
+                        'input': '$history',
+                        'as': 'item',
+                        'cond': {
+                            # Use $dateFromString for robust comparison against a datetime object
+                            '$eq': [
+                                {'$dateFromString': {'dateString': '$$item.date'}},
+                                target_date
+                            ]
+                        }
+                    }
+                }
+            }},
+            {'$unwind': '$matched_item'},
+            {'$limit': 1}
+        ]
+        result = list(self.collections[collection_name].aggregate(pipeline))
+        if not result:
+            return None
+        
+        item = result[0].get('matched_item', {})
+        value = item.get('followerCount')
+        if value is None:
+            value = item.get('value')
+        
+        return value
