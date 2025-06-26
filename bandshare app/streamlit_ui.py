@@ -165,10 +165,10 @@ def display_artist_metadata(metadata):
     st.markdown("---")
 
 
-def display_full_song_streaming_chart(db_manager, history_data: list, entry_points: list, chart_key: str):
+def display_full_song_streaming_chart(db_manager, history_data: list, entry_points: list, chart_key: str, song_release_date: str = None):
     """
-    Takes a full history of data points for a song. Now displays the original
-    cumulative data chart by default, followed by the calculated daily streams chart.
+    Takes a full history of data points for a song. Displays the original
+    cumulative data chart by default, followed by the calculated daily streams chart with spike analysis.
     """
     if not history_data:
         st.info("No streaming data available for this song.")
@@ -185,7 +185,6 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
         st.warning("Streaming data for this song appears to be empty or in an unexpected format.")
         return
 
-    # Create both daily and cumulative dataframes
     daily_stream_data = convert_cumulative_to_daily(parsed_history)
     df_daily = pd.DataFrame(daily_stream_data)
     df_daily['date'] = pd.to_datetime(df_daily['date'])
@@ -195,16 +194,13 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
     df_cumulative_raw.sort_values(by='date', inplace=True)
     df_cumulative = df_cumulative_raw.drop_duplicates(subset=['date'], keep='last')
 
-    # Remove first data point by default for both datasets
     if len(df_daily) > 1:
         df_daily = df_daily.iloc[1:].copy()
     if len(df_cumulative) > 1:
         df_cumulative = df_cumulative.iloc[1:].copy()
     
-    # --- 1. DISPLAY RAW (CUMULATIVE) DATA CHART BY DEFAULT ---
     st.subheader("Raw Data: Total Accumulated Streams")
     st.caption("This chart shows the original, cumulative stream data for the song over time.")
-    
     fig_cumulative = go.Figure()
     fig_cumulative.add_trace(go.Scatter(x=df_cumulative['date'], y=df_cumulative['value'], mode='lines', name='Total Streams',
                                        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Streams</b>: %{y:,.0f}<extra></extra>'))
@@ -212,15 +208,12 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
     st.plotly_chart(fig_cumulative, use_container_width=True, key=f"cumulative_chart_{chart_key}")
     st.markdown("---")
 
-    # --- 2. DISPLAY CALCULATED (DAILY) DATA CHART ---
     st.subheader("Calculated Data: Daily Streams & Playlist Adds")
     st.caption("*Note: The first data point is removed by default to improve chart readability.*")
-    
     fig_daily = go.Figure()
     fig_daily.add_trace(go.Scatter(x=df_daily['date'], y=df_daily['value'], mode='lines', name='Daily Streams', connectgaps=False,
                                    hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily Streams</b>: %{y:,.0f}<extra></extra>'))
     
-    # Add Playlist Entry Annotations to the Daily chart
     sorted_entry_points = sorted(entry_points, key=lambda x: x.get('entryDate', ''))
     last_entry_date = None
     y_shift_offset = 15
@@ -234,25 +227,12 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
                 y_shift_offset += 35
             else:
                 y_shift_offset = 15
-
             fig_daily.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
-            
             playlist_name = entry.get('name', 'N/A')
-            playlist_uuid = entry.get('uuid') # Get UUID to use in fallback query
-
-            # --- FIX: ADDED ROBUST FALLBACK LOGIC FOR SUBSCRIBER COUNT ---
-            # Try to get the pre-fetched subscriber count first.
+            playlist_uuid = entry.get('uuid')
             entry_subscribers = entry.get('entrySubscribers')
-            
-            # If it's missing (is None), query the database directly as a fallback.
             if entry_subscribers is None and playlist_uuid:
-                entry_subscribers = db_manager.get_timeseries_value_for_date(
-                    'playlist_audience',
-                    {'playlist_uuid': playlist_uuid},
-                    entry_date_dt
-                )
-            # --- END OF FIX ---
-
+                entry_subscribers = db_manager.get_timeseries_value_for_date('playlist_audience', {'playlist_uuid': playlist_uuid}, entry_date_dt)
             subscribers_formatted = f"{entry_subscribers:,}" if entry_subscribers is not None else "N/A"
             annotation_text = f"{playlist_name}<br>{subscribers_formatted} subs"
             hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date_val.strftime('%Y-%m-%d')}"
@@ -262,26 +242,54 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
             print(f"Could not process playlist annotation. Error: {e}")
             continue
 
-    # Add Anomaly Annotations to the Daily chart
+    # Add Song Release Date marker
+    if song_release_date:
+        try:
+            release_date_dt = pd.to_datetime(song_release_date)
+            if not df_daily.empty and 'date' in df_daily.columns:
+                chart_start_date = df_daily['date'].min()
+                chart_end_date = df_daily['date'].max()
+
+                if not pd.isna(chart_start_date) and not pd.isna(chart_end_date) and chart_start_date <= release_date_dt <= chart_end_date:
+                    fig_daily.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
+                    fig_daily.add_annotation(
+                        x=release_date_dt,
+                        y=y_max_daily,
+                        text="Song Release",
+                        showarrow=True,
+                        arrowhead=1,
+                        ax=-25,
+                        ay=-60,
+                        font=dict(color="green"),
+                        bgcolor="rgba(0, 200, 0, 0.6)"
+                    )
+        except (ValueError, TypeError) as e:
+            st.warning(f"Could not plot release date marker due to an issue with the date format: {e}")
+
     analysis_session_key = f'analysis_results_{chart_key}'
     if st.session_state.get(analysis_session_key):
         results = st.session_state[analysis_session_key]
         if 'anomalies' in results and results['anomalies']:
             for anomaly in results['anomalies']:
                 anomaly_date = datetime.strptime(anomaly['date'], '%Y-%m-%d').date()
-                jump_size_formatted = f"~{int(anomaly['jump_size']):,}"
-                fig_daily.add_vline(x=anomaly_date, line_width=2, line_dash="dot", line_color="cyan",
-                                      annotation_text=f"Spike: {jump_size_formatted}", annotation_position="top left",
-                                      annotation_font_color="cyan", annotation_bgcolor="rgba(0,0,50,0.7)")
+                jump_size_formatted = f"+{int(anomaly['jump_size']):,}"
+                fig_daily.add_vline(x=anomaly_date, line_width=1, line_dash="dot", line_color="cyan")
+                fig_daily.add_annotation(
+                    x=anomaly_date, y=y_max_daily, text=f"Spike: {jump_size_formatted}",
+                    showarrow=False, yshift=10, font=dict(color="cyan"), bgcolor="rgba(0, 50, 100, 0.6)")
 
     y_range = _get_optimal_y_range(df_daily, ['value'])
     fig_daily.update_layout(yaxis_range=y_range, showlegend=False, hovermode="x unified", yaxis_tickformat=",.0f")
     st.plotly_chart(fig_daily, use_container_width=True, key=f"daily_chart_{chart_key}")
 
-
-    # --- 3. ANOMALY DETECTION UI ---
-    # This section remains unchanged
     with st.expander("🔬 Analyze Streaming Spikes"):
+        st.markdown("""
+        This tool detects anomalous spikes by analyzing the rate of change of the cumulative stream count.
+        - **Discretization Step:** The window (in days) for analyzing the rate of change.
+        - **Alpha (Smoothing Factor):** Controls how quickly the average adapts to new trends.
+        - **Sensitivity:** How far from the average the rate of change must be to be flagged as a spike.
+        """)
+        
         param_cols = st.columns(3)
         p_step = param_cols[0].number_input("Discretization Step (days)", min_value=1, max_value=30, value=7, step=1, key=f"step_{chart_key}")
         p_alpha = param_cols[1].slider("Alpha (Smoothing Factor)", min_value=0.01, max_value=1.0, value=0.2, step=0.01, key=f"alpha_{chart_key}")
@@ -309,58 +317,51 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
             else: 
                 st.success(f"Detected {len(results['anomalies'])} potential anomalies.")
                 anomaly_df = pd.DataFrame(results['anomalies'])
-                anomaly_df['jump_size'] = anomaly_df['jump_size'].apply(lambda x: f"{int(x):,}")
-                anomaly_df.rename(columns={'date': 'Date', 'jump_size': 'Approx. Jump in Streams'}, inplace=True)
+                anomaly_df['jump_size'] = anomaly_df['jump_size'].apply(lambda x: f"+{int(x):,}")
+                anomaly_df.rename(columns={'date': 'Date', 'jump_size': 'Jump Size (in streams)'}, inplace=True)
                 st.dataframe(anomaly_df, use_container_width=True)
-
-            if results.get('debug') and st.checkbox("Show advanced debug plots", key=f"debug_cb_{chart_key}"):
+            
+            if results.get('debug') and st.checkbox("Show debug plots", key=f"debug_cb_{chart_key}"):
                 with st.container(border=True):
-                    st.subheader("Advanced Debug Information")
-                    if df_cumulative.empty:
-                        st.warning("No data available for debug plots.")
-                    else:
-                        try:
-                            debug_data = results['debug']
-                            start_date_obj = datetime.strptime(debug_data['start_date'], '%Y-%m-%d')
-                            debug_dates = [start_date_obj + timedelta(days=d) for d in debug_data['grid_days']]
-                            debug_dates_diff = debug_dates[1:]
+                    st.subheader("Debug Information")
+                    try:
+                        debug_data = results['debug']
+                        start_date_obj = datetime.strptime(debug_data['start_date'], '%Y-%m-%d')
+                        grid_dates = [start_date_obj + timedelta(days=d) for d in debug_data['grid_days']]
+                        
+                        st.markdown("##### Plot 1: Rate of Change Comparison")
+                        st.write("This plot shows the rate of change of the discretized data (`s_diff`) versus the rate of the smoothed average (`Av_diff`).")
+                        fig_debug1 = go.Figure()
+                        fig_debug1.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['s_diffs'], mode='lines', name='Discretized Rate (s_diff)'))
+                        fig_debug1.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['Av_diffs'], mode='lines', name='EMA Rate (Av_diff)', line=dict(dash='dash')))
+                        fig_debug1.update_layout(title_text='Rate of Change: Discretized vs. Smoothed', yaxis_title="Streams per Day", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+                        st.plotly_chart(fig_debug1, use_container_width=True)
 
-                            st.markdown("##### Plot 1: Interpolated & Discretized Streams vs. EMA")
-                            fig_debug1 = go.Figure()
-                            fig_debug1.add_trace(go.Scatter(x=debug_dates, y=debug_data['discretized_streams'], mode='lines', name='Discretized Cumulative Streams'))
-                            fig_debug1.add_trace(go.Scatter(x=debug_dates, y=debug_data['ema_streams'], mode='lines', name='Exponential Moving Average (EMA)', line=dict(dash='dash')))
-                            fig_debug1.update_layout(title_text='Interpolated Cumulative Streams and Smoothed Average', yaxis_title='Cumulative Streams', showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                            st.plotly_chart(fig_debug1, use_container_width=True)
+                        st.markdown("##### Plot 2: Anomaly Detection")
+                        st.write("An anomaly is flagged when the actual difference in rates (solid blue) crosses the dynamic threshold (red dots).")
+                        fig_debug2 = go.Figure()
+                        fig_debug2.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['abs_diff_devs'], mode='lines', name='Absolute Difference in Rates'))
+                        threshold_values = [p_sens * std for std in debug_data['smoothed_stds']]
+                        fig_debug2.add_trace(go.Scatter(x=grid_dates[1:], y=threshold_values, mode='lines', name='Detection Threshold', line=dict(color='red', dash='dot')))
+                        fig_debug2.update_layout(title_text='Detection Logic', yaxis_title="Difference Score / Threshold", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+                        st.plotly_chart(fig_debug2, use_container_width=True)
 
-                            st.markdown("##### Plot 2: Anomaly Score vs. Detection Threshold")
-                            fig_debug2 = go.Figure()
-                            fig_debug2.add_trace(go.Scatter(x=debug_dates_diff, y=debug_data['diffs_over_time'], mode='lines', name='Anomaly Score (Rate Difference)'))
-                            fig_debug2.add_trace(go.Scatter(x=debug_dates_diff, y=debug_data['thresholds_over_time'], mode='lines', name='Detection Threshold', line=dict(color='red', dash='dot')))
-                            fig_debug2.update_layout(title_text='Calculated Anomaly Score vs. Dynamic Threshold', yaxis_title='Score / Threshold', showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                            st.plotly_chart(fig_debug2, use_container_width=True)
-
-                            st.markdown("##### Plot 3: Rate of Change Comparison")
-                            fig_debug3 = go.Figure()
-                            fig_debug3.add_trace(go.Scatter(x=debug_dates_diff, y=debug_data['s_diffs'], mode='lines', name='Stream Rate (s_diff)'))
-                            fig_debug3.add_trace(go.Scatter(x=debug_dates_diff, y=debug_data['Av_diffs'], mode='lines', name='EMA Rate (Av_diff)', line=dict(dash='dash')))
-                            fig_debug3.update_layout(title_text='Rate of Change: Actual vs. Smoothed Average', yaxis_title='Daily Rate of Change', showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                            st.plotly_chart(fig_debug3, use_container_width=True)
-                        except (KeyError, IndexError, TypeError) as e:
-                            st.error(f"Failed to generate debug plots. Data might be missing or malformed. Error: {e}")
+                    except (KeyError, IndexError, TypeError) as e:
+                        st.error(f"Failed to generate debug plots. Data might be missing or malformed. Error: {e}")
 
 
-
-
-def display_playlist_audience_chart(audience_data: list, entry_date_str: str, chart_key: str):
+                        
+                        
+                        
+def display_playlist_audience_chart(audience_data: list, entry_date_str: str, song_release_date: str, chart_key: str):
     """
     Takes playlist audience data and plots both the original cumulative data and the
-    calculated daily change, each with a marker for the song's entry date.
+    calculated daily change, each with a marker for the song's entry date and release date.
     """
     if not audience_data:
         st.info("No audience data available for this playlist in the local database. Please use the Backfill page to update it.")
         return
 
-    # Parse the raw data from the database history
     parsed_data = []
     for entry in audience_data:
         value = entry.get('value')
@@ -372,6 +373,25 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, ch
         return
 
     st.markdown("---")
+    
+    # --- Helper function to add markers to charts ---
+    def add_markers_to_fig(fig, df):
+        # Add Song Entry Date marker
+        if entry_date_str:
+            entry_date_val = pd.to_datetime(entry_date_str)
+            fig.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
+            if not df.empty:
+                fig.add_annotation(x=entry_date_val, y=df['value'].max(), text="Song Entry", showarrow=True, arrowhead=2, ax=0, ay=-40)
+        
+        # Add Song Release Date marker if it's within the chart's date range
+        if song_release_date and not df.empty:
+            release_date_dt = pd.to_datetime(song_release_date)
+            chart_start_date = df['date'].min()
+            chart_end_date = df['date'].max()
+            if chart_start_date <= release_date_dt <= chart_end_date:
+                fig.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
+                fig.add_annotation(x=release_date_dt, y=df['value'].max(), text="Song Release", showarrow=True, arrowhead=1, ax=20, ay=-60, font=dict(color="green"))
+
 
     # --- 1. Plot Original (Cumulative) Data ---
     st.write("##### Original Data: Cumulative Follower Count")
@@ -387,13 +407,7 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, ch
     
     y_range_cumul = _get_optimal_y_range(sorted_df_cumulative, ['value'])
     fig_cumulative.update_layout(title="Cumulative Playlist Followers", yaxis_range=y_range_cumul, yaxis_tickformat=",.0f", showlegend=False)
-
-    if entry_date_str:
-        entry_date_val = pd.to_datetime(entry_date_str)
-        fig_cumulative.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
-        if not sorted_df_cumulative.empty:
-            fig_cumulative.add_annotation(x=entry_date_val, y=sorted_df_cumulative['value'].max(), text="Song Entry Date", showarrow=True, arrowhead=2, ax=0, ay=-40)
-
+    add_markers_to_fig(fig_cumulative, sorted_df_cumulative)
     st.plotly_chart(fig_cumulative, use_container_width=True, key=f"{chart_key}_cumulative")
     st.markdown("---")
 
@@ -418,16 +432,8 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, ch
 
     y_range_daily = _get_optimal_y_range(sorted_df_daily, ['value'])
     fig_daily.update_layout(title="Daily Change in Playlist Followers", yaxis_range=y_range_daily, yaxis_tickformat=",.0f", showlegend=False)
-    
-    if entry_date_str:
-        entry_date_val = pd.to_datetime(entry_date_str)
-        fig_daily.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
-        if not sorted_df_daily.empty:
-            fig_daily.add_annotation(x=entry_date_val, y=sorted_df_daily['value'].max(), text="Song Entry Date", showarrow=True, arrowhead=2, ax=0, ay=-40)
-
+    add_markers_to_fig(fig_daily, sorted_df_daily)
     st.plotly_chart(fig_daily, use_container_width=True, key=f"{chart_key}_daily")
-
-
 
 
 def display_playlist_details(db_manager, item):
@@ -439,10 +445,8 @@ def display_playlist_details(db_manager, item):
     playlist_uuid = playlist.get('uuid')
     song_uuid = song.get('uuid')
 
-    # --- ADDED: Display Playlist UUID ---
     if playlist_uuid:
         st.code(f"Playlist UUID: {playlist_uuid}", language=None)
-    # ------------------------------------
 
     st.write(f"**Song:** {song_name}")
     position = item.get('position')
@@ -478,6 +482,13 @@ def display_playlist_details(db_manager, item):
                 try:
                     _, db_manager_local = get_clients()
                     
+                    # --- NEW: Fetch song details to get the release date ---
+                    song_details = get_song_details(db_manager_local, song_uuid)
+                    song_release_date = None
+                    if song_details:
+                        song_release_date = song_details.get('object', song_details).get('releaseDate')
+                    # ----------------------------------------------------
+
                     entry_date_dt = datetime.fromisoformat(entry_date.replace('Z', '+00:00')).date()
                     start_date_req = entry_date_dt - timedelta(days=90)
                     end_date_req = entry_date_dt + timedelta(days=90)
@@ -485,7 +496,13 @@ def display_playlist_details(db_manager, item):
                     with st.spinner(f"Loading audience data for playlist '{playlist_name}' from database..."):
                         audience_data = get_playlist_audience_data(db_manager_local, playlist_uuid, start_date_req, end_date_req)
                         st.write(f"##### Follower Growth for **{playlist_name}**")
-                        display_playlist_audience_chart(audience_data, entry_date, chart_key=f"chart_playlist_{playlist_uuid}_{song_uuid}")
+                        # --- MODIFIED: Pass release date to the chart function ---
+                        display_playlist_audience_chart(
+                            audience_data, 
+                            entry_date, 
+                            song_release_date, 
+                            chart_key=f"chart_playlist_{playlist_uuid}_{song_uuid}"
+                        )
 
                 except (ValueError, TypeError) as e:
                     st.error(f"Could not process the request. Error: {e}")
@@ -547,6 +564,8 @@ def display_song_details(db_manager, song_uuid, song_data):
                 display_full_song_streaming_chart(db_manager_local, song_full_data.get('history', []), song_full_data.get('playlists', []), chart_key=f"full_chart_{song_uuid}")
             else:
                 st.warning("Aggregated streaming data not found. Please update the artist data on the homepage to fetch it.")
+                
+    
 
 def display_by_song_view(db_manager, playlist_items):
     """Displays songs in an interactive grid, or a detail view for a selected song."""
