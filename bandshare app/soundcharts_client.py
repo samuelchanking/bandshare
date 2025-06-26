@@ -178,15 +178,19 @@ class SoundchartsAPIClient:
         result['metadata'] = self.get_artist_metadata(artist_uuid)
         return result
 
+    # --- THIS IS THE CORRECTED FUNCTION ---
     def _fetch_and_process_song_data(self, song_uuid: str, data: dict) -> dict:
         if not data['entry_dates']: return {}
 
         processed_playlists = []
         with ThreadPoolExecutor(max_workers=20) as executor:
-            future_to_playlist = {
-                executor.submit(self.get_playlist_audience, p['uuid'], p['entryDate'], p['entryDate']): p
-                for p in data['playlists'] if p.get('uuid') and p.get('entryDate')
-            }
+            future_to_playlist = {}
+            for p in data['playlists']:
+                if p.get('uuid') and p.get('entryDate'):
+                    # FIX: Convert the date string to a date object before passing it.
+                    entry_date_obj = datetime.fromisoformat(p['entryDate']).date()
+                    future = executor.submit(self.get_playlist_audience, p['uuid'], entry_date_obj, entry_date_obj)
+                    future_to_playlist[future] = p
 
             for future in as_completed(future_to_playlist):
                 playlist_item = future_to_playlist[future]
