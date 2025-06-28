@@ -145,6 +145,12 @@ class SoundchartsAPIClient:
     def get_artist_playlists(self, artist_uuid: str, platform: str = "spotify") -> Dict[str, Any]:
         url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/current/{platform}"
         return self._request(url)
+    
+    def get_playlists_by_type(self, platform: str, playlist_type: str) -> List[Any]:
+        """Fetches a complete list of all playlists for a given type (e.g., editorial, algorithmic)."""
+        url = f"{self.BASE_URL}/v2.20/playlist/by-type/{platform}/{playlist_type}"
+        return self._fetch_paginated_data(url)
+
 
     def get_playlist_audience(self, playlist_uuid: str, start_date=None, end_date=None) -> Dict[str, Any]:
         """Fetches time-series audience data for a playlist. Now supports chunking."""
@@ -156,6 +162,16 @@ class SoundchartsAPIClient:
         if start_date: params['startDate'] = str(start_date)
         if end_date: params['endDate'] = str(end_date)
         return self._request(url_builder(start_date, end_date), params=params)
+    
+    # --- NEW METHOD ---
+    def get_song_playlist_entries(self, song_uuid: str, platform: str = "spotify") -> List[Any]:
+        """
+        Fetches a complete list of all current playlist entries for a specific song
+        by handling pagination.
+        """
+        url = f"{self.BASE_URL}/v2.20/song/{song_uuid}/playlist/current/{platform}"
+        return self._fetch_paginated_data(url)
+
 
     def get_artist_streaming_audience(self, artist_uuid: str, platform: str = "spotify", start_date=None, end_date=None) -> Dict[str, Any]:
         url_builder = lambda sd, ed: f"{self.BASE_URL}/v2/artist/{artist_uuid}/streaming/{platform}/listening"
@@ -178,7 +194,6 @@ class SoundchartsAPIClient:
         result['metadata'] = self.get_artist_metadata(artist_uuid)
         return result
 
-    # --- THIS IS THE CORRECTED FUNCTION ---
     def _fetch_and_process_song_data(self, song_uuid: str, data: dict) -> dict:
         if not data['entry_dates']: return {}
 
@@ -187,7 +202,6 @@ class SoundchartsAPIClient:
             future_to_playlist = {}
             for p in data['playlists']:
                 if p.get('uuid') and p.get('entryDate'):
-                    # FIX: Convert the date string to a date object before passing it.
                     entry_date_obj = datetime.fromisoformat(p['entryDate']).date()
                     future = executor.submit(self.get_playlist_audience, p['uuid'], entry_date_obj, entry_date_obj)
                     future_to_playlist[future] = p
@@ -230,33 +244,52 @@ class SoundchartsAPIClient:
             'history': unique_history,
             'playlists': processed_playlists
         }
-
-    # --- MODIFIED: Simplified the song discovery logic ---
-    def fetch_secondary_artist_data(self, artist_uuid: str) -> Dict[str, Any]:
+        
+    
+    # --- MODIFIED: This is the main orchestration function ---
+    def fetch_secondary_artist_data(self, artist_uuid: str, platform: str = "spotify") -> Dict[str, Any]:
         """
-        Fetches all secondary artist data. Song discovery now relies solely on the
-        dedicated artist songs endpoint for improved reliability.
+        Fetches all secondary artist data. Song discovery relies on the artist songs
+        endpoint, and playlist discovery is now done for each individual song to ensure
+        complete and accurate data.
         """
         result = {}
         all_song_uuids = set()
 
         with ThreadPoolExecutor(max_workers=20) as executor:
-            # Step 1: Concurrently fetch all primary lists
+            # Step 1: Concurrently fetch albums and the definitive list of artist songs
             future_albums = executor.submit(self.get_artist_albums, artist_uuid)
-            future_playlists = executor.submit(self.get_artist_playlists, artist_uuid)
-            future_artist_songs = executor.submit(self.get_artist_songs, artist_uuid) # Definitive song list
+            future_artist_songs = executor.submit(self.get_artist_songs, artist_uuid)
 
-            result['albums'] = future_albums.result()
-            result['playlists'] = future_playlists.result()
+            # Process definitive song list
             artist_songs_list = future_artist_songs.result()
-
-            # Populate the unique song UUID set ONLY from the definitive artist songs endpoint
             for song_item in artist_songs_list:
                 if song_uuid := song_item.get('uuid'):
                     all_song_uuids.add(song_uuid)
 
-            # Step 2: Concurrently fetch album metadata and tracklists
-            # We still need these for the UI, but not for song discovery.
+            # Step 2: For each unique song, concurrently fetch its playlist entries.
+            song_playlist_futures = {
+                executor.submit(self.get_song_playlist_entries, song_uuid, platform): song_uuid
+                for song_uuid in all_song_uuids
+            }
+
+            # --- NEW: Store playlist entries in a clean map {song_uuid: [entries]} ---
+            song_playlist_map = {}
+            for future in as_completed(song_playlist_futures):
+                song_uuid = song_playlist_futures[future]
+                try:
+                    playlist_entries = future.result()
+                    if playlist_entries:
+                        song_playlist_map[song_uuid] = playlist_entries
+                except Exception as e:
+                    print(f"Failed to fetch playlist entries for song {song_uuid}: {e}")
+            
+            # Add the map to the final result dictionary
+            result['song_playlist_map'] = song_playlist_map
+
+            # Step 3: Concurrently fetch metadata for albums and songs (no changes to this logic)
+            result['albums'] = future_albums.result()
+            # ... existing logic for album_metadata, tracklists, and song_metadata ...
             result['album_metadata'] = {}
             result['tracklists'] = {}
             if 'items' in result.get('albums', {}):
@@ -277,7 +310,6 @@ class SoundchartsAPIClient:
                     album_uuid = tracklist_futures[future]
                     result['tracklists'][album_uuid] = future.result()
 
-            # Step 3: Fetch metadata for every unique song found, only once
             result['song_metadata'] = {}
             song_meta_futures = {
                 executor.submit(self.get_song_metadata, song_uuid): song_uuid
@@ -288,40 +320,5 @@ class SoundchartsAPIClient:
                 song_meta = future.result()
                 if 'error' not in song_meta:
                     result['song_metadata'][song_uuid] = song_meta
-
-        # Step 4: Process playlist data to find songs needing extended history
-        playlist_items = result.get('playlists', {}).get('items', [])
-        songs_to_process = {}
-        for item in playlist_items:
-            if song_uuid := item.get('song', {}).get('uuid'):
-                if song_uuid not in songs_to_process:
-                    songs_to_process[song_uuid] = {'entry_dates': [], 'playlists': []}
-                try:
-                    entry_date_dt = datetime.fromisoformat(item['entryDate'].replace('Z', '+00:00')).date()
-                    songs_to_process[song_uuid]['entry_dates'].append(entry_date_dt)
-                    songs_to_process[song_uuid]['playlists'].append({
-                        'uuid': item.get('playlist', {}).get('uuid'),
-                        'name': item.get('playlist', {}).get('name', 'N/A'),
-                        'entryDate': str(entry_date_dt),
-                        'subscribers': item.get('playlist', {}).get('latestSubscriberCount', 0)
-                    })
-                except (ValueError, KeyError):
-                    continue
-
-        # Step 5: Fetch extended history for the playlisted songs
-        song_centric_results = []
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            future_to_song = {
-                executor.submit(self._fetch_and_process_song_data, song_uuid, data): song_uuid
-                for song_uuid, data in songs_to_process.items()
-            }
-            for future in as_completed(future_to_song):
-                try:
-                    if song_result := future.result():
-                        song_centric_results.append(song_result)
-                except Exception as e:
-                    print(f"Failed to process song {future_to_song[future]}: {e}")
-
-        result['song_centric_streaming'] = song_centric_results
         
         return result
