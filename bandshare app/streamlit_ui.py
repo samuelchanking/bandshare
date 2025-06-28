@@ -7,9 +7,10 @@ from analysis_tools import detect_anomalous_spikes, convert_cumulative_to_daily
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from typing import List, Dict, Any
 from streamlit_caching import (
     get_song_details, get_full_song_data_from_db,
-    get_song_audience_data, get_playlist_audience_data
+    get_song_audience_data, get_playlist_audience_data, get_playlists_for_song
 )
 from datetime import datetime, date, timedelta
 import plotly.express as px
@@ -17,6 +18,7 @@ from itertools import zip_longest
 from concurrent.futures import ThreadPoolExecutor
 from client_setup import initialize_clients 
 import config
+from itertools import zip_longest
 
 # --- Helper to get api_client and db_manager ---
 @st.cache_resource
@@ -165,6 +167,7 @@ def display_artist_metadata(metadata):
     st.markdown("---")
 
 
+# --- MODIFIED: Function now accepts song_release_date ---
 def display_full_song_streaming_chart(db_manager, history_data: list, entry_points: list, chart_key: str, song_release_date: str = None):
     """
     Takes a full history of data points for a song. Displays the original
@@ -242,7 +245,7 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
             print(f"Could not process playlist annotation. Error: {e}")
             continue
 
-    # Add Song Release Date marker
+    # --- NEW: Add Song Release Date marker ---
     if song_release_date:
         try:
             release_date_dt = pd.to_datetime(song_release_date)
@@ -272,7 +275,7 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
         if 'anomalies' in results and results['anomalies']:
             for anomaly in results['anomalies']:
                 anomaly_date = datetime.strptime(anomaly['date'], '%Y-%m-%d').date()
-                jump_size_formatted = f"+{int(anomaly['jump_size']):,}"
+                jump_size_formatted = f"+{int(anomaly['total_streams_on_day']):,}"
                 fig_daily.add_vline(x=anomaly_date, line_width=1, line_dash="dot", line_color="cyan")
                 fig_daily.add_annotation(
                     x=anomaly_date, y=y_max_daily, text=f"Spike: {jump_size_formatted}",
@@ -317,9 +320,26 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
             else: 
                 st.success(f"Detected {len(results['anomalies'])} potential anomalies.")
                 anomaly_df = pd.DataFrame(results['anomalies'])
-                anomaly_df['jump_size'] = anomaly_df['jump_size'].apply(lambda x: f"+{int(x):,}")
-                anomaly_df.rename(columns={'date': 'Date', 'jump_size': 'Jump Size (in streams)'}, inplace=True)
-                st.dataframe(anomaly_df, use_container_width=True)
+                
+                anomaly_df['spike_size_streams_per_day_formatted'] = anomaly_df['spike_size_streams_per_day'].apply(lambda x: f"+{int(x):,}")
+                
+                def format_rel_sig(x):
+                    if x == float('inf') or x > 10000:
+                        return "N/A (from low base)"
+                    return f"{x:+.1%}"
+                anomaly_df['relative_significance_formatted'] = anomaly_df['relative_significance'].apply(format_rel_sig)
+                
+                anomaly_df.rename(columns={
+                    'date': 'Date', 
+                    'spike_size_streams_per_day_formatted': 'Spike Size (Anomalous Streams/Day)',
+                    'relative_significance_formatted': 'Relative Significance'
+                }, inplace=True)
+                
+                st.dataframe(
+                    anomaly_df[['Date', 'Spike Size (Anomalous Streams/Day)', 'Relative Significance']],
+                    use_container_width=True,
+                    hide_index=True
+                )
             
             if results.get('debug') and st.checkbox("Show debug plots", key=f"debug_cb_{chart_key}"):
                 with st.container(border=True):
@@ -349,10 +369,34 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
                     except (KeyError, IndexError, TypeError) as e:
                         st.error(f"Failed to generate debug plots. Data might be missing or malformed. Error: {e}")
 
+def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
+    """
+    Displays a list of playlists in a grid, sorted by subscriber count.
+    """
+    st.subheader(title)
+    if not playlists:
+        st.info("No playlists to display. Try fetching the data first.")
+        return
 
+    for playlist_chunk in grouper(playlists, 5): # 5 columns
+        cols = st.columns(5)
+        for i, playlist in enumerate(playlist_chunk):
+            if playlist:
+                with cols[i]:
+                    playlist_name = playlist.get('name', 'N/A')
+                    image_url = playlist.get('imageUrl')
+                    subscribers = playlist.get('latestSubscriberCount', 0)
+
+                    if image_url:
+                        st.image(image_url, use_container_width=True)
+                    else:
+                        st.image("https://i.imgur.com/3gMbdA5.png", use_container_width=True)
+
+                    st.caption(f"**{playlist_name}**")
+                    st.write(f"{subscribers:,} Subscribers")                        
                         
                         
-                        
+# --- MODIFIED: Function now accepts song_release_date ---
 def display_playlist_audience_chart(audience_data: list, entry_date_str: str, song_release_date: str, chart_key: str):
     """
     Takes playlist audience data and plots both the original cumulative data and the
@@ -383,12 +427,12 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
             if not df.empty:
                 fig.add_annotation(x=entry_date_val, y=df['value'].max(), text="Song Entry", showarrow=True, arrowhead=2, ax=0, ay=-40)
         
-        # Add Song Release Date marker if it's within the chart's date range
+        # --- NEW: Add Song Release Date marker ---
         if song_release_date and not df.empty:
             release_date_dt = pd.to_datetime(song_release_date)
             chart_start_date = df['date'].min()
             chart_end_date = df['date'].max()
-            if chart_start_date <= release_date_dt <= chart_end_date:
+            if not pd.isna(chart_start_date) and not pd.isna(chart_end_date) and chart_start_date <= release_date_dt <= chart_end_date:
                 fig.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
                 fig.add_annotation(x=release_date_dt, y=df['value'].max(), text="Song Release", showarrow=True, arrowhead=1, ax=20, ay=-60, font=dict(color="green"))
 
@@ -436,6 +480,7 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
     st.plotly_chart(fig_daily, use_container_width=True, key=f"{chart_key}_daily")
 
 
+# --- MODIFIED: This function now fetches song release date for chart context ---
 def display_playlist_details(db_manager, item):
     """Displays the detailed view for a single playlist entry."""
     playlist = item.get('playlist', {})
@@ -482,7 +527,7 @@ def display_playlist_details(db_manager, item):
                 try:
                     _, db_manager_local = get_clients()
                     
-                    # --- NEW: Fetch song details to get the release date ---
+                    # --- NEW: Fetch song details to get the release date for context ---
                     song_details = get_song_details(db_manager_local, song_uuid)
                     song_release_date = None
                     if song_details:
@@ -510,18 +555,24 @@ def display_playlist_details(db_manager, item):
                 st.info("Cannot display performance graph without a song entry date.")
 
 
-def display_song_details(db_manager, song_uuid, song_data):
-    """Displays the detailed view for a single song."""
+# --- MODIFIED: Major rewrite to use the correct data sources ---
+def display_song_details(db_manager, song_uuid):
+    """
+    Displays the detailed view for a single song by fetching all its data from the DB.
+    """
+    # Step 1: Fetch all necessary data from their respective collections
     song_metadata = get_song_details(db_manager, song_uuid)
+    song_playlist_entries = get_playlists_for_song(db_manager, song_uuid) # Uses the new collection
+
+    # Step 2: Display Metadata Section
+    release_date_for_chart = None
     if song_metadata:
         meta_obj = song_metadata.get('object', song_metadata)
-        
-        st.write(f"**Song UUID:** `{song_uuid}`")
+        release_date_for_chart = meta_obj.get('releaseDate') # Store for later use in chart
 
+        st.write(f"**Song UUID:** `{song_uuid}`")
         col1, col2 = st.columns(2)
-        
-        release_date = meta_obj.get('releaseDate', 'N/A')
-        col1.metric("Release Date", str(release_date)[:10])
+        col1.metric("Release Date", str(release_date_for_chart)[:10] if release_date_for_chart else "N/A")
         
         duration_seconds = meta_obj.get('duration')
         if duration_seconds is not None:
@@ -531,6 +582,7 @@ def display_song_details(db_manager, song_uuid, song_data):
         else:
             col2.metric("Duration", "N/A")
 
+        # ... genre display logic ...
         genres_list = meta_obj.get('genres', [])
         if genres_list:
             genre_tags = set()
@@ -540,84 +592,143 @@ def display_song_details(db_manager, song_uuid, song_data):
                 for sub_genre in genre_info.get('sub', []):
                     genre_tags.add(sub_genre.capitalize())
             st.write(f"**Genres:** {', '.join(sorted(list(genre_tags)))}")
-        else:
-            st.write("**Genres:** N/A")
 
     else:
-        st.info("Additional song metadata not found in the database. Please update artist data on the homepage.")
-    
-    st.markdown("---")
-    st.write("**Featured in playlists:**")
-    for p in song_data['playlists']:
-        st.write(f"- {p['name']} (Added on: {str(p.get('entryDate', 'N/A'))[:10]})")
+        st.info("Additional song metadata not found. Please update artist data on the homepage.")
 
     st.markdown("---")
+
+    # Step 3: Display Featured in Playlists Section using the new data source
+    st.write("**Featured in playlists:**")
+    if song_playlist_entries:
+        for entry in song_playlist_entries:
+            playlist_name = entry.get('playlist', {}).get('name', 'N/A')
+            entry_date_str = str(entry.get('entryDate', 'N/A'))[:10]
+            st.write(f"- {playlist_name} (Added on: {entry_date_str})")
+    else:
+        st.info("This song has not been detected in any tracked playlists.")
+
+    st.markdown("---")
+    
+    # Step 4: Display Performance Graph Section
     session_key = f"show_song_graph_{song_uuid}"
     if st.button("Show Full Performance Graph", key=f"song_graph_btn_{song_uuid}", use_container_width=True):
         st.session_state[session_key] = not st.session_state.get(session_key, False)
     
     if st.session_state.get(session_key, False):
-        with st.spinner(f"Loading aggregated performance for '{song_data['name']}'..."):
-            _, db_manager_local = get_clients()
-            song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
-            if song_full_data:
-                display_full_song_streaming_chart(db_manager_local, song_full_data.get('history', []), song_full_data.get('playlists', []), chart_key=f"full_chart_{song_uuid}")
-            else:
-                st.warning("Aggregated streaming data not found. Please update the artist data on the homepage to fetch it.")
+        song_full_data = get_full_song_data_from_db(db_manager, song_uuid) # Still needed for stream history
+        if song_full_data and song_full_data.get('history'):
+            song_name_for_title = song_metadata.get('object', {}).get('name', 'this song') if song_metadata else "this song"
+            
+            # Prepare playlist annotations from our new, correct data source
+            playlist_annotations = []
+            for entry in song_playlist_entries:
+                playlist_info = entry.get('playlist', {})
+                playlist_annotations.append({
+                    'name': playlist_info.get('name'),
+                    'uuid': playlist_info.get('uuid'),
+                    'entryDate': entry.get('entryDate'),
+                    'entrySubscribers': None # Let the chart function fetch this as needed
+                })
+
+            with st.spinner(f"Loading aggregated performance for '{song_name_for_title}'..."):
+                display_full_song_streaming_chart(
+                    db_manager, 
+                    song_full_data.get('history', []), 
+                    playlist_annotations, # Pass the correct annotations
+                    chart_key=f"full_chart_{song_uuid}",
+                    song_release_date=release_date_for_chart
+                )
+        else:
+            st.warning("Aggregated streaming history not found. Please update the artist data on the homepage to fetch it.")
                 
     
-
+# --- MODIFIED: This function now displays a grid, like the playlist view ---
 def display_by_song_view(db_manager, playlist_items):
-    """Displays songs in an interactive grid, or a detail view for a selected song."""
-    songs = {}
-    for item in playlist_items:
-        song = item.get('song', {})
-        song_uuid = song.get('uuid')
-        if not song_uuid: continue
-        
-        if song_uuid not in songs:
-            songs[song_uuid] = {
-                'name': song.get('name', 'N/A'),
-                'imageUrl': song.get('imageUrl'),
-                'playlists': []
-            }
-        songs[song_uuid]['playlists'].append({'name': item.get('playlist', {}).get('name', 'N/A'), 'entryDate': item.get('entryDate')})
-
-    if not songs:
-        st.info("Could not identify any songs from the playlist data.")
-        return
-
+    """
+    Displays songs found on playlists in an interactive grid, similar to the main playlist view.
+    """
     selected_uuid = st.session_state.get('selected_song_uuid')
 
+    # --- DETAILED VIEW (for a selected song) ---
     if selected_uuid:
-        song_data = songs.get(selected_uuid)
-        if song_data:
-            st.subheader(f"Details for: {song_data['name']}")
-            if st.button("⬅️ Back to all songs"):
-                st.session_state.selected_song_uuid = None
-                st.rerun()
-            display_song_details(db_manager, selected_uuid, song_data)
-        else:
-            st.error("Could not find selected song details.")
+        st.subheader("Song Performance Details")
+        if st.button("⬅️ Back to all songs"):
             st.session_state.selected_song_uuid = None
             st.rerun()
-    else:
-        # Simplified display logic
-        for song_uuid_chunk in grouper(songs.keys(), 4):
-            cols = st.columns(4)
-            for i, song_uuid in enumerate(song_uuid_chunk):
-                if song_uuid:
-                    with cols[i]:
-                        song = songs[song_uuid]
-                        image_url = song.get('imageUrl')
-                        
-                        if image_url:
-                            st.image(image_url, use_container_width=True)
-                        else:
-                            st.image("https://i.imgur.com/3gMbdA5.png", use_container_width=True)
-                        
-                        st.caption(f"**{song['name']}**")
+        display_song_details(db_manager, selected_uuid)
+        return
 
+    # --- GRID VIEW (default for "View by: Song") ---
+
+    if not playlist_items:
+        st.info("No playlist entries were found for this artist. Please try updating the artist data on the Home page.")
+        return
+
+    # Step 1: Discover unique songs and fetch their metadata
+    with st.spinner("Aggregating song information..."):
+        song_uuids_on_playlists = {item.get('song_uuid') for item in playlist_items if item.get('song_uuid')}
+
+        if not song_uuids_on_playlists:
+            st.info("Could not identify any songs from the playlist data. The data may be malformed.")
+            return
+
+        songs_cursor = db_manager.collections['songs'].find(
+            {'song_uuid': {'$in': list(song_uuids_on_playlists)}},
+            {'song_uuid': 1, 'object.name': 1, 'object.imageUrl': 1, 'name': 1, 'imageUrl': 1}
+        )
+        
+        songs = {}
+        for song_doc in songs_cursor:
+            meta_obj = song_doc.get('object', song_doc)
+            song_uuid = song_doc.get('song_uuid')
+            if song_uuid:
+                songs[song_uuid] = {
+                    'uuid': song_uuid, # Add uuid for keying and selection
+                    'name': meta_obj.get('name', 'N/A'),
+                    'imageUrl': meta_obj.get('imageUrl'),
+                }
+
+    # Step 2: Add Search and Sort controls, similar to the playlist view
+    st.markdown("---")
+    controls_cols = st.columns([2, 1, 1])
+    with controls_cols[0]:
+        search_term = st.text_input("Search by song name...", key="song_search")
+    with controls_cols[1]:
+        sort_key = st.selectbox("Sort by", ["Alphabetical"], key="song_sort_key")
+    with controls_cols[2]:
+        sort_order_label = st.radio("Order", ["A-Z", "Z-A"], key="song_sort_order", horizontal=True)
+
+    # Step 3: Apply filtering and sorting
+    display_songs = list(songs.values())
+    if search_term:
+        display_songs = [
+            song for song in display_songs if search_term.lower() in song.get("name", "").lower()
+        ]
+
+    reverse_order = (sort_order_label == "Z-A")
+    sort_lambda = lambda song: (song.get('name') or "").lower()
+    sorted_songs = sorted(display_songs, key=sort_lambda, reverse=reverse_order)
+    
+    # Step 4: Render the grid
+    if not sorted_songs:
+        st.info("No songs match your search criteria.")
+    else:
+        st.write(f"Displaying **{len(sorted_songs)}** unique song(s) found on playlists.")
+        st.markdown("---")
+
+        for song_chunk in grouper(sorted_songs, 4):
+            cols = st.columns(4)
+            for i, song_data in enumerate(song_chunk):
+                if song_data:
+                    with cols[i]:
+                        song_uuid = song_data['uuid']
+                        song_name = song_data['name']
+                        image_url = song_data['imageUrl']
+
+                        st.image(image_url or "https://i.imgur.com/3gMbdA5.png", use_container_width=True)
+                        st.caption(f"**{song_name}**")
+                        
                         if st.button("Details", key=f"btn_song_{song_uuid}", use_container_width=True):
                             st.session_state.selected_song_uuid = song_uuid
                             st.rerun()
@@ -645,7 +756,7 @@ def display_playlists(db_manager, playlist_items):
     selected_uuid = st.session_state.get('selected_playlist_uuid')
 
     if selected_uuid:
-        # Detailed view logic (unchanged)
+        # Detailed view logic uses a different approach and is not affected
         selected_item = next((item for item in playlist_items if item.get('playlist', {}).get('uuid') == selected_uuid), None)
         if selected_item:
             playlist_name = selected_item.get('playlist', {}).get('name', 'Unknown Playlist')
@@ -659,7 +770,7 @@ def display_playlists(db_manager, playlist_items):
             st.session_state.selected_playlist_uuid = None
             st.rerun()
     else:
-        # --- NEW: UI Controls for Searching and Sorting ---
+        # --- GRID VIEW ---
         controls_cols = st.columns([2, 1, 1])
         with controls_cols[0]:
             search_term = st.text_input("Search by playlist name...")
@@ -668,7 +779,6 @@ def display_playlists(db_manager, playlist_items):
         with controls_cols[2]:
             sort_order_label = st.radio("Order", ["High to Low", "Low to High"])
 
-        # --- NEW: Filtering and Sorting Logic ---
         display_items = playlist_items
         if search_term:
             display_items = [
@@ -683,7 +793,6 @@ def display_playlists(db_manager, playlist_items):
             sort_lambda = lambda item: item.get('playlist', {}).get('latestSubscriberCount', 0)
 
         display_items = sorted(display_items, key=sort_lambda, reverse=reverse_order)
-        # -----------------------------------------
 
         if not display_items:
             st.info("No playlists match your search criteria.")
@@ -698,6 +807,13 @@ def display_playlists(db_manager, playlist_items):
                         playlist_name = playlist.get('name', 'N/A')
                         image_url = playlist.get('imageUrl')
 
+                        # --- MODIFICATION IS HERE ---
+                        # Use the unique MongoDB document _id to guarantee a unique key.
+                        # Convert the ObjectId to a string.
+                        doc_id = str(item.get('_id'))
+                        button_key = f"btn_playlist_{doc_id}"
+                        # --- END MODIFICATION ---
+
                         if image_url:
                             st.image(image_url, use_container_width=True)
                         else:
@@ -709,7 +825,8 @@ def display_playlists(db_manager, playlist_items):
                         if playlist_uuid:
                             st.caption(f"UUID: `{playlist_uuid}`")
 
-                        if st.button("Details", key=f"btn_playlist_{playlist_uuid}", use_container_width=True):
+                        # Use the new, guaranteed-unique button_key
+                        if st.button("Details", key=button_key, use_container_width=True):
                             st.session_state.selected_playlist_uuid = playlist_uuid
                             st.rerun()
 
@@ -870,7 +987,7 @@ def display_popularity_chart(popularity_data):
     if not popularity_data:
         st.info("No popularity data available for the selected period.")
         return
-
+    
     df = pd.DataFrame(popularity_data).rename(columns={'value': 'Popularity Score'})
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
