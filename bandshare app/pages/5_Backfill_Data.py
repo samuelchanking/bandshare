@@ -9,9 +9,9 @@ from streamlit_caching import (
     get_album_details,
     get_album_audience_data,
     get_song_audience_data,
-    get_playlist_audience_data, # Import the DB-reading function
+    get_playlist_audience_data,
 )
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Page Configuration & Initialization ---
@@ -104,37 +104,71 @@ def run_backfill(artist_uuid, start_date, end_date):
     else:
         st.info("The backfill process ran, but the API did not return any new data for the missing items.")
 
-# --- NEW Backfill Logic for Playlists ---
-def run_playlist_audience_backfill(artist_uuid, start_date, end_date):
+# --- MODIFIED: The main logic of this function is updated to use the correct collection ---
+def run_playlist_audience_backfill(artist_uuid):
     """
-    Fetches and stores missing audience data for all playlists associated with an artist.
+    Fetches and stores missing audience data for all playlists associated with an artist,
+    specifically for the date ranges required by the UI charts (+/- 90 days around song entry).
     """
-    st.info("Gathering all playlists for the artist...")
+    st.info("Gathering all playlist entries for the artist from the definitive source...")
     
-    # Find all unique playlists associated with the artist
-    playlist_docs = db_manager.collections['playlists'].find({'artist_uuid': artist_uuid})
-    all_playlists = {doc.get('playlist', {}).get('uuid'): doc.get('playlist', {}).get('name') for doc in playlist_docs if doc.get('playlist', {}).get('uuid')}
+    # --- CRITICAL FIX: Use the 'songs_playlists' collection, not the old 'playlists' collection ---
+    playlist_entries = list(db_manager.collections['songs_playlists'].find({'artist_uuid': artist_uuid}))
     
-    if not all_playlists:
-        st.warning("No playlists found for this artist in the database.")
+    if not playlist_entries:
+        st.warning("No playlist entries found for this artist in the database.")
         return
 
     tasks_to_run = []
-    with st.spinner("Checking for missing audience data across all playlists..."):
-        for playlist_uuid, playlist_name in all_playlists.items():
-            query_filter = {'playlist_uuid': playlist_uuid}
-            min_db, max_db = db_manager.get_timeseries_data_range('playlist_audience', query_filter)
-            
-            # For simplicity, we'll backfill the whole period if any data is missing.
-            # A more advanced check could fetch only the missing gaps.
-            if not min_db or not max_db or min_db.date() > start_date or max_db.date() < end_date:
-                 tasks_to_run.append({'uuid': playlist_uuid, 'name': playlist_name, 'start': start_date, 'end': end_date})
+    with st.spinner("Checking for missing audience data around each song's entry date..."):
+        for entry in playlist_entries:
+            playlist_info = entry.get('playlist', {})
+            playlist_uuid = playlist_info.get('uuid')
+            entry_date_str = entry.get('entryDate')
+
+            if not playlist_uuid or not entry_date_str:
+                continue
+
+            try:
+                entry_date = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
+                required_start = entry_date - timedelta(days=90)
+                required_end = entry_date + timedelta(days=90)
+
+                query_filter = {'playlist_uuid': playlist_uuid}
+                min_db, max_db = db_manager.get_timeseries_data_range('playlist_audience', query_filter)
+
+                fetch_needed = False
+                if not min_db or not max_db:
+                    fetch_needed = True
+                elif max_db.date() < required_end or min_db.date() > required_start:
+                    fetch_needed = True
+
+                if fetch_needed:
+                    tasks_to_run.append({
+                        'uuid': playlist_uuid,
+                        'name': playlist_info.get('name', 'N/A'),
+                        'start': required_start,
+                        'end': required_end
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    final_tasks = {}
+    for task in tasks_to_run:
+        uuid = task['uuid']
+        if uuid not in final_tasks:
+            final_tasks[uuid] = task
+        else:
+            final_tasks[uuid]['start'] = min(final_tasks[uuid]['start'], task['start'])
+            final_tasks[uuid]['end'] = max(final_tasks[uuid]['end'], task['end'])
+    
+    tasks_to_run = list(final_tasks.values())
 
     if not tasks_to_run:
-        st.success("All playlist audience data appears to be populated for the last year.")
+        st.success("All required playlist audience data is already in the database.")
         return
 
-    st.info(f"Found {len(tasks_to_run)} playlists missing data. Starting parallel fetch...")
+    st.info(f"Found {len(tasks_to_run)} playlist(s) needing audience data updates. Starting parallel fetch...")
     data_found = False
     progress_bar = st.progress(0, text=f"Submitting {len(tasks_to_run)} update tasks...")
     
@@ -195,7 +229,7 @@ with st.container(border=True):
 with st.container(border=True):
     st.subheader("Backfill Playlist Audience Data")
     st.markdown("""
-    This process finds all playlists the artist is featured on and downloads the playlist's audience (follower) history for the past year.
+    This process finds every playlist a song has been on and downloads the playlist's follower history for the 90 days before and after the song's entry date, if that data is missing.
     """)
     if st.button(f"Start Playlist Audience Backfill for {artist_name}", use_container_width=True, type="primary"):
-        run_playlist_audience_backfill(artist_uuid, start_date, end_date)
+        run_playlist_audience_backfill(artist_uuid)
