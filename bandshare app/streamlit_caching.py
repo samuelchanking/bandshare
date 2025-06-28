@@ -44,13 +44,25 @@ def get_song_details(_db_manager, song_uuid: str):
         return song  # Returns the document or None
     return None
 
+# --- NEW FUNCTION ---
+@st.cache_data
+def get_playlists_for_song(_db_manager, song_uuid: str):
+    """
+    Fetches all playlist entries for a given song from the 'songs_playlists' collection.
+    """
+    if not song_uuid: return []
+    # Find all documents for the song and sort by entry date, most recent first
+    return list(_db_manager.collections['songs_playlists'].find(
+        {'song_uuid': song_uuid}
+    ).sort('entryDate', -1))
+
+
 @st.cache_data
 def get_artist_playlists_from_db(_db_manager, artist_uuid: str):
-    """Fetches playlist data from the database for a given artist."""
-    if not artist_uuid: return None
-    if 'playlists' in _db_manager.collections:
-        return list(_db_manager.collections['playlists'].find({'artist_uuid': artist_uuid}))
-    return []
+    """Fetches ALL playlist data from the new songs_playlists collection for an artist."""
+    if not artist_uuid: return []
+    return list(_db_manager.collections['songs_playlists'].find({'artist_uuid': artist_uuid}))
+
 
 @st.cache_data
 def get_local_audience_from_db(_db_manager, artist_uuid: str, platform: str):
@@ -113,29 +125,16 @@ def get_song_audience_data(_db_manager, song_uuid: str, platform: str, start_dat
 
 @st.cache_data
 def get_full_song_data_from_db(_db_manager, song_uuid: str):
-    """Fetches the complete, unified data document for a single song."""
+    """Fetches the complete, unified data document for a single song from 'song_audience'."""
     if not song_uuid: return None
     return _db_manager.collections['song_audience'].find_one({'song_uuid': song_uuid})
 
-
-@st.cache_data(show_spinner=False)
-def download_image_bytes(url: str):
-    """
-    Downloads an image from a URL by emulating a browser and returns its content in bytes.
-    The result is cached by Streamlit.
-    """
-    if not url:
-        return None
-
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-        
-    try:
-        response = requests.get(url, timeout=10, headers=headers)
-        if response.status_code == 200 and 'image' in response.headers.get('Content-Type', ''):
-            return response.content
-    except requests.exceptions.RequestException:
-        return None
-    
-    return None
+@st.cache_data
+def get_typed_playlists_from_db(_db_manager, playlist_type: str, platform: str):
+    """Fetches typed playlists from the database, sorted by subscriber count."""
+    if not playlist_type: return []
+    if 'typed_playlists' in _db_manager.collections:
+        return list(_db_manager.collections['typed_playlists'].find(
+            {'type': playlist_type, 'platform': platform}
+        ).sort('latestSubscriberCount', -1)) # Sort descending
+    return []
