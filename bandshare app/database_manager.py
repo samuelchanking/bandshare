@@ -20,7 +20,7 @@ class DatabaseManager:
                 'albums': self.db['albums'],
                 'tracklists': self.db['album_tracklist'],
                 'songs': self.db['songs'],
-                'playlists': self.db['playlists'],
+                'playlists': self.db['playlists'], # Note: This is legacy now for song details
                 'audience': self.db['audience'],
                 'popularity': self.db['popularity'],
                 'streaming_audience': self.db['streaming_audience'],
@@ -29,6 +29,8 @@ class DatabaseManager:
                 'album_audience': self.db['album_audience'],
                 'song_audience': self.db['song_audience'],
                 'playlist_audience': self.db['playlist_audience'],
+                'typed_playlists': self.db['typed_playlists'],
+                'songs_playlists': self.db['songs_playlists'], # --- NEW COLLECTION ---
             }
             # Create indexes for efficient queries
             self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
@@ -39,9 +41,13 @@ class DatabaseManager:
             self.collections['album_audience'].create_index([("album_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['song_audience'].create_index([("song_uuid", ASCENDING), ("platform", ASCENDING)])
             self.collections['playlist_audience'].create_index([("playlist_uuid", ASCENDING)])
+            self.collections['typed_playlists'].create_index([("uuid", ASCENDING), ("type", ASCENDING)])
+            self.collections['songs_playlists'].create_index([("song_uuid", ASCENDING)]) # --- NEW INDEX ---
+            self.collections['songs_playlists'].create_index([("artist_uuid", ASCENDING)]) # --- NEW INDEX ---
+
         except ConnectionFailure as e:
             raise e
-
+        
     def close_connection(self):
         """Closes the MongoDB connection."""
         self.client.close()
@@ -85,6 +91,26 @@ class DatabaseManager:
         Stores or updates all secondary data with improved error handling.
         """
         try:
+            # --- NEW: Logic to store data in the 'songs_playlists' collection ---
+            if 'song_playlist_map' in data:
+                all_song_uuids_in_batch = list(data['song_playlist_map'].keys())
+                
+                # First, clear all existing playlist entries for the artist's songs
+                self.collections['songs_playlists'].delete_many({'artist_uuid': artist_uuid})
+
+                docs_to_insert = []
+                for song_uuid, entries in data['song_playlist_map'].items():
+                    for entry in entries:
+                        doc = entry.copy()
+                        doc['song_uuid'] = song_uuid
+                        doc['artist_uuid'] = artist_uuid # Add artist_uuid for broader queries
+                        docs_to_insert.append(doc)
+
+                if docs_to_insert:
+                    self.collections['songs_playlists'].insert_many(docs_to_insert)
+            # --- END NEW LOGIC ---
+
+            # The rest of the function remains the same...
             if 'albums' in data and 'items' in data.get('albums', {}):
                 all_album_metadata = data.get('album_metadata', {})
                 for album_summary in data['albums']['items']:
@@ -111,32 +137,9 @@ class DatabaseManager:
                         doc_to_store.update({'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid})
                         self.collections['songs'].update_one({'song_uuid': song_uuid}, {'$set': doc_to_store}, upsert=True)
 
-            if 'playlists' in data and 'items' in data.get('playlists', {}):
-                for playlist_item in data['playlists']['items']:
-                    if isinstance(playlist_item, dict) and (playlist_uuid := playlist_item.get('playlist', {}).get('uuid')):
-                        doc_to_store = playlist_item.copy()
-                        doc_to_store.update({'artist_uuid': artist_uuid})
-                        self.collections['playlists'].update_one({'artist_uuid': artist_uuid, 'playlist.uuid': playlist_uuid}, {'$set': doc_to_store}, upsert=True)
-
-            if 'song_centric_streaming' in data:
-                for song_data in data.get('song_centric_streaming', []):
-                    if isinstance(song_data, dict) and (song_uuid := song_data.get('song_uuid')):
-                        update_operation = {
-                            '$set': {
-                                'artist_uuid': artist_uuid,
-                                'song_uuid': song_uuid,
-                                'playlists': song_data.get('playlists', []),
-                                'last_updated': datetime.utcnow()
-                            },
-                            '$addToSet': {
-                                'history': {'$each': song_data.get('history', [])}
-                            }
-                        }
-                        self.collections['song_audience'].update_one({'song_uuid': song_uuid}, update_operation, upsert=True)
-
         except OperationFailure as e:
             print(f"Error storing secondary data: {e}")
-
+            
     def store_demographic_data(self, artist_uuid: str, data: Dict[str, Any]):
         """Stores demographic data for followers."""
         try:
@@ -263,6 +266,21 @@ class DatabaseManager:
                 {'$addToSet': {'history': {'$each': new_data_points}}}, 
                 upsert=True
             )
+    
+    def store_typed_playlists(self, playlists: List[Dict[str, Any]]):
+        """
+        Stores or updates playlists from the by-type endpoint.
+        """
+        try:
+            for playlist in playlists:
+                if playlist_uuid := playlist.get('uuid'):
+                    self.collections['typed_playlists'].update_one(
+                        {'uuid': playlist_uuid},
+                        {'$set': playlist},
+                        upsert=True
+                    )
+        except OperationFailure as e:
+            print(f"Error storing typed playlists: {e}")
 
     def get_timeseries_data_for_display(self, collection_name: str, query_filter: Dict, start_date, end_date) -> List[Dict]:
         """Gets the final time-series data within a specific date range for display."""
