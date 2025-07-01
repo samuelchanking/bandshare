@@ -2,6 +2,7 @@
 
 # --- ADD THESE IMPORTS TO THE TOP OF THE FILE ---
 import json
+import plotly.express as px
 import numpy as np
 from analysis_tools import detect_anomalous_spikes, convert_cumulative_to_daily
 import streamlit as st
@@ -10,7 +11,9 @@ import plotly.graph_objects as go
 from typing import List, Dict, Any
 from streamlit_caching import (
     get_song_details, get_full_song_data_from_db,
-    get_song_audience_data, get_playlist_audience_data, get_playlists_for_song
+    get_song_audience_data, get_playlist_audience_data, get_playlists_for_song,
+    get_tracks_for_playlist, get_playlist_placements_for_songs,
+    get_global_song_audience_data, # Add this import
 )
 from datetime import datetime, date, timedelta
 import plotly.express as px
@@ -371,14 +374,14 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
 
 def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
     """
-    Displays a list of playlists in a grid, sorted by subscriber count.
+    Displays a list of playlists in a grid, now with a Details button.
     """
     st.subheader(title)
     if not playlists:
         st.info("No playlists to display. Try fetching the data first.")
         return
 
-    for playlist_chunk in grouper(playlists, 5): # 5 columns
+    for playlist_chunk in grouper(playlists, 5):
         cols = st.columns(5)
         for i, playlist in enumerate(playlist_chunk):
             if playlist:
@@ -386,6 +389,7 @@ def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
                     playlist_name = playlist.get('name', 'N/A')
                     image_url = playlist.get('imageUrl')
                     subscribers = playlist.get('latestSubscriberCount', 0)
+                    playlist_uuid = playlist.get('uuid')
 
                     if image_url:
                         st.image(image_url, use_container_width=True)
@@ -393,8 +397,145 @@ def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
                         st.image("https://i.imgur.com/3gMbdA5.png", use_container_width=True)
 
                     st.caption(f"**{playlist_name}**")
-                    st.write(f"{subscribers:,} Subscribers")                        
+                    st.write(f"{subscribers:,} Subscribers")
+
+                    if st.button("Details", key=f"btn_global_{playlist_uuid}", use_container_width=True):
+                        st.session_state.selected_playlist_uuid = playlist_uuid
+                        st.rerun()
+
+# --- MODIFIED: Added Song UUID to expanded view ---
+def display_global_playlist_tracks(db_manager, playlist_uuid: str, playlist_name: str):
+    """
+    Displays the full tracklist, performing a direct lookup for each song to find
+    its entry data and display an impact analysis graph if found.
+    """
+    api_client, _ = get_clients()
+
+    st.header(f"Tracklist & Analysis for: {playlist_name}")
+    if st.button("⬅️ Back to all Global Playlists"):
+        st.session_state.selected_playlist_uuid = None
+        st.rerun()
+
+    st.code(f"Playlist UUID: {playlist_uuid}")
+    st.markdown("---")
+
+    with st.spinner("Loading playlist tracklist..."):
+        full_tracklist = list(db_manager.collections['global_song'].find(
+            {'playlist_uuid': playlist_uuid}
+        ).sort('position', 1))
+
+    if not full_tracklist:
+        st.warning(
+            "Could not find a tracklist for this playlist in the 'global_song' collection. "
+            "Please try running 'Step 1: Fetch Playlists & Tracks' again on the main analysis page."
+        )
+        return
+
+    st.subheader("Playlist Tracklist")
+    st.caption("Songs by your tracked artists are highlighted with an automatic impact analysis.")
+
+    for track in full_tracklist:
+        position = track.get('position')
+        song_info = track.get('song', {})
+        song_uuid = song_info.get('uuid')
+        song_name = song_info.get('name', 'N/A')
+        artist_name = song_info.get('creditName', 'N/A')
+        image_url = song_info.get('imageUrl')
+
+        entry_details = db_manager.collections['global_song_playlists'].find_one({
+            'playlist.uuid': playlist_uuid,
+            'song_uuid': song_uuid
+        })
+
+        with st.container(border=True):
+            col1, col2 = st.columns([1, 10])
+            with col1:
+                st.image(image_url or "https://i.imgur.com/3gMbdA5.png", use_container_width=True)
+
+            with col2:
+                st.write(f"**{position}. {song_name}** - *{artist_name}*")
+                st.caption(f"Song UUID: {song_uuid}")
+
+                if entry_details:
+                    st.markdown("---")
+                    entry_date_str = entry_details.get('entryDate')
+                    entry_date_obj = None
+                    if entry_date_str:
+                        try:
+                            entry_date_obj = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
+                            st.write(f"**Date Added**: {entry_date_obj.strftime('%Y-%m-%d')}")
+                        except (ValueError, TypeError):
+                            st.write(f"**Date Added**: N/A")
+
+                    if not entry_date_obj:
+                        st.error("Cannot display graph without a valid entry date for this song.")
+                        continue
+
+                    with st.spinner(f"Loading audience data for '{song_name}'..."):
+                        start_date = entry_date_obj - timedelta(days=90)
+                        end_date = entry_date_obj + timedelta(days=90)
+
+                        audience_response = api_client.get_song_streaming_audience(song_uuid, 'spotify', start_date, end_date)
+                        if audience_response and not audience_response.get('error'):
+                            db_manager.store_global_song_audience_data(song_uuid, audience_response)
+                            st.cache_data.clear()
+
+                        audience_data = get_global_song_audience_data(db_manager, song_uuid, start_date, end_date)
+                        if not audience_data:
+                            st.warning("No audience data could be found or fetched for this period.")
+                            continue
                         
+                        parsed_history = [{'date': item['date'], 'value': item['plots'][0]['value']} for item in audience_data if item.get('plots')]
+                        
+                        if not parsed_history:
+                            st.info("Audience data is present but could not be parsed for graphing.")
+                            continue
+
+                        entry_datetime = datetime.combine(entry_date_obj, datetime.min.time())
+
+                        # --- Graph 1: Cumulative Data (Before Calculation) ---
+                        st.write("##### Cumulative Stream Performance")
+                        df_cumulative = pd.DataFrame(parsed_history)
+                        df_cumulative['date'] = pd.to_datetime(df_cumulative['date'])
+                        df_cumulative.sort_values('date', inplace=True)
+
+                        fig_cumulative = go.Figure()
+                        fig_cumulative.add_trace(go.Scatter(x=df_cumulative['date'], y=df_cumulative['value'], mode='lines', name='Total Streams'))
+                        
+                        fig_cumulative.add_vline(x=entry_datetime, line_width=2, line_dash="dash", line_color="red")
+                        fig_cumulative.add_annotation(x=entry_datetime, y=df_cumulative['value'].max(), yref="y", text="Playlist Add", showarrow=True, arrowhead=1, ax=0, ay=-40)
+                        
+                        # Apply unified hover mode
+                        fig_cumulative.update_layout(yaxis_title="Total Streams", showlegend=False, hovermode='x unified')
+                        st.plotly_chart(fig_cumulative, use_container_width=True)
+
+                        # --- Graph 2: Daily Data (After Calculation) ---
+                        st.write("##### Calculated Daily Stream Impact")
+                        daily_stream_data = convert_cumulative_to_daily(parsed_history)
+
+                        if not daily_stream_data:
+                            st.info("Not enough data points to calculate daily stream changes.")
+                            continue
+                            
+                        df_daily = pd.DataFrame(daily_stream_data)
+                        df_daily['date'] = pd.to_datetime(df_daily['date'])
+                        
+                        # Explicitly drop the first data point
+                        if not df_daily.empty:
+                            df_daily = df_daily.iloc[1:].copy()
+                        
+                        fig_daily = go.Figure()
+                        fig_daily.add_trace(go.Scatter(x=df_daily['date'], y=df_daily['value'], mode='lines', name='Daily Streams'))
+                        
+                        fig_daily.add_vline(x=entry_datetime, line_width=2, line_dash="dash", line_color="red")
+                        fig_daily.add_annotation(x=entry_datetime, y=df_daily['value'].max(), yref="y", text="Playlist Add", showarrow=True, arrowhead=1, ax=0, ay=-40)
+                        
+                        fig_daily.update_layout(yaxis_title="Calculated Daily Streams", showlegend=False, hovermode='x unified')
+                        st.plotly_chart(fig_daily, use_container_width=True)
+
+
+
+
                         
 # --- MODIFIED: Function now accepts song_release_date ---
 def display_playlist_audience_chart(audience_data: list, entry_date_str: str, song_release_date: str, chart_key: str):
@@ -643,7 +784,7 @@ def display_song_details(db_manager, song_uuid):
             st.warning("Aggregated streaming history not found. Please update the artist data on the homepage to fetch it.")
                 
     
-# --- MODIFIED: This function now displays a grid, like the playlist view ---
+# --- MODIFIED: Major rewrite to use the correct data sources ---
 def display_by_song_view(db_manager, playlist_items):
     """
     Displays songs found on playlists in an interactive grid, similar to the main playlist view.
@@ -728,6 +869,7 @@ def display_by_song_view(db_manager, playlist_items):
 
                         st.image(image_url or "https://i.imgur.com/3gMbdA5.png", use_container_width=True)
                         st.caption(f"**{song_name}**")
+                        st.caption(f"UUID: `{song_uuid}`") # <-- MODIFICATION HERE
                         
                         if st.button("Details", key=f"btn_song_{song_uuid}", use_container_width=True):
                             st.session_state.selected_song_uuid = song_uuid
@@ -899,10 +1041,13 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_da
                     if start_date and end_date:
                         st.markdown("---")
                         song_aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date, end_date)
-                        display_timeseries_chart(song_aud_data, title="Song Audience Over Time")
+                        display_timeseries_chart(
+                            song_aud_data, 
+                            title="Song Audience Over Time", 
+                            chart_key=f"aud_chart_{song_uuid}" # Pass the unique key here
+                        )
 
-
-def display_timeseries_chart(chart_data, title=""):
+def display_timeseries_chart(chart_data, title="", chart_key=None):
     """
     Displays a generic time-series chart, ensuring data is sorted and
     gaps are not connected.
@@ -959,7 +1104,7 @@ def display_timeseries_chart(chart_data, title=""):
         showlegend=False,
         hovermode='x unified'
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 
 def display_audience_chart(audience_data):
@@ -1080,3 +1225,37 @@ def display_local_streaming_plots(local_streaming_data):
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info(f"No streaming data found for the selected location.")
+            
+
+def display_top_countries_trend_chart(df_top_countries):
+    """
+    Takes a DataFrame of daily stream data for the top countries and
+    plots it as a multi-line trend chart.
+    """
+    if df_top_countries.empty:
+        st.warning("No data available to plot.")
+        return
+
+    # Pivot the DataFrame to have countries as columns for plotting
+    df_pivot = df_top_countries.pivot(
+        index='date', 
+        columns='country', 
+        values='streams'
+    )
+
+    # Create the line chart
+    fig = px.line(
+        df_pivot, 
+        x=df_pivot.index, 
+        y=df_pivot.columns,
+        title="Streaming Trends for Top 10 Countries",
+        labels={'value': 'Daily Streams', 'date': 'Date', 'country': 'Country'}
+    )
+    
+    fig.update_layout(
+        hovermode="x unified",
+        yaxis_tickformat=",.0f",
+        legend_title_text='Countries'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
