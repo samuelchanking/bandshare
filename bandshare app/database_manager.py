@@ -9,6 +9,9 @@ from datetime import datetime, date
 class DatabaseManager:
     """Manages all interactions with the MongoDB database."""
 
+class DatabaseManager:
+    """Manages all interactions with the MongoDB database."""
+
     def __init__(self, mongo_uri: str, db_name: str):
         """Initializes the database manager and connects to MongoDB."""
         try:
@@ -20,7 +23,7 @@ class DatabaseManager:
                 'albums': self.db['albums'],
                 'tracklists': self.db['album_tracklist'],
                 'songs': self.db['songs'],
-                'playlists': self.db['playlists'], # Note: This is legacy now for song details
+                'playlists': self.db['playlists'],
                 'audience': self.db['audience'],
                 'popularity': self.db['popularity'],
                 'streaming_audience': self.db['streaming_audience'],
@@ -30,24 +33,22 @@ class DatabaseManager:
                 'song_audience': self.db['song_audience'],
                 'playlist_audience': self.db['playlist_audience'],
                 'typed_playlists': self.db['typed_playlists'],
-                'songs_playlists': self.db['songs_playlists'], # --- NEW COLLECTION ---
+                'songs_playlists': self.db['songs_playlists'],
+                'global_song': self.db['global_song'], # --- NEW COLLECTION ---
+                'global_song_audience': self.db['global_song_audience'], # --- NEW COLLECTION ---
+                'global_song_playlists': self.db['global_song_playlists'], # --- NEW COLLECTION ---
             }
             # Create indexes for efficient queries
-            self.collections['audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['popularity'].create_index([("artist_uuid", ASCENDING), ("source", ASCENDING)])
-            self.collections['streaming_audience'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['demographic_followers'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['local_streaming_history'].create_index([("artist_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['album_audience'].create_index([("album_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['song_audience'].create_index([("song_uuid", ASCENDING), ("platform", ASCENDING)])
-            self.collections['playlist_audience'].create_index([("playlist_uuid", ASCENDING)])
-            self.collections['typed_playlists'].create_index([("uuid", ASCENDING), ("type", ASCENDING)])
-            self.collections['songs_playlists'].create_index([("song_uuid", ASCENDING)]) # --- NEW INDEX ---
-            self.collections['songs_playlists'].create_index([("artist_uuid", ASCENDING)]) # --- NEW INDEX ---
-
+            # ... (existing indexes)
+            self.collections['songs_playlists'].create_index([("artist_uuid", ASCENDING)])
+            self.collections['global_song'].create_index([("playlist_uuid", ASCENDING)]) # --- NEW INDEX ---
+            self.collections['global_song'].create_index([("song.uuid", ASCENDING)]) # --- NEW INDEX ---
+            self.collections['global_song_audience'].create_index([("song_uuid", ASCENDING)]) # --- NEW INDEX ---
+            self.collections['global_song_playlists'].create_index([("playlist.uuid", ASCENDING)]) # --- NEW INDEX ---
         except ConnectionFailure as e:
             raise e
         
+                
     def close_connection(self):
         """Closes the MongoDB connection."""
         self.client.close()
@@ -200,6 +201,24 @@ class DatabaseManager:
             )
         except OperationFailure as e:
             print(f"Error storing album audience data: {e}")
+            
+    def store_song_metadata(self, song_uuid: str, metadata: Dict[str, Any]):
+        """
+        Stores or updates the metadata for a single song in the 'songs' collection.
+        """
+        try:
+            if 'error' not in metadata and metadata:
+                # We can add artist_uuid if it's available in the metadata for consistency
+                if artist_info := metadata.get('artists', []):
+                     metadata['artist_uuid'] = artist_info[0].get('uuid')
+                metadata['song_uuid'] = song_uuid
+                self.collections['songs'].update_one(
+                    {'song_uuid': song_uuid},
+                    {'$set': metadata},
+                    upsert=True
+                )
+        except OperationFailure as e:
+            print(f"Error storing song metadata for {song_uuid}: {e}")
 
     # --- CORRECTED FUNCTION ---
     def store_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
@@ -341,3 +360,26 @@ class DatabaseManager:
             value = item.get('value')
         
         return value
+    
+        # --- NEW METHOD ---
+    def store_global_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
+        """
+        Appends new time-series data points to the database for a song's audience
+        in the 'global_song_audience' collection.
+        """
+        try:
+            if 'error' in data or 'items' not in data or not data['items']:
+                return
+
+            query_filter = {'song_uuid': song_uuid}
+            update_operation = {
+                '$setOnInsert': {'song_uuid': song_uuid},
+                '$addToSet': {'history': {'$each': data['items']}}
+            }
+            self.collections['global_song_audience'].update_one(
+                query_filter,
+                update_operation,
+                upsert=True
+            )
+        except OperationFailure as e:
+            print(f"Error storing global song audience data for {song_uuid}: {e}")
