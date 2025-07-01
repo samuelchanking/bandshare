@@ -1,5 +1,6 @@
 # streamlit_caching.py
 
+import re
 import requests
 import streamlit as st
 from database_manager import DatabaseManager
@@ -137,4 +138,58 @@ def get_typed_playlists_from_db(_db_manager, playlist_type: str, platform: str):
         return list(_db_manager.collections['typed_playlists'].find(
             {'type': playlist_type, 'platform': platform}
         ).sort('latestSubscriberCount', -1)) # Sort descending
+    return []
+
+@st.cache_data
+def get_tracks_for_playlist(_db_manager, playlist_uuid: str):
+    """Fetches all tracks for a given playlist from the 'global_song' collection."""
+    if not playlist_uuid: return []
+    return list(_db_manager.collections['global_song'].find({'playlist_uuid': playlist_uuid}))
+
+
+@st.cache_data
+def get_playlist_placements_for_songs(_db_manager, song_uuids: list):
+    """
+    For a given list of song UUIDs, finds all their placements in the 'songs_playlists' collection.
+    """
+    if not song_uuids: return []
+    # Find all entries where the song_uuid is in our list of songs
+    placements_cursor = _db_manager.collections['songs_playlists'].find(
+        {'song_uuid': {'$in': song_uuids}}
+    )
+    # Group the results by song_uuid for easy lookup
+    placements_by_song = {}
+    for placement in placements_cursor:
+        s_uuid = placement.get('song_uuid')
+        if s_uuid not in placements_by_song:
+            placements_by_song[s_uuid] = []
+        placements_by_song[s_uuid].append(placement.get('playlist', {}).get('name', 'N/A'))
+    
+    return placements_by_song
+
+@st.cache_data
+def get_global_song_audience_data(_db_manager, song_uuid: str, start_date, end_date):
+    """Gets song audience data from the 'global_song_audience' collection."""
+    if not all([song_uuid, start_date, end_date]): return []
+    query_filter = {'song_uuid': song_uuid}
+    # Uses the generic display function pointing to the new collection
+    return _db_manager.get_timeseries_data_for_display('global_song_audience', query_filter, start_date, end_date)
+
+@st.cache_data
+def get_typed_playlists_from_db(_db_manager, playlist_type: str, platform: str):
+    """
+    Fetches typed playlists from the 'typed_playlists' collection using a case-insensitive search.
+    """
+    if not playlist_type:
+        return []
+
+    # Use a case-insensitive regex to match the 'type' field.
+    query = {
+        'type': re.compile(f'^{playlist_type}$', re.IGNORECASE),
+        'platform': platform
+    }
+
+    if 'typed_playlists' in _db_manager.collections:
+        return list(_db_manager.collections['typed_playlists'].find(query).sort('latestSubscriberCount', -1))
+
     return []
