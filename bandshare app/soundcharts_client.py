@@ -146,10 +146,22 @@ class SoundchartsAPIClient:
         url = f"{self.BASE_URL}/v2.20/artist/{artist_uuid}/playlist/current/{platform}"
         return self._request(url)
     
-    def get_playlists_by_type(self, platform: str, playlist_type: str) -> List[Any]:
-        """Fetches a complete list of all playlists for a given type (e.g., editorial, algorithmic)."""
+    # --- MODIFIED: This function now takes a limit and does not paginate. ---
+    def get_playlists_by_type(self, platform: str, playlist_type: str, limit: int = 20) -> List[Any]:
+        """
+        Fetches a list of top playlists for a given type, sorted by audience size.
+        """
         url = f"{self.BASE_URL}/v2.20/playlist/by-type/{platform}/{playlist_type}"
-        return self._fetch_paginated_data(url)
+        
+        # Set params to sort by audience in descending order per the documentation
+        params = {
+            'limit': str(limit),
+            'sortBy': 'audience',
+            'sortOrder': 'desc'
+        }
+        
+        data = self._request(url, params=params)
+        return data.get('items', []) if 'error' not in data else []
 
 
     def get_playlist_audience(self, playlist_uuid: str, start_date=None, end_date=None) -> Dict[str, Any]:
@@ -163,13 +175,27 @@ class SoundchartsAPIClient:
         if end_date: params['endDate'] = str(end_date)
         return self._request(url_builder(start_date, end_date), params=params)
     
-    # --- NEW METHOD ---
-    def get_song_playlist_entries(self, song_uuid: str, platform: str = "spotify") -> List[Any]:
+    # --- MODIFIED: This function now accepts additional filtering parameters. ---
+    def get_song_playlist_entries(self, song_uuid: str, platform: str = "spotify", playlist_type: str = None, sort_by: str = None, limit: int = None) -> List[Any]:
         """
-        Fetches a complete list of all current playlist entries for a specific song
-        by handling pagination.
+        Fetches a list of current playlist entries for a specific song, with optional filters.
+        Handles pagination. The API will respect the limit parameter within pagination.
         """
         url = f"{self.BASE_URL}/v2.20/song/{song_uuid}/playlist/current/{platform}"
+        params = {}
+        if playlist_type:
+            params['type'] = playlist_type
+        if sort_by:
+            params['sortBy'] = sort_by
+        if limit:
+            params['limit'] = str(limit)
+
+        # Encode params into the URL for the paginator
+        if params:
+            url += "?" + urllib.parse.urlencode(params)
+
+        # _fetch_paginated_data will handle the API calls. If a limit is set, the API
+        # will only return that many items and 'next' will be null, stopping pagination naturally.
         return self._fetch_paginated_data(url)
 
 
@@ -244,6 +270,13 @@ class SoundchartsAPIClient:
             'history': unique_history,
             'playlists': processed_playlists
         }
+        
+    def get_playlist_tracks(self, playlist_uuid: str) -> List[Any]:
+        """
+        Fetches a complete, paginated list of all tracks for a given playlist.
+        """
+        url = f"{self.BASE_URL}/v2.20/playlist/{playlist_uuid}/tracks/latest"
+        return self._fetch_paginated_data(url)
         
     
     # --- MODIFIED: This is the main orchestration function ---
