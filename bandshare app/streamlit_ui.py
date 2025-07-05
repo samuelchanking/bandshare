@@ -4,7 +4,13 @@
 import json
 import plotly.express as px
 import numpy as np
-from analysis_tools import detect_anomalous_spikes, convert_cumulative_to_daily
+# --- MODIFICATION: Added import for detect_changepoint_effect ---
+from analysis_tools import (
+    detect_anomalous_spikes, convert_cumulative_to_daily,
+    detect_additional_contribution, detect_event_effect,
+    detect_changepoint_effect, detect_prophet_anomalies,
+    clean_and_prepare_cumulative_data  # <-- ADD THIS IMPORT
+)
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -19,7 +25,7 @@ from datetime import datetime, date, timedelta
 import plotly.express as px
 from itertools import zip_longest
 from concurrent.futures import ThreadPoolExecutor
-from client_setup import initialize_clients 
+from client_setup import initialize_clients
 import config
 from itertools import zip_longest
 
@@ -33,7 +39,7 @@ def _get_optimal_y_range(dataframe, columns):
     """Calculates an optimal Y-axis range with padding for a given set of data columns."""
     min_val = float('inf')
     max_val = float('-inf')
-    
+
     for col in columns:
         if col in dataframe.columns and not dataframe[col].dropna().empty:
             min_val = min(min_val, dataframe[col].min())
@@ -47,10 +53,10 @@ def _get_optimal_y_range(dataframe, columns):
 
     if min_val == max_val:
         return [min_val - 1, max_val + 1]
-        
+
     padding = (max_val - min_val) * 0.1
     if padding == 0: padding = 1
-    
+
     return [min_val - padding, max_val + padding]
 
 
@@ -71,16 +77,16 @@ def display_all_songs_audience_chart(songs_with_data):
             for entry in history:
                 date_val = entry.get('date')
                 if not date_val: continue
-                
+
                 value = None
                 if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
                     value = entry['plots'][0].get('value')
                 elif 'value' in entry:
                     value = entry.get('value')
-                
+
                 if value is not None:
                     parsed_data.append({'date': pd.to_datetime(date_val), 'value': value})
-            
+
             if parsed_data:
                 song_df = pd.DataFrame(parsed_data).set_index('date')
                 song_df.rename(columns={'value': song_name}, inplace=True)
@@ -96,17 +102,17 @@ def display_all_songs_audience_chart(songs_with_data):
     fig = go.Figure()
     for col in combined_df.columns:
         fig.add_trace(go.Scatter(
-            x=combined_df.index, 
-            y=combined_df[col], 
-            mode='lines', 
-            name=col, 
+            x=combined_df.index,
+            y=combined_df[col],
+            mode='lines',
+            name=col,
             connectgaps=False
         ))
 
     y_range = _get_optimal_y_range(combined_df, combined_df.columns)
     fig.update_layout(
-        title="Song Audience Over Time", 
-        yaxis_range=y_range, 
+        title="Song Audience Over Time",
+        yaxis_range=y_range,
         yaxis_tickformat=",.0f",
         hovermode="x unified"
     )
@@ -132,7 +138,7 @@ def display_artist_metadata(metadata):
     if not metadata:
         st.warning("No artist metadata available.")
         return
-    
+
     metadata_obj = metadata.get('object', metadata)
 
     st.header(f"Artist Overview: {metadata_obj.get('name', 'Unknown Artist')}")
@@ -148,7 +154,7 @@ def display_artist_metadata(metadata):
         m_col1.metric("Country", metadata_obj.get("countryCode", "N/A"))
         m_col2.metric("Type", metadata_obj.get("type", "N/A").capitalize())
         m_col3.metric("Career Stage", metadata_obj.get("careerStage", "N/A").replace("_", " ").title())
-        st.write("") 
+        st.write("")
 
         genres = metadata_obj.get('genres', [])
         if genres:
@@ -166,79 +172,93 @@ def display_artist_metadata(metadata):
         st.markdown("---")
         st.subheader("Biography")
         st.markdown(biography)
-    
+
     st.markdown("---")
 
 
-# --- MODIFIED: Function now accepts song_release_date ---
 def display_full_song_streaming_chart(db_manager, history_data: list, entry_points: list, chart_key: str, song_release_date: str = None):
-    """
-    Takes a full history of data points for a song. Displays the original
-    cumulative data chart by default, followed by the calculated daily streams chart with spike analysis.
-    """
     if not history_data:
         st.info("No streaming data available for this song.")
         return
 
-    parsed_history = []
-    for entry in history_data:
-        if 'date' in entry and 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
-            value = entry['plots'][0].get('value')
-            if value is not None:
-                parsed_history.append({'date': entry['date'], 'value': value})
+    df_cumulative, decreasing_dates = clean_and_prepare_cumulative_data(history_data)
 
-    if not parsed_history:
-        st.warning("Streaming data for this song appears to be empty or in an unexpected format.")
+    if df_cumulative.empty:
+        st.warning("Could not parse valid data points after cleaning.")
         return
 
-    daily_stream_data = convert_cumulative_to_daily(parsed_history)
-    df_daily = pd.DataFrame(daily_stream_data)
-    df_daily['date'] = pd.to_datetime(df_daily['date'])
+    interpolated_df = pd.DataFrame()
+    if not df_cumulative.empty and len(df_cumulative) > 1:
+        df_for_interp = df_cumulative.set_index('date')
+        full_date_range = pd.date_range(start=df_for_interp.index.min(), end=df_for_interp.index.max(), freq='D')
+        
+        interpolated_df = df_for_interp.reindex(full_date_range)
+        
+        interpolated_df['interpolated'] = interpolated_df['value'].isna()
+        
+        interpolated_df['value'] = interpolated_df['value'].interpolate(method='time')
+        
+        if not decreasing_dates.empty:
+            interpolated_df.loc[interpolated_df.index.isin(decreasing_dates), 'value'] = np.nan
+            interpolated_df.loc[interpolated_df.index.isin(decreasing_dates), 'interpolated'] = False
+        
+        interpolated_df['hover_text'] = np.where(interpolated_df['interpolated'], '<br>(interpolated)', '')
+    
+    df_daily = pd.DataFrame()
+    if not interpolated_df.empty:
+        daily_values = interpolated_df['value'].diff().clip(lower=0)
+        df_daily = pd.DataFrame({'date': daily_values.index, 'value': daily_values.values})
 
-    df_cumulative_raw = pd.DataFrame(parsed_history)
-    df_cumulative_raw['date'] = pd.to_datetime(df_cumulative_raw['date'])
-    df_cumulative_raw.sort_values(by='date', inplace=True)
-    df_cumulative = df_cumulative_raw.drop_duplicates(subset=['date'], keep='last')
+
+    st.subheader("Raw Data: Total Accumulated Streams")
+    st.caption("This chart shows the cumulative stream data. Gaps from decreasing values are shown, while gaps from duplicate days are interpolated.")
+    fig_cumulative = go.Figure()
+
+    fig_cumulative.add_trace(go.Scatter(
+        x=interpolated_df.index, y=interpolated_df['value'],
+        mode='lines', name='Total Streams',
+        connectgaps=True,
+        customdata=interpolated_df['hover_text'],
+        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Streams</b>: %{y:,.0f}%{customdata}<extra></extra>'
+    ))
+
+    fig_cumulative.update_layout(showlegend=False, yaxis_title="Cumulative Streams")
+    st.plotly_chart(fig_cumulative, use_container_width=True, key=f"cumulative_chart_{chart_key}")
+    
+    st.markdown("---")
+    st.subheader("Calculated Data: Daily Streams")
+    st.caption("This chart shows the calculated day-over-day change from the cleaned data.")
+
+    if df_daily.empty:
+        st.info("Not enough data to calculate daily stream changes.")
+        return
 
     if len(df_daily) > 1:
         df_daily = df_daily.iloc[1:].copy()
-    if len(df_cumulative) > 1:
-        df_cumulative = df_cumulative.iloc[1:].copy()
-    
-    st.subheader("Raw Data: Total Accumulated Streams")
-    st.caption("This chart shows the original, cumulative stream data for the song over time.")
-    fig_cumulative = go.Figure()
-    fig_cumulative.add_trace(go.Scatter(x=df_cumulative['date'], y=df_cumulative['value'], mode='lines', name='Total Streams',
-                                       hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Streams</b>: %{y:,.0f}<extra></extra>'))
-    fig_cumulative.update_layout(showlegend=False, yaxis_title="Cumulative Streams")
-    st.plotly_chart(fig_cumulative, use_container_width=True, key=f"cumulative_chart_{chart_key}")
-    st.markdown("---")
 
-    st.subheader("Calculated Data: Daily Streams & Playlist Adds")
-    st.caption("*Note: The first data point is removed by default to improve chart readability.*")
     fig_daily = go.Figure()
-    fig_daily.add_trace(go.Scatter(x=df_daily['date'], y=df_daily['value'], mode='lines', name='Daily Streams', connectgaps=False,
-                                   hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily Streams</b>: %{y:,.0f}<extra></extra>'))
+    fig_daily.add_trace(go.Scatter(
+        x=df_daily['date'], y=df_daily['value'], mode='lines', name='Daily Streams',
+        connectgaps=False, 
+        line=dict(color='#1f77b4'),
+        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily Streams</b>: %{y:,.0f}<extra></extra>'
+    ))
     
     sorted_entry_points = sorted(entry_points, key=lambda x: x.get('entryDate', ''))
     last_entry_date = None
     y_shift_offset = 15
     y_max_daily = df_daily['value'].max() if not df_daily.empty else 0
-
     for entry in sorted_entry_points:
         try:
             entry_date_dt = datetime.fromisoformat(entry['entryDate'].replace('Z', '+00:00'))
             entry_date_val = entry_date_dt.date()
-            if last_entry_date and (entry_date_val - last_entry_date) < timedelta(days=30):
-                y_shift_offset += 35
-            else:
-                y_shift_offset = 15
+            if last_entry_date and (entry_date_val - last_entry_date) < timedelta(days=30): y_shift_offset += 35
+            else: y_shift_offset = 15
             fig_daily.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
             playlist_name = entry.get('name', 'N/A')
             playlist_uuid = entry.get('uuid')
             entry_subscribers = entry.get('entrySubscribers')
-            if entry_subscribers is None and playlist_uuid:
-                entry_subscribers = db_manager.get_timeseries_value_for_date('playlist_audience', {'playlist_uuid': playlist_uuid}, entry_date_dt)
+            if entry_subscribers is None and playlist_uuid: entry_subscribers = db_manager.get_timeseries_value_for_date('playlist_audience', {'playlist_uuid': playlist_uuid}, entry_date_dt)
             subscribers_formatted = f"{entry_subscribers:,}" if entry_subscribers is not None else "N/A"
             annotation_text = f"{playlist_name}<br>{subscribers_formatted} subs"
             hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date_val.strftime('%Y-%m-%d')}"
@@ -247,103 +267,62 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
         except (ValueError, KeyError) as e:
             print(f"Could not process playlist annotation. Error: {e}")
             continue
-
-    # --- NEW: Add Song Release Date marker ---
     if song_release_date:
         try:
             release_date_dt = pd.to_datetime(song_release_date)
             if not df_daily.empty and 'date' in df_daily.columns:
                 chart_start_date = df_daily['date'].min()
                 chart_end_date = df_daily['date'].max()
-
                 if not pd.isna(chart_start_date) and not pd.isna(chart_end_date) and chart_start_date <= release_date_dt <= chart_end_date:
                     fig_daily.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
-                    fig_daily.add_annotation(
-                        x=release_date_dt,
-                        y=y_max_daily,
-                        text="Song Release",
-                        showarrow=True,
-                        arrowhead=1,
-                        ax=-25,
-                        ay=-60,
-                        font=dict(color="green"),
-                        bgcolor="rgba(0, 200, 0, 0.6)"
-                    )
+                    fig_daily.add_annotation(x=release_date_dt, y=y_max_daily, text="Song Release", showarrow=True, arrowhead=1, ax=-25, ay=-60, font=dict(color="green"), bgcolor="rgba(0, 200, 0, 0.6)")
         except (ValueError, TypeError) as e:
             st.warning(f"Could not plot release date marker due to an issue with the date format: {e}")
-
-    analysis_session_key = f'analysis_results_{chart_key}'
-    if st.session_state.get(analysis_session_key):
-        results = st.session_state[analysis_session_key]
-        if 'anomalies' in results and results['anomalies']:
-            for anomaly in results['anomalies']:
-                anomaly_date = datetime.strptime(anomaly['date'], '%Y-%m-%d').date()
-                jump_size_formatted = f"+{int(anomaly['total_streams_on_day']):,}"
-                fig_daily.add_vline(x=anomaly_date, line_width=1, line_dash="dot", line_color="cyan")
-                fig_daily.add_annotation(
-                    x=anomaly_date, y=y_max_daily, text=f"Spike: {jump_size_formatted}",
-                    showarrow=False, yshift=10, font=dict(color="cyan"), bgcolor="rgba(0, 50, 100, 0.6)")
-
+    
     y_range = _get_optimal_y_range(df_daily, ['value'])
     fig_daily.update_layout(yaxis_range=y_range, showlegend=False, hovermode="x unified", yaxis_tickformat=",.0f")
     st.plotly_chart(fig_daily, use_container_width=True, key=f"daily_chart_{chart_key}")
 
+
+    analysis_session_key = f"analysis_results_{chart_key}"
     with st.expander("🔬 Analyze Streaming Spikes"):
         st.markdown("""
-        This tool detects anomalous spikes by analyzing the rate of change of the cumulative stream count.
+        This tool detects anomalous spikes by analyzing the rate of change of the cumulative stream count. It uses a moving average to smooth the data and identify significant deviations.
         - **Discretization Step:** The window (in days) for analyzing the rate of change.
-        - **Alpha (Smoothing Factor):** Controls how quickly the average adapts to new trends.
-        - **Sensitivity:** How far from the average the rate of change must be to be flagged as a spike.
+        - **Smoothing Window Size:** The number of data points to include in the moving average for smoothing the trend line. A larger window creates a smoother line.
+        - **Sensitivity:** How far from the smoothed average the rate of change must be to be flagged as a spike.
         """)
-        
         param_cols = st.columns(3)
         p_step = param_cols[0].number_input("Discretization Step (days)", min_value=1, max_value=30, value=7, step=1, key=f"step_{chart_key}")
-        p_alpha = param_cols[1].slider("Alpha (Smoothing Factor)", min_value=0.01, max_value=1.0, value=0.2, step=0.01, key=f"alpha_{chart_key}")
+        p_smooth = param_cols[1].number_input("Smoothing Window Size", min_value=2, max_value=30, value=7, step=1, key=f"smooth_{chart_key}")
         p_sens = param_cols[2].number_input("Sensitivity", min_value=0.5, max_value=10.0, value=2.0, step=0.1, key=f"sens_{chart_key}")
-        
         button_cols = st.columns(2)
         if button_cols[0].button("Run Analysis", key=f"analyze_{chart_key}", use_container_width=True, type="primary"):
             dates_for_analysis = df_cumulative['date'].dt.strftime('%Y-%m-%d').tolist()
             streams_for_analysis = df_cumulative['value'].tolist()
             data_tuple = (tuple(dates_for_analysis), tuple(streams_for_analysis))
             with st.spinner("Analyzing data for anomalies..."):
-                result_json = detect_anomalous_spikes(data_tuple, discretization_step=p_step, alpha=p_alpha, sensitivity=p_sens)
+                result_json = detect_anomalous_spikes(data_tuple, discretization_step=p_step, smoothing_window_size=p_smooth, sensitivity=p_sens)
                 st.session_state[analysis_session_key] = json.loads(result_json)
                 st.rerun()
-
         if button_cols[1].button("Clear Analysis", key=f"clear_{chart_key}", use_container_width=True):
             if analysis_session_key in st.session_state:
                 del st.session_state[analysis_session_key]
             st.rerun()
-
         if st.session_state.get(analysis_session_key):
             results = st.session_state[analysis_session_key]
             if 'error' in results and results['error']: st.error(f"Analysis failed: {results['error']}")
             elif not results['anomalies']: st.success("No significant anomalies detected.")
-            else: 
+            else:
                 st.success(f"Detected {len(results['anomalies'])} potential anomalies.")
                 anomaly_df = pd.DataFrame(results['anomalies'])
-                
                 anomaly_df['spike_size_streams_per_day_formatted'] = anomaly_df['spike_size_streams_per_day'].apply(lambda x: f"+{int(x):,}")
-                
                 def format_rel_sig(x):
-                    if x == float('inf') or x > 10000:
-                        return "N/A (from low base)"
+                    if x == float('inf') or x > 10000: return "N/A (from low base)"
                     return f"{x:+.1%}"
                 anomaly_df['relative_significance_formatted'] = anomaly_df['relative_significance'].apply(format_rel_sig)
-                
-                anomaly_df.rename(columns={
-                    'date': 'Date', 
-                    'spike_size_streams_per_day_formatted': 'Spike Size (Anomalous Streams/Day)',
-                    'relative_significance_formatted': 'Relative Significance'
-                }, inplace=True)
-                
-                st.dataframe(
-                    anomaly_df[['Date', 'Spike Size (Anomalous Streams/Day)', 'Relative Significance']],
-                    use_container_width=True,
-                    hide_index=True
-                )
-            
+                anomaly_df.rename(columns={'date': 'Date', 'spike_size_streams_per_day_formatted': 'Spike Size (Anomalous Streams/Day)', 'relative_significance_formatted': 'Relative Significance'}, inplace=True)
+                st.dataframe(anomaly_df[['Date', 'Spike Size (Anomalous Streams/Day)', 'Relative Significance']], use_container_width=True, hide_index=True)
             if results.get('debug') and st.checkbox("Show debug plots", key=f"debug_cb_{chart_key}"):
                 with st.container(border=True):
                     st.subheader("Debug Information")
@@ -351,7 +330,6 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
                         debug_data = results['debug']
                         start_date_obj = datetime.strptime(debug_data['start_date'], '%Y-%m-%d')
                         grid_dates = [start_date_obj + timedelta(days=d) for d in debug_data['grid_days']]
-                        
                         st.markdown("##### Plot 1: Rate of Change Comparison")
                         st.write("This plot shows the rate of change of the discretized data (`s_diff`) versus the rate of the smoothed average (`Av_diff`).")
                         fig_debug1 = go.Figure()
@@ -359,7 +337,6 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
                         fig_debug1.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['Av_diffs'], mode='lines', name='EMA Rate (Av_diff)', line=dict(dash='dash')))
                         fig_debug1.update_layout(title_text='Rate of Change: Discretized vs. Smoothed', yaxis_title="Streams per Day", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
                         st.plotly_chart(fig_debug1, use_container_width=True)
-
                         st.markdown("##### Plot 2: Anomaly Detection")
                         st.write("An anomaly is flagged when the actual difference in rates (solid blue) crosses the dynamic threshold (red dots).")
                         fig_debug2 = go.Figure()
@@ -368,19 +345,14 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
                         fig_debug2.add_trace(go.Scatter(x=grid_dates[1:], y=threshold_values, mode='lines', name='Detection Threshold', line=dict(color='red', dash='dot')))
                         fig_debug2.update_layout(title_text='Detection Logic', yaxis_title="Difference Score / Threshold", showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
                         st.plotly_chart(fig_debug2, use_container_width=True)
-
                     except (KeyError, IndexError, TypeError) as e:
                         st.error(f"Failed to generate debug plots. Data might be missing or malformed. Error: {e}")
 
 def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
-    """
-    Displays a list of playlists in a grid, now with a Details button.
-    """
     st.subheader(title)
     if not playlists:
         st.info("No playlists to display. Try fetching the data first.")
         return
-
     for playlist_chunk in grouper(playlists, 5):
         cols = st.columns(5)
         for i, playlist in enumerate(playlist_chunk):
@@ -390,68 +362,60 @@ def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
                     image_url = playlist.get('imageUrl')
                     subscribers = playlist.get('latestSubscriberCount', 0)
                     playlist_uuid = playlist.get('uuid')
-
-                    if image_url:
-                        st.image(image_url, use_container_width=True)
-                    else:
-                        st.image("https://i.imgur.com/3gMbdA5.png", use_container_width=True)
-
+                    if image_url: st.image(image_url, use_container_width=True)
+                    else: st.image("https://i.imgur.com/3gMbdA5.png", use_container_width=True)
                     st.caption(f"**{playlist_name}**")
                     st.write(f"{subscribers:,} Subscribers")
-
                     if st.button("Details", key=f"btn_global_{playlist_uuid}", use_container_width=True):
                         st.session_state.selected_playlist_uuid = playlist_uuid
                         st.rerun()
 
-# --- MODIFIED: Added Song UUID to expanded view ---
+# --- MODIFIED FUNCTION ---
 def display_global_playlist_tracks(db_manager, playlist_uuid: str, playlist_name: str):
     """
-    Displays the full tracklist, performing a direct lookup for each song to find
-    its entry data and display an impact analysis graph if found.
+    Displays the full tracklist, with a per-song button to trigger spike analysis.
     """
     api_client, _ = get_clients()
 
     st.header(f"Tracklist & Analysis for: {playlist_name}")
     if st.button("⬅️ Back to all Global Playlists"):
+        # Clear all session state results for this view
         st.session_state.selected_playlist_uuid = None
+        keys_to_clear = [key for key in st.session_state if key.startswith('global_')]
+        for key in keys_to_clear:
+            del st.session_state[key]
         st.rerun()
 
     st.code(f"Playlist UUID: {playlist_uuid}")
     st.markdown("---")
+    
+    # Initialize session state for this specific view if not present
+    if 'global_prophet_anomaly_results' not in st.session_state:
+        st.session_state.global_prophet_anomaly_results = {}
+    
+    if 'global_spike_analysis_results' not in st.session_state:
+        st.session_state.global_spike_analysis_results = {}
 
     with st.spinner("Loading playlist tracklist..."):
-        full_tracklist = list(db_manager.collections['global_song'].find(
-            {'playlist_uuid': playlist_uuid}
-        ).sort('position', 1))
+        full_tracklist = list(db_manager.collections['global_song'].find({'playlist_uuid': playlist_uuid}).sort('position', 1))
 
     if not full_tracklist:
-        st.warning(
-            "Could not find a tracklist for this playlist in the 'global_song' collection. "
-            "Please try running 'Step 1: Fetch Playlists & Tracks' again on the main analysis page."
-        )
+        st.warning("Could not find a tracklist for this playlist in the 'global_song' collection.")
         return
 
     st.subheader("Playlist Tracklist")
-    st.caption("Songs by your tracked artists are highlighted with an automatic impact analysis.")
+    st.caption("For songs by tracked artists, expand the analysis panel to check for streaming spikes.")
 
     for track in full_tracklist:
-        position = track.get('position')
-        song_info = track.get('song', {})
-        song_uuid = song_info.get('uuid')
-        song_name = song_info.get('name', 'N/A')
-        artist_name = song_info.get('creditName', 'N/A')
-        image_url = song_info.get('imageUrl')
+        position, song_info = track.get('position'), track.get('song', {})
+        song_uuid, song_name, artist_name, image_url = song_info.get('uuid'), song_info.get('name', 'N/A'), song_info.get('creditName', 'N/A'), song_info.get('imageUrl')
 
-        entry_details = db_manager.collections['global_song_playlists'].find_one({
-            'playlist.uuid': playlist_uuid,
-            'song_uuid': song_uuid
-        })
+        entry_details = db_manager.collections['global_song_playlists'].find_one({'playlist.uuid': playlist_uuid, 'song_uuid': song_uuid})
 
         with st.container(border=True):
             col1, col2 = st.columns([1, 10])
             with col1:
                 st.image(image_url or "https://i.imgur.com/3gMbdA5.png", use_container_width=True)
-
             with col2:
                 st.write(f"**{position}. {song_name}** - *{artist_name}*")
                 st.caption(f"Song UUID: {song_uuid}")
@@ -463,9 +427,8 @@ def display_global_playlist_tracks(db_manager, playlist_uuid: str, playlist_name
                     if entry_date_str:
                         try:
                             entry_date_obj = datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date()
-                            st.write(f"**Date Added**: {entry_date_obj.strftime('%Y-%m-%d')}")
                         except (ValueError, TypeError):
-                            st.write(f"**Date Added**: N/A")
+                            pass
 
                     if not entry_date_obj:
                         st.error("Cannot display graph without a valid entry date for this song.")
@@ -474,70 +437,265 @@ def display_global_playlist_tracks(db_manager, playlist_uuid: str, playlist_name
                     with st.spinner(f"Loading audience data for '{song_name}'..."):
                         start_date = entry_date_obj - timedelta(days=90)
                         end_date = entry_date_obj + timedelta(days=90)
-
-                        audience_response = api_client.get_song_streaming_audience(song_uuid, 'spotify', start_date, end_date)
-                        if audience_response and not audience_response.get('error'):
-                            db_manager.store_global_song_audience_data(song_uuid, audience_response)
-                            st.cache_data.clear()
-
                         audience_data = get_global_song_audience_data(db_manager, song_uuid, start_date, end_date)
-                        if not audience_data:
-                            st.warning("No audience data could be found or fetched for this period.")
-                            continue
+
+                    if not audience_data:
+                        st.warning("No audience data could be found or fetched for this period.")
+                        continue
+                    
+                    # Use the simplified cleaning function
+                    df_cumulative, decreasing_dates = clean_and_prepare_cumulative_data(audience_data)
+    
+                    if df_cumulative.empty:
+                        st.info("Audience data is present but could not be parsed for graphing after cleaning.")
+                        continue
+    
+                    interpolated_df = pd.DataFrame()
+                    df_daily = pd.DataFrame()
+    
+                    if not df_cumulative.empty and len(df_cumulative) > 1:
+                        # Set up the full date range for interpolation
+                        df_for_interp = df_cumulative.set_index('date')
+                        full_date_range = pd.date_range(start=df_for_interp.index.min(), end=df_for_interp.index.max(), freq='D')
+                        interpolated_df = df_for_interp.reindex(full_date_range)
                         
-                        parsed_history = [{'date': item['date'], 'value': item['plots'][0]['value']} for item in audience_data if item.get('plots')]
+                        # Flag the points that will be interpolated
+                        interpolated_df['interpolated'] = interpolated_df['value'].isna()
                         
-                        if not parsed_history:
-                            st.info("Audience data is present but could not be parsed for graphing.")
-                            continue
-
-                        entry_datetime = datetime.combine(entry_date_obj, datetime.min.time())
-
-                        # --- Graph 1: Cumulative Data (Before Calculation) ---
-                        st.write("##### Cumulative Stream Performance")
-                        df_cumulative = pd.DataFrame(parsed_history)
-                        df_cumulative['date'] = pd.to_datetime(df_cumulative['date'])
-                        df_cumulative.sort_values('date', inplace=True)
-
-                        fig_cumulative = go.Figure()
-                        fig_cumulative.add_trace(go.Scatter(x=df_cumulative['date'], y=df_cumulative['value'], mode='lines', name='Total Streams'))
+                        # Perform the interpolation
+                        interpolated_df['value'] = interpolated_df['value'].interpolate(method='time')
                         
-                        fig_cumulative.add_vline(x=entry_datetime, line_width=2, line_dash="dash", line_color="red")
-                        fig_cumulative.add_annotation(x=entry_datetime, y=df_cumulative['value'].max(), yref="y", text="Playlist Add", showarrow=True, arrowhead=1, ax=0, ay=-40)
+                        # For any date removed due to decreasing value, do NOT interpolate.
+                        # Set its value back to NaN and unflag it.
+                        if not decreasing_dates.empty:
+                            interpolated_df.loc[interpolated_df.index.isin(decreasing_dates), 'value'] = np.nan
+                            interpolated_df.loc[interpolated_df.index.isin(decreasing_dates), 'interpolated'] = False
                         
-                        # Apply unified hover mode
-                        fig_cumulative.update_layout(yaxis_title="Total Streams", showlegend=False, hovermode='x unified')
-                        st.plotly_chart(fig_cumulative, use_container_width=True)
+                        # Create the text for the hover tooltip
+                        interpolated_df['hover_text'] = np.where(interpolated_df['interpolated'], '<br>(interpolated)', '')
 
-                        # --- Graph 2: Daily Data (After Calculation) ---
-                        st.write("##### Calculated Daily Stream Impact")
-                        daily_stream_data = convert_cumulative_to_daily(parsed_history)
+                        # Calculate daily values from the now conditionally interpolated data
+                        daily_values = interpolated_df['value'].diff().clip(lower=0)
+                        df_daily = pd.DataFrame({'date': daily_values.index, 'value': daily_values.values}).iloc[1:]
 
-                        if not daily_stream_data:
-                            st.info("Not enough data points to calculate daily stream changes.")
-                            continue
+                    with st.expander("🔬 Analyze Streaming Spikes for this Song"):
+                        
+                        st.markdown("##### Analysis Parameters")
+                        st.caption("These parameters are shared across the analysis tools below.")
+                        param_cols = st.columns(3)
+                        p_smooth = param_cols[0].number_input("Smoothing Window (days)", min_value=1, max_value=30, value=7, step=1, key=f"smooth_global_{song_uuid}")
+                        p_step = param_cols[1].number_input("Discretization Step (days)", min_value=1, max_value=30, value=7, step=1, key=f"step_global_{song_uuid}", help="Used for Volatility analysis.")
+                        p_sens = param_cols[2].number_input("Sensitivity", min_value=0.5, max_value=10.0, value=2.0, step=0.1, key=f"sens_global_{song_uuid}", help="Used for Volatility analysis.")
+
+                        st.markdown("---")
+                        
+                        tab1, tab2, tab3 = st.tabs(["Volatility Spike Detection", "Playlist Impact Analysis", "Prophet Anomaly Detection"])
+
+                        with tab1:
+                            st.markdown("""
+                            This tool detects spikes by analyzing how quickly the stream rate changes compared to its smoothed trend.
+                            """)
+                            if st.button("Run Volatility Analysis", key=f"run_analysis_global_{song_uuid}", use_container_width=True):
+                                with st.spinner("Analyzing song for anomalies..."):
+                                    dates_for_analysis = df_cumulative['date'].dt.strftime('%Y-%m-%d').tolist()
+                                    streams_for_analysis = df_cumulative['value'].tolist()
+                                    data_tuple = (tuple(dates_for_analysis), tuple(streams_for_analysis))
+                                    result_json = detect_anomalous_spikes(data_tuple, discretization_step=p_step, smoothing_window_size=p_smooth, sensitivity=p_sens)
+                                    st.session_state.global_spike_analysis_results[song_uuid] = json.loads(result_json)
+                                    st.rerun()
                             
-                        df_daily = pd.DataFrame(daily_stream_data)
-                        df_daily['date'] = pd.to_datetime(df_daily['date'])
-                        
-                        # Explicitly drop the first data point
-                        if not df_daily.empty:
-                            df_daily = df_daily.iloc[1:].copy()
-                        
-                        fig_daily = go.Figure()
-                        fig_daily.add_trace(go.Scatter(x=df_daily['date'], y=df_daily['value'], mode='lines', name='Daily Streams'))
-                        
-                        fig_daily.add_vline(x=entry_datetime, line_width=2, line_dash="dash", line_color="red")
-                        fig_daily.add_annotation(x=entry_datetime, y=df_daily['value'].max(), yref="y", text="Playlist Add", showarrow=True, arrowhead=1, ax=0, ay=-40)
-                        
-                        fig_daily.update_layout(yaxis_title="Calculated Daily Streams", showlegend=False, hovermode='x unified')
-                        st.plotly_chart(fig_daily, use_container_width=True)
+                            spike_results = st.session_state.get('global_spike_analysis_results', {}).get(song_uuid)
+                            if spike_results:
+                                if spike_results.get('error'):
+                                    st.error(f"Analysis failed: {spike_results['error']}")
+                                elif not spike_results['anomalies']:
+                                    st.success("Analysis complete. No significant anomalies detected.")
+                                else:
+                                    st.success(f"Detected {len(spike_results['anomalies'])} potential anomalies.")
+                                
+                                if spike_results.get('debug') and st.checkbox("Show Volatility Debug Plots", key=f"v_debug_cb_global_{song_uuid}"):
+                                    with st.container(border=True):
+                                        st.subheader("Volatility Analysis Debug Information")
+                                        try:
+                                            debug_data = spike_results['debug']
+                                            start_date_obj = datetime.strptime(debug_data['start_date'], '%Y-%m-%d')
+                                            grid_dates = [start_date_obj + timedelta(days=d) for d in debug_data['grid_days']]
+
+                                            st.markdown("##### Plot 1: Rate of Change Comparison")
+                                            fig_debug1 = go.Figure()
+                                            fig_debug1.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['s_diffs'], mode='lines', name='Discretized Rate (s_diff)'))
+                                            fig_debug1.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['Av_diffs'], mode='lines', name='EMA Rate (Av_diff)', line=dict(dash='dash')))
+                                            st.plotly_chart(fig_debug1, use_container_width=True)
+
+                                            st.markdown("##### Plot 2: Anomaly Detection")
+                                            fig_debug2 = go.Figure()
+                                            fig_debug2.add_trace(go.Scatter(x=grid_dates[1:], y=debug_data['abs_diff_devs'], mode='lines', name='Absolute Difference in Rates'))
+                                            threshold_values = [p_sens * std for std in debug_data['smoothed_stds']]
+                                            fig_debug2.add_trace(go.Scatter(x=grid_dates[1:], y=threshold_values, mode='lines', name='Detection Threshold', line=dict(color='red', dash='dot')))
+                                            st.plotly_chart(fig_debug2, use_container_width=True)
+
+                                        except (KeyError, IndexError, TypeError) as e:
+                                            st.error(f"Failed to generate debug plots. Data might be missing or malformed. Error: {e}")
 
 
+                        with tab2:
+                            st.markdown("""
+                            This tool uses Prophet to estimate the additional daily streams gained *after* the song was added to this playlist. It automatically finds the best weight for the event.
+                            """)
+                            if st.button("Estimate Playlist Effect", key=f"run_prophet_analysis_global_{song_uuid}", use_container_width=True, type="primary"):
+                                if not df_daily.empty and entry_date_obj and not df_daily[df_daily['date'].dt.date > entry_date_obj].empty:
+                                    with st.spinner(f"Running Prophet analysis for '{song_name}'..."):
+                                        prophet_input_data = {'dates': df_daily['date'].dt.strftime('%Y-%m-%d').tolist(), 'streams': df_daily['value'].tolist()}
+                                        latest_date = df_daily['date'].max().date()
+                                        duration_days = (latest_date - entry_date_obj).days + 1
 
-
+                                        if duration_days > 1:
+                                            result_json = detect_additional_contribution(data=prophet_input_data, event_date=entry_date_obj.strftime('%Y-%m-%d'), event_duration_days=duration_days, is_cumulative=False, smoothing_window_size=p_smooth)
+                                            st.session_state.global_prophet_analysis_results[song_uuid] = json.loads(result_json)
+                                        else:
+                                            st.session_state.global_prophet_analysis_results[song_uuid] = {'error': 'Not enough data after the playlist entry date to perform analysis.'}
+                                        st.rerun()
+                                else:
+                                    st.error("Cannot run Prophet analysis. Calculated daily stream data or a valid playlist entry date is missing.")
+                            
+                            prophet_results = st.session_state.get('global_prophet_analysis_results', {}).get(song_uuid)
+                            if prophet_results:
+                                if prophet_results.get('error'):
+                                    st.error(f"Prophet analysis failed: {prophet_results['error']}")
+                                elif 'additional_contribution' in prophet_results and prophet_results['additional_contribution']:
+                                    st.success("Prophet analysis complete.")
+                                    effect_data = prophet_results['additional_contribution']
+                                    avg_streams = effect_data.get('average_additional_streams_per_day', 0)
+                                    optimal_scale = effect_data.get('optimal_prior_scale')
+                                    st.metric(label="Estimated Effect (Avg. Daily Streams)", value=f"{avg_streams:,.0f}")
+                                    if optimal_scale is not None:
+                                        st.info(f"Analysis used an optimal holiday weight of **{optimal_scale:.2f}**.")
                         
-# --- MODIFIED: Function now accepts song_release_date ---
+                        with tab3:
+                            st.markdown("""
+                            This tool uses Prophet's forecast uncertainty intervals to find specific dates that are statistically anomalous.
+                            """)
+                            pa_interval = st.slider("Uncertainty Interval", min_value=0.8, max_value=0.99, value=0.95, step=0.01, key=f"pa_interval_global_{song_uuid}", help="A higher value makes the detection stricter, finding fewer anomalies.")
+                            
+                            if st.button("Find Prophet Anomalies", key=f"run_prophet_anomaly_global_{song_uuid}", use_container_width=True):
+                                if not df_daily.empty:
+                                    with st.spinner("Finding anomalies with Prophet..."):
+                                        prophet_input_data = {'dates': df_daily['date'].dt.strftime('%Y-%m-%d').tolist(), 'streams': df_daily['value'].tolist()}
+                                        result_json = detect_prophet_anomalies(data=prophet_input_data, is_cumulative=False, interval_width=pa_interval, smoothing_window_size=p_smooth)
+                                        st.session_state.global_prophet_anomaly_results[song_uuid] = json.loads(result_json)
+                                        st.rerun()
+                                else:
+                                    st.error("Cannot run Prophet anomaly detection without calculated daily stream data.")
+                            
+                            prophet_anomaly_results = st.session_state.get('global_prophet_anomaly_results', {}).get(song_uuid)
+                            if prophet_anomaly_results:
+                                if prophet_anomaly_results.get('error'):
+                                    st.error(f"Prophet anomaly analysis failed: {prophet_anomaly_results['error']}")
+                                elif 'anomalies' in prophet_anomaly_results:
+                                    anomalies = prophet_anomaly_results['anomalies']
+                                    st.success(f"Analysis complete. Found **{len(anomalies)}** anomalous dates.")
+                                    if anomalies:
+                                        anomaly_df = pd.DataFrame(anomalies)
+                                        anomaly_df['ds'] = pd.to_datetime(anomaly_df['ds']).dt.date
+                                        anomaly_df.rename(columns={'ds': 'Date', 'y': 'Actual Streams', 'yhat': 'Forecasted Streams', 'difference': 'Difference'}, inplace=True)
+                                        st.dataframe(anomaly_df[['Date', 'Actual Streams', 'Forecasted Streams', 'Difference']], use_container_width=True, hide_index=True)
+
+                                    if prophet_anomaly_results.get('forecast_df') and st.checkbox("Show Anomaly Forecast Plot", key=f"show_pa_plot_{song_uuid}"):
+                                        forecast_df = pd.DataFrame(prophet_anomaly_results['forecast_df'])
+                                        forecast_df['ds'] = pd.to_datetime(forecast_df['ds'])
+                                        
+                                        fig = go.Figure()
+                                        fig.add_trace(go.Scatter(x=forecast_df['ds'], y=forecast_df['yhat_upper'], mode='lines', line=dict(color='rgba(0,0,0,0)'), name='Upper Bound', showlegend=False))
+                                        fig.add_trace(go.Scatter(x=forecast_df['ds'], y=forecast_df['yhat_lower'], mode='lines', fill='tonexty', fillcolor='rgba(211,211,211,0.3)', line=dict(color='rgba(0,0,0,0)'), name='Uncertainty', showlegend=False))
+                                        fig.add_trace(go.Scatter(x=forecast_df['ds'], y=forecast_df['y'], mode='markers', marker=dict(color='black', size=5), name='Actual'))
+                                        fig.add_trace(go.Scatter(x=forecast_df['ds'], y=forecast_df['yhat'], mode='lines', line=dict(color='blue', dash='dash'), name='Forecast'))
+                                        
+                                        if anomalies:
+                                            anomaly_plot_df = anomaly_df.copy()
+                                            anomaly_plot_df['Date'] = pd.to_datetime(anomaly_plot_df['Date'])
+                                            fig.add_trace(go.Scatter(x=anomaly_plot_df['Date'], y=anomaly_plot_df['Actual Streams'], mode='markers', marker=dict(color='red', size=8, symbol='x'), name='Anomaly'))
+
+                                        fig.update_layout(title="Prophet Anomaly Detection Forecast", yaxis_title="Daily Streams", hovermode='x unified')
+                                        st.plotly_chart(fig, use_container_width=True)
+
+                    st.markdown("---")
+                    st.write("##### Cumulative Stream Performance")
+                    st.caption("Gaps from duplicate days are interpolated (indicated by markers), while gaps from decreasing values are not.")
+                    fig_cumulative = go.Figure()
+
+                    # Plot the main line, which will still show a tooltip for all points
+                    fig_cumulative.add_trace(go.Scatter(
+                        x=interpolated_df.index, y=interpolated_df['value'],
+                        mode='lines', name='Total Streams', connectgaps=True,
+                        customdata=interpolated_df['hover_text'],
+                        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Streams</b>: %{y:,.0f}%{customdata}<extra></extra>'
+                    ))
+
+                    # Add markers for only the points that were interpolated
+                    marker_df = interpolated_df[interpolated_df['interpolated'] == True]
+                    if not marker_df.empty:
+                        # This trace for the orange circle markers will now have its own tooltip disabled
+                        fig_cumulative.add_trace(go.Scatter(
+                            x=marker_df.index, y=marker_df['value'],
+                            mode='markers', name='Interpolated Point',
+                            marker=dict(symbol='circle-open', size=8, color='orange', line=dict(width=2)),
+                            hoverinfo='skip' # This line prevents the repetitive tooltip
+                        ))
+                    
+                    y_max_cumulative = (interpolated_df['value'].dropna().max() if not interpolated_df.empty else 0)
+                    
+                    fig_cumulative.add_vline(x=datetime.combine(entry_date_obj, datetime.min.time()), line_width=2, line_dash="dash", line_color="red")
+                    fig_cumulative.add_annotation(x=datetime.combine(entry_date_obj, datetime.min.time()), y=y_max_cumulative, yref="y", text="Playlist Add", showarrow=True, arrowhead=1, ax=0, ay=-40)
+                    fig_cumulative.update_layout(yaxis_title="Total Streams", showlegend=False, hovermode='x unified')
+                    st.plotly_chart(fig_cumulative, use_container_width=True)
+
+                    st.markdown("---")
+                    st.write("##### Calculated Daily Stream Impact")
+                    analysis_results = st.session_state.get('global_spike_analysis_results', {}).get(song_uuid)
+                    if analysis_results:
+                        if analysis_results.get('error'): st.error(f"Spike analysis failed: {analysis_results['error']}")
+                        elif not analysis_results.get('anomalies'): pass
+                        else: st.info(f"Volatility analysis detected {len(analysis_results['anomalies'])} potential spike(s) marked on the chart below.")
+
+                    if df_daily.empty:
+                        st.info("Not enough data points to calculate daily stream changes.")
+                        continue
+
+                    fig_daily = go.Figure()
+                    
+                    # MODIFICATION: Added 'connectgaps=True' to create a continuous line.
+                    fig_daily.add_trace(go.Scatter(
+                        x=df_daily['date'], 
+                        y=df_daily['value'], 
+                        mode='lines', 
+                        name='Daily Streams', 
+                        connectgaps=True
+                    ))
+                    
+                    y_max_daily = df_daily['value'].max() if not df_daily.empty else 0
+
+                    if analysis_results and analysis_results.get('anomalies'):
+                        last_spike_pos = {}
+                        for anomaly in analysis_results['anomalies']:
+                            anomaly_date = datetime.strptime(anomaly['date'], '%Y-%m-%d').date()
+                            start_period = anomaly_date - timedelta(days=p_step)
+                            center_period = anomaly_date - timedelta(days=p_step / 2)
+
+                            y_level = y_max_daily
+                            if last_spike_pos and (center_period - last_spike_pos.get('date', date.min)).days < (p_step * 1.5):
+                                y_level = last_spike_pos.get('y', y_max_daily) * 0.85
+                            last_spike_pos = {'date': center_period, 'y': y_level}
+
+                            fig_daily.add_vrect(x0=start_period, x1=anomaly_date, fillcolor="rgba(0,255,255,0.1)", layer="below", line_width=1, line_color="cyan")
+                            jump_size_formatted = f"+{int(anomaly['total_streams_on_day']):,}"
+                            fig_daily.add_annotation(x=center_period, y=y_level, text=f"Spike: {jump_size_formatted}", showarrow=False, yshift=10, font=dict(color="cyan"), bgcolor="rgba(0, 50, 100, 0.6)")
+
+                    fig_daily.add_vline(x=datetime.combine(entry_date_obj, datetime.min.time()), line_width=2, line_dash="dash", line_color="red")
+                    fig_daily.add_annotation(x=datetime.combine(entry_date_obj, datetime.min.time()), y=y_max_daily, yref="y", text="Playlist Add", showarrow=True, arrowhead=1, ax=0, ay=-40)
+                    fig_daily.update_layout(yaxis_title="Calculated Daily Streams", showlegend=False, hovermode='x unified')
+                    st.plotly_chart(fig_daily, use_container_width=True)
+
+
 def display_playlist_audience_chart(audience_data: list, entry_date_str: str, song_release_date: str, chart_key: str):
     """
     Takes playlist audience data and plots both the original cumulative data and the
@@ -558,17 +716,13 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
         return
 
     st.markdown("---")
-    
-    # --- Helper function to add markers to charts ---
+
     def add_markers_to_fig(fig, df):
-        # Add Song Entry Date marker
         if entry_date_str:
             entry_date_val = pd.to_datetime(entry_date_str)
             fig.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
             if not df.empty:
                 fig.add_annotation(x=entry_date_val, y=df['value'].max(), text="Song Entry", showarrow=True, arrowhead=2, ax=0, ay=-40)
-        
-        # --- NEW: Add Song Release Date marker ---
         if song_release_date and not df.empty:
             release_date_dt = pd.to_datetime(song_release_date)
             chart_start_date = df['date'].min()
@@ -577,43 +731,53 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
                 fig.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
                 fig.add_annotation(x=release_date_dt, y=df['value'].max(), text="Song Release", showarrow=True, arrowhead=1, ax=20, ay=-60, font=dict(color="green"))
 
-
-    # --- 1. Plot Original (Cumulative) Data ---
-    st.write("##### Original Data: Cumulative Follower Count")
-    st.caption("This chart shows the raw, cumulative follower data as stored in the database over time.")
-    
     df_cumulative = pd.DataFrame(parsed_data)
     df_cumulative['date'] = pd.to_datetime(df_cumulative['date'])
-    sorted_df_cumulative = df_cumulative.sort_values(by='date')
-
-    fig_cumulative = go.Figure()
-    fig_cumulative.add_trace(go.Scatter(x=sorted_df_cumulative['date'], y=sorted_df_cumulative['value'], mode='lines', name='Total Followers',
-                                        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Followers</b>: %{y:,.0f}<extra></extra>'))
+    sorted_df_cumulative = df_cumulative.sort_values(by='date').reset_index(drop=True)
     
+    decreasing_points = sorted_df_cumulative['value'].diff() < 0
+    # MODIFIED: Erroneous rows are dropped
+    sorted_df_cumulative = sorted_df_cumulative[~decreasing_points]
+
+    interpolated_df = pd.DataFrame()
+    df_daily = pd.DataFrame()
+
+    if not sorted_df_cumulative.empty and len(sorted_df_cumulative) > 1:
+        # Temporary interpolation for daily calculation
+        df_for_interp = sorted_df_cumulative.set_index('date')
+        full_date_range = pd.date_range(start=df_for_interp.index.min(), end=df_for_interp.index.max(), freq='D')
+        interpolated_df = df_for_interp.reindex(full_date_range).interpolate(method='time')
+        daily_values = interpolated_df['value'].diff().clip(lower=0)
+        df_daily = pd.DataFrame({'date': daily_values.index, 'value': daily_values.values})
+
+    st.write("##### Original Data: Cumulative Follower Count")
+    st.caption("This chart shows the raw, cumulative follower data. Gaps may appear where data was erroneous and has been removed.")
+    fig_cumulative = go.Figure()
+
+    # MODIFIED: Plotting from original data to show gaps
+    fig_cumulative.add_trace(go.Scatter(
+        x=sorted_df_cumulative['date'], y=sorted_df_cumulative['value'], 
+        mode='lines', name='Total Followers', connectgaps=False,
+        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Followers</b>: %{y:,.0f}<extra></extra>'
+    ))
+
     y_range_cumul = _get_optimal_y_range(sorted_df_cumulative, ['value'])
     fig_cumulative.update_layout(title="Cumulative Playlist Followers", yaxis_range=y_range_cumul, yaxis_tickformat=",.0f", showlegend=False)
-    add_markers_to_fig(fig_cumulative, sorted_df_cumulative)
+    add_markers_to_fig(fig_cumulative, interpolated_df if not interpolated_df.empty else sorted_df_cumulative)
     st.plotly_chart(fig_cumulative, use_container_width=True, key=f"{chart_key}_cumulative")
     st.markdown("---")
 
-
-    # --- 2. Plot Normalized (Daily) Data ---
     st.write("##### Normalized Data: Daily Follower Change")
-    st.caption("This chart shows the calculated day-over-day change in followers.")
+    st.caption("This chart shows the calculated day-over-day change in followers, with gaps filled by linear interpolation.")
 
-    daily_data = convert_cumulative_to_daily(parsed_data)
-    
-    if not daily_data:
+    if df_daily.empty:
         st.warning("Could not calculate daily changes from the source data.")
         return
 
-    df_daily = pd.DataFrame(daily_data)
-    df_daily['date'] = pd.to_datetime(df_daily['date'])
-    sorted_df_daily = df_daily.sort_values(by='date')
-    
+    sorted_df_daily = df_daily.sort_values(by='date').iloc[1:].copy()
+
     fig_daily = go.Figure()
-    fig_daily.add_trace(go.Scatter(x=sorted_df_daily['date'], y=sorted_df_daily['value'], mode='lines', name='Daily Change',
-                                   hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily Change</b>: %{y:,.0f}<extra></extra>'))
+    fig_daily.add_trace(go.Scatter(x=sorted_df_daily['date'], y=sorted_df_daily['value'], mode='lines', name='Daily Change', hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily Change</b>: %{y:,.0f}<extra></extra>'))
 
     y_range_daily = _get_optimal_y_range(sorted_df_daily, ['value'])
     fig_daily.update_layout(title="Daily Change in Playlist Followers", yaxis_range=y_range_daily, yaxis_tickformat=",.0f", showlegend=False)
@@ -621,7 +785,6 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
     st.plotly_chart(fig_daily, use_container_width=True, key=f"{chart_key}_daily")
 
 
-# --- MODIFIED: This function now fetches song release date for chart context ---
 def display_playlist_details(db_manager, item):
     """Displays the detailed view for a single playlist entry."""
     playlist = item.get('playlist', {})
@@ -655,38 +818,107 @@ def display_playlist_details(db_manager, item):
     col1.metric("Current Playlist Subscribers", f"{subscribers:,}" if subscribers else "N/A")
     col2.metric("Song Entry Date", str(entry_date)[:10] if entry_date else "N/A")
     col3.metric("Song Peak Date", str(peak_date)[:10] if peak_date else "N/A")
+    
+    st.markdown("---")
+    st.subheader("Song Performance Analysis")
+    st.write("Analyze the song's streaming performance around its placement on this playlist.")
+
+    event_analysis_key = f"event_analysis_{playlist_uuid}_{song_uuid}"
+
+    with st.container(border=True):
+        st.write("**Analyze Impact Between Entry and Peak Date**")
+        st.caption("This tool compares the average daily streams during the playlisting period (from entry to peak date) against a 30-day baseline period before the entry.")
+        
+        if st.button("Calculate Playlist Impact (Entry to Peak)", key=f"event_btn_{playlist_uuid}_{song_uuid}"):
+            if entry_date and peak_date and song_uuid:
+                with st.spinner(f"Fetching full stream history for '{song_name}'..."):
+                    song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
+                
+                if song_full_data and song_full_data.get('history'):
+                    history = song_full_data.get('history', [])
+                    
+                    parsed_history = []
+                    for h_item in history:
+                        if h_item.get('date') and h_item.get('plots') and h_item['plots'][0].get('value') is not None:
+                            parsed_history.append({'date': h_item['date'], 'streams': h_item['plots'][0]['value']})
+                    
+                    if parsed_history:
+                        input_data = {
+                            'dates': [item['date'] for item in parsed_history],
+                            'streams': [item['streams'] for item in parsed_history]
+                        }
+                        
+                        with st.spinner("Analyzing event impact..."):
+                            result_json = detect_event_effect(
+                                data=input_data,
+                                start_date=entry_date,
+                                end_date=peak_date,
+                                is_cumulative=True
+                            )
+                            st.session_state[event_analysis_key] = json.loads(result_json)
+                            st.rerun()
+                    else:
+                        st.error("Could not parse streaming history for analysis.")
+                else:
+                    st.error("Full streaming history for this song is not available. Please update the artist data.")
+            else:
+                st.warning("Cannot run analysis without a Song UUID, an Entry Date, and a Peak Date for the event period.")
+        
+        if event_analysis_key in st.session_state:
+            results = st.session_state[event_analysis_key]
+            if results.get('error'):
+                st.error(f"Analysis failed: {results['error']}")
+            elif 'event_effect' in results:
+                st.success("Analysis complete.")
+                effect = results['event_effect']
+                
+                res_cols = st.columns(2)
+                res_cols[0].metric(
+                    label="Avg. Daily Streams (Before Event)",
+                    value=f"{effect.get('baseline_period_avg', 0):,.0f}"
+                )
+                res_cols[1].metric(
+                    label="Avg. Daily Streams (During Event)",
+                    value=f"{effect.get('event_period_avg', 0):,.0f}"
+                )
+                
+                abs_increase = effect.get('absolute_increase_per_day', 0)
+                rel_increase = effect.get('relative_increase', 0)
+                
+                st.metric(
+                    label="Increase in Avg. Daily Streams",
+                    value=f"{abs_increase:,.0f}",
+                    delta=f"{rel_increase:.1%}" if rel_increase != float('inf') else "N/A"
+                )
 
     if song_uuid and playlist_uuid:
         graph_button_key = f"graph_btn_{playlist_uuid}_{song_uuid}"
         session_key = f"show_graph_{playlist_uuid}_{song_uuid}"
-        
-        if st.button("Show Playlist Audience", key=graph_button_key, use_container_width=True):
+
+        if st.button("Show Playlist Audience Growth Chart", key=graph_button_key, use_container_width=True):
             st.session_state[session_key] = not st.session_state.get(session_key, False)
-        
+
         if st.session_state.get(session_key, False):
             if entry_date:
                 try:
                     _, db_manager_local = get_clients()
-                    
-                    # --- NEW: Fetch song details to get the release date for context ---
-                    song_details = get_song_details(db_manager_local, song_uuid)
+
+                    song_details_data = get_song_details(db_manager_local, song_uuid)
                     song_release_date = None
-                    if song_details:
-                        song_release_date = song_details.get('object', song_details).get('releaseDate')
-                    # ----------------------------------------------------
+                    if song_details_data:
+                        song_release_date = song_details_data.get('object', song_details_data).get('releaseDate')
 
                     entry_date_dt = datetime.fromisoformat(entry_date.replace('Z', '+00:00')).date()
                     start_date_req = entry_date_dt - timedelta(days=90)
                     end_date_req = entry_date_dt + timedelta(days=90)
-                    
+
                     with st.spinner(f"Loading audience data for playlist '{playlist_name}' from database..."):
                         audience_data = get_playlist_audience_data(db_manager_local, playlist_uuid, start_date_req, end_date_req)
                         st.write(f"##### Follower Growth for **{playlist_name}**")
-                        # --- MODIFIED: Pass release date to the chart function ---
                         display_playlist_audience_chart(
-                            audience_data, 
-                            entry_date, 
-                            song_release_date, 
+                            audience_data,
+                            entry_date,
+                            song_release_date,
                             chart_key=f"chart_playlist_{playlist_uuid}_{song_uuid}"
                         )
 
@@ -696,25 +928,22 @@ def display_playlist_details(db_manager, item):
                 st.info("Cannot display performance graph without a song entry date.")
 
 
-# --- MODIFIED: Major rewrite to use the correct data sources ---
 def display_song_details(db_manager, song_uuid):
     """
     Displays the detailed view for a single song by fetching all its data from the DB.
     """
-    # Step 1: Fetch all necessary data from their respective collections
     song_metadata = get_song_details(db_manager, song_uuid)
-    song_playlist_entries = get_playlists_for_song(db_manager, song_uuid) # Uses the new collection
+    song_playlist_entries = get_playlists_for_song(db_manager, song_uuid)
 
-    # Step 2: Display Metadata Section
     release_date_for_chart = None
     if song_metadata:
         meta_obj = song_metadata.get('object', song_metadata)
-        release_date_for_chart = meta_obj.get('releaseDate') # Store for later use in chart
+        release_date_for_chart = meta_obj.get('releaseDate')
 
         st.write(f"**Song UUID:** `{song_uuid}`")
         col1, col2 = st.columns(2)
         col1.metric("Release Date", str(release_date_for_chart)[:10] if release_date_for_chart else "N/A")
-        
+
         duration_seconds = meta_obj.get('duration')
         if duration_seconds is not None:
             minutes = duration_seconds // 60
@@ -723,7 +952,6 @@ def display_song_details(db_manager, song_uuid):
         else:
             col2.metric("Duration", "N/A")
 
-        # ... genre display logic ...
         genres_list = meta_obj.get('genres', [])
         if genres_list:
             genre_tags = set()
@@ -739,7 +967,6 @@ def display_song_details(db_manager, song_uuid):
 
     st.markdown("---")
 
-    # Step 3: Display Featured in Playlists Section using the new data source
     st.write("**Featured in playlists:**")
     if song_playlist_entries:
         for entry in song_playlist_entries:
@@ -751,17 +978,132 @@ def display_song_details(db_manager, song_uuid):
 
     st.markdown("---")
     
-    # Step 4: Display Performance Graph Section
+    st.subheader("Analysis Tools")
+
+    with st.container(border=True):
+        st.markdown("**Changepoint Analysis**")
+        st.caption("Select a single date to detect a change in performance. This tool compares the average daily streams in a window before and after that date.")
+
+        changepoint_key = f'changepoint_result_{song_uuid}'
+        
+        cp_cols = st.columns(3)
+        cp_date = cp_cols[0].date_input("Changepoint Date", date.today() - timedelta(days=14))
+        cp_window = cp_cols[1].number_input("Comparison Window (days)", min_value=3, max_value=60, value=14, help="The number of days to compare before and after the selected date.")
+        cp_smoothing = cp_cols[2].number_input("Smoothing Window (days)", min_value=1, max_value=30, value=7, key=f"cp_smooth_{song_uuid}")
+
+        if st.button("Run Changepoint Analysis", key=f"cp_btn_{song_uuid}"):
+            with st.spinner("Fetching data and analyzing changepoint..."):
+                song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
+                if song_full_data and song_full_data.get('history'):
+                    history = song_full_data.get('history', [])
+                    parsed_history = [{'date': h['date'], 'streams': h['plots'][0]['value']} for h in history if h.get('date') and h.get('plots') and h['plots'][0].get('value') is not None]
+                    
+                    if parsed_history:
+                        input_data = {'dates': [item['date'] for item in parsed_history], 'streams': [item['streams'] for item in parsed_history]}
+                        result_json = detect_changepoint_effect(
+                            data=input_data,
+                            changepoint_date=cp_date.strftime('%Y-%m-%d'),
+                            is_cumulative=True,
+                            window_days=cp_window,
+                            smoothing_window_size=cp_smoothing
+                        )
+                        st.session_state[changepoint_key] = json.loads(result_json)
+                        st.rerun()
+                    else:
+                        st.error("Could not parse valid streaming history for this song.")
+                else:
+                    st.error("Full streaming history for this song is not available.")
+        
+        if changepoint_key in st.session_state:
+            results = st.session_state[changepoint_key]
+            if results.get('error'):
+                st.error(f"Analysis failed: {results['error']}")
+            elif 'changepoint_effect' in results:
+                st.success("Analysis complete.")
+                effect = results['changepoint_effect']
+                
+                res_cols = st.columns(2)
+                res_cols[0].metric(label=f"Avg. Daily Streams ({cp_window} Days Before)", value=f"{effect.get('before_period_avg', 0):,.0f}")
+                res_cols[1].metric(label=f"Avg. Daily Streams ({cp_window} Days After)", value=f"{effect.get('after_period_avg', 0):,.0f}")
+                
+                abs_increase = effect.get('absolute_increase_per_day', 0)
+                rel_increase = effect.get('relative_increase', 0)
+                
+                st.metric(label="Change in Avg. Daily Streams", value=f"{abs_increase:,.0f}", delta=f"{rel_increase:.1%}" if rel_increase != float('inf') else "N/A")
+
+    
+    with st.container(border=True):
+        st.markdown("**Custom Date Range Event Analysis**")
+        st.caption("Define a custom date range to analyze an event's impact. This tool compares the average daily streams during the event to a baseline period before it.")
+        
+        date_cols = st.columns(2)
+        start_date = date_cols[0].date_input("Event Start Date", date.today() - timedelta(days=30))
+        end_date = date_cols[1].date_input("Event End Date", date.today())
+
+        param_cols = st.columns(2)
+        baseline_days = param_cols[0].number_input("Baseline Period (days)", min_value=7, max_value=90, value=30, help="How many days before the start date to use for the 'before' average.")
+        smoothing_days = param_cols[1].number_input("Smoothing Window (days)", min_value=1, max_value=30, value=7, key=f"event_smooth_{song_uuid}")
+
+        custom_event_key = f'custom_event_result_{song_uuid}'
+
+        if st.button("Run Custom Event Analysis", key=f"custom_event_btn_{song_uuid}"):
+            if start_date and end_date:
+                if start_date >= end_date:
+                    st.error("The start date must be before the end date.")
+                else:
+                    with st.spinner("Fetching data and running analysis..."):
+                        song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
+                        if song_full_data and song_full_data.get('history'):
+                            history = song_full_data.get('history', [])
+                            parsed_history = [{'date': h['date'], 'streams': h['plots'][0]['value']} for h in history if h.get('date') and h.get('plots') and h['plots'][0].get('value') is not None]
+                            
+                            if parsed_history:
+                                input_data = {'dates': [item['date'] for item in parsed_history], 'streams': [item['streams'] for item in parsed_history]}
+                                result_json = detect_event_effect(
+                                    data=input_data,
+                                    start_date=start_date.strftime('%Y-%m-%d'),
+                                    end_date=end_date.strftime('%Y-%m-%d'),
+                                    is_cumulative=True,
+                                    baseline_period_days=baseline_days,
+                                    smoothing_window_size=smoothing_days
+                                )
+                                st.session_state[custom_event_key] = json.loads(result_json)
+                                st.rerun()
+                            else:
+                                st.error("Could not parse valid streaming history for this song.")
+                        else:
+                            st.error("Full streaming history for this song is not available.")
+            else:
+                st.warning("Please select both a start and end date.")
+
+        if custom_event_key in st.session_state:
+            results = st.session_state[custom_event_key]
+            if results.get('error'):
+                st.error(f"Analysis failed: {results['error']}")
+            elif 'event_effect' in results:
+                st.success("Analysis complete.")
+                effect = results['event_effect']
+                
+                res_cols = st.columns(2)
+                res_cols[0].metric(label="Avg. Daily Streams (Before Event)", value=f"{effect.get('baseline_period_avg', 0):,.0f}")
+                res_cols[1].metric(label="Avg. Daily Streams (During Event)", value=f"{effect.get('event_period_avg', 0):,.0f}")
+                
+                abs_increase = effect.get('absolute_increase_per_day', 0)
+                rel_increase = effect.get('relative_increase', 0)
+                
+                st.metric(label="Increase in Avg. Daily Streams", value=f"{abs_increase:,.0f}", delta=f"{rel_increase:.1%}" if rel_increase != float('inf') else "N/A")
+    
+    st.markdown("---")
+
     session_key = f"show_song_graph_{song_uuid}"
     if st.button("Show Full Performance Graph", key=f"song_graph_btn_{song_uuid}", use_container_width=True):
         st.session_state[session_key] = not st.session_state.get(session_key, False)
-    
+
     if st.session_state.get(session_key, False):
-        song_full_data = get_full_song_data_from_db(db_manager, song_uuid) # Still needed for stream history
+        song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
         if song_full_data and song_full_data.get('history'):
             song_name_for_title = song_metadata.get('object', {}).get('name', 'this song') if song_metadata else "this song"
-            
-            # Prepare playlist annotations from our new, correct data source
+
             playlist_annotations = []
             for entry in song_playlist_entries:
                 playlist_info = entry.get('playlist', {})
@@ -769,29 +1111,27 @@ def display_song_details(db_manager, song_uuid):
                     'name': playlist_info.get('name'),
                     'uuid': playlist_info.get('uuid'),
                     'entryDate': entry.get('entryDate'),
-                    'entrySubscribers': None # Let the chart function fetch this as needed
+                    'entrySubscribers': None
                 })
 
             with st.spinner(f"Loading aggregated performance for '{song_name_for_title}'..."):
                 display_full_song_streaming_chart(
-                    db_manager, 
-                    song_full_data.get('history', []), 
-                    playlist_annotations, # Pass the correct annotations
+                    db_manager,
+                    song_full_data.get('history', []),
+                    playlist_annotations,
                     chart_key=f"full_chart_{song_uuid}",
                     song_release_date=release_date_for_chart
                 )
         else:
             st.warning("Aggregated streaming history not found. Please update the artist data on the homepage to fetch it.")
-                
-    
-# --- MODIFIED: Major rewrite to use the correct data sources ---
+
+
 def display_by_song_view(db_manager, playlist_items):
     """
     Displays songs found on playlists in an interactive grid, similar to the main playlist view.
     """
     selected_uuid = st.session_state.get('selected_song_uuid')
 
-    # --- DETAILED VIEW (for a selected song) ---
     if selected_uuid:
         st.subheader("Song Performance Details")
         if st.button("⬅️ Back to all songs"):
@@ -800,13 +1140,10 @@ def display_by_song_view(db_manager, playlist_items):
         display_song_details(db_manager, selected_uuid)
         return
 
-    # --- GRID VIEW (default for "View by: Song") ---
-
     if not playlist_items:
         st.info("No playlist entries were found for this artist. Please try updating the artist data on the Home page.")
         return
 
-    # Step 1: Discover unique songs and fetch their metadata
     with st.spinner("Aggregating song information..."):
         song_uuids_on_playlists = {item.get('song_uuid') for item in playlist_items if item.get('song_uuid')}
 
@@ -818,19 +1155,18 @@ def display_by_song_view(db_manager, playlist_items):
             {'song_uuid': {'$in': list(song_uuids_on_playlists)}},
             {'song_uuid': 1, 'object.name': 1, 'object.imageUrl': 1, 'name': 1, 'imageUrl': 1}
         )
-        
+
         songs = {}
         for song_doc in songs_cursor:
             meta_obj = song_doc.get('object', song_doc)
             song_uuid = song_doc.get('song_uuid')
             if song_uuid:
                 songs[song_uuid] = {
-                    'uuid': song_uuid, # Add uuid for keying and selection
+                    'uuid': song_uuid,
                     'name': meta_obj.get('name', 'N/A'),
                     'imageUrl': meta_obj.get('imageUrl'),
                 }
 
-    # Step 2: Add Search and Sort controls, similar to the playlist view
     st.markdown("---")
     controls_cols = st.columns([2, 1, 1])
     with controls_cols[0]:
@@ -840,7 +1176,6 @@ def display_by_song_view(db_manager, playlist_items):
     with controls_cols[2]:
         sort_order_label = st.radio("Order", ["A-Z", "Z-A"], key="song_sort_order", horizontal=True)
 
-    # Step 3: Apply filtering and sorting
     display_songs = list(songs.values())
     if search_term:
         display_songs = [
@@ -850,8 +1185,7 @@ def display_by_song_view(db_manager, playlist_items):
     reverse_order = (sort_order_label == "Z-A")
     sort_lambda = lambda song: (song.get('name') or "").lower()
     sorted_songs = sorted(display_songs, key=sort_lambda, reverse=reverse_order)
-    
-    # Step 4: Render the grid
+
     if not sorted_songs:
         st.info("No songs match your search criteria.")
     else:
@@ -869,8 +1203,8 @@ def display_by_song_view(db_manager, playlist_items):
 
                         st.image(image_url or "https://i.imgur.com/3gMbdA5.png", use_container_width=True)
                         st.caption(f"**{song_name}**")
-                        st.caption(f"UUID: `{song_uuid}`") # <-- MODIFICATION HERE
-                        
+                        st.caption(f"UUID: `{song_uuid}`")
+
                         if st.button("Details", key=f"btn_song_{song_uuid}", use_container_width=True):
                             st.session_state.selected_song_uuid = song_uuid
                             st.rerun()
@@ -898,7 +1232,6 @@ def display_playlists(db_manager, playlist_items):
     selected_uuid = st.session_state.get('selected_playlist_uuid')
 
     if selected_uuid:
-        # Detailed view logic uses a different approach and is not affected
         selected_item = next((item for item in playlist_items if item.get('playlist', {}).get('uuid') == selected_uuid), None)
         if selected_item:
             playlist_name = selected_item.get('playlist', {}).get('name', 'Unknown Playlist')
@@ -912,7 +1245,6 @@ def display_playlists(db_manager, playlist_items):
             st.session_state.selected_playlist_uuid = None
             st.rerun()
     else:
-        # --- GRID VIEW ---
         controls_cols = st.columns([2, 1, 1])
         with controls_cols[0]:
             search_term = st.text_input("Search by playlist name...")
@@ -931,7 +1263,7 @@ def display_playlists(db_manager, playlist_items):
         reverse_order = (sort_order_label == "High to Low")
         if sort_key == "Alphabetical":
             sort_lambda = lambda item: item.get('playlist', {}).get('name', '').lower()
-        else:  # Subscriber Count
+        else:
             sort_lambda = lambda item: item.get('playlist', {}).get('latestSubscriberCount', 0)
 
         display_items = sorted(display_items, key=sort_lambda, reverse=reverse_order)
@@ -949,12 +1281,8 @@ def display_playlists(db_manager, playlist_items):
                         playlist_name = playlist.get('name', 'N/A')
                         image_url = playlist.get('imageUrl')
 
-                        # --- MODIFICATION IS HERE ---
-                        # Use the unique MongoDB document _id to guarantee a unique key.
-                        # Convert the ObjectId to a string.
                         doc_id = str(item.get('_id'))
                         button_key = f"btn_playlist_{doc_id}"
-                        # --- END MODIFICATION ---
 
                         if image_url:
                             st.image(image_url, use_container_width=True)
@@ -967,7 +1295,6 @@ def display_playlists(db_manager, playlist_items):
                         if playlist_uuid:
                             st.caption(f"UUID: `{playlist_uuid}`")
 
-                        # Use the new, guaranteed-unique button_key
                         if st.button("Details", key=button_key, use_container_width=True):
                             st.session_state.selected_playlist_uuid = playlist_uuid
                             st.rerun()
@@ -1018,7 +1345,7 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_da
             if button_col.button("Details", key=button_key, use_container_width=True):
                  session_key = f"show_{album_uuid}_{song_uuid}"
                  st.session_state[session_key] = not st.session_state.get(session_key, False)
-            
+
             if st.session_state.get(f"show_{album_uuid}_{song_uuid}", False):
                 with st.container(border=True):
                     song_metadata = get_song_details(db_manager, song_uuid)
@@ -1042,9 +1369,9 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_da
                         st.markdown("---")
                         song_aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date, end_date)
                         display_timeseries_chart(
-                            song_aud_data, 
-                            title="Song Audience Over Time", 
-                            chart_key=f"aud_chart_{song_uuid}" # Pass the unique key here
+                            song_aud_data,
+                            title="Song Audience Over Time",
+                            chart_key=f"aud_chart_{song_uuid}"
                         )
 
 def display_timeseries_chart(chart_data, title="", chart_key=None):
@@ -1063,9 +1390,9 @@ def display_timeseries_chart(chart_data, title="", chart_key=None):
     for entry in data_source:
         date_val = entry.get('date')
         if not date_val: continue
-        
+
         data_point = {'date': pd.to_datetime(date_val)}
-        
+
         value = None
         if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
             value = entry['plots'][0].get('value')
@@ -1075,7 +1402,7 @@ def display_timeseries_chart(chart_data, title="", chart_key=None):
             value = entry.get('listenerCount')
         elif 'followerCount' in entry:
             value = entry.get('followerCount')
-        
+
         if value is not None:
             data_point['value'] = value
             parsed_data.append(data_point)
@@ -1091,15 +1418,15 @@ def display_timeseries_chart(chart_data, title="", chart_key=None):
     if df.empty or 'value' not in df.columns:
         st.warning("Could not find any valid data to plot after parsing.")
         return
-    
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df.index, y=df['value'], mode='lines', name='Value', connectgaps=False,
                              hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Value</b>: %{y:,.0f}<extra></extra>'))
-    
+
     y_range = _get_optimal_y_range(df, ['value'])
     fig.update_layout(
         title="",
-        yaxis_range=y_range, 
+        yaxis_range=y_range,
         yaxis_tickformat=",.0f",
         showlegend=False,
         hovermode='x unified'
@@ -1113,7 +1440,7 @@ def display_audience_chart(audience_data):
     if not audience_data:
         st.info("No audience data available for the selected period.")
         return
-    
+
     df = pd.DataFrame(audience_data).rename(columns={'followerCount': 'Followers'})
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
@@ -1132,7 +1459,7 @@ def display_popularity_chart(popularity_data):
     if not popularity_data:
         st.info("No popularity data available for the selected period.")
         return
-    
+
     df = pd.DataFrame(popularity_data).rename(columns={'value': 'Popularity Score'})
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
@@ -1190,15 +1517,15 @@ def display_local_streaming_plots(local_streaming_data):
                 if country_name not in country_to_cities: country_to_cities[country_name] = set()
                 country_to_cities[country_name].add(city_name)
                 plot_data.append({'date': date_val, 'country': country_name, 'city': city_name, 'streams': city_plot.get('value')})
-    
+
     if not plot_data:
         st.info("Could not find any stream data in the local breakdown.")
         return
-        
+
     df = pd.DataFrame(plot_data)
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
-    
+
     sorted_countries = sorted(list(all_countries))
     selected_country = st.selectbox("Select a Country", sorted_countries)
 
@@ -1213,9 +1540,9 @@ def display_local_streaming_plots(local_streaming_data):
             title = f"Daily Streams in {selected_city}, {selected_country}"
         else:
             filtered_df = df[(df['country'] == selected_country) & (df['city'].isnull())]
-        
+
         if not filtered_df.empty:
-            
+
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=filtered_df['date'], y=filtered_df['streams'], mode='lines', name='Streams', connectgaps=False,
                                      hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,.0f}<extra></extra>'))
@@ -1225,7 +1552,7 @@ def display_local_streaming_plots(local_streaming_data):
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info(f"No streaming data found for the selected location.")
-            
+
 
 def display_top_countries_trend_chart(df_top_countries):
     """
@@ -1236,26 +1563,24 @@ def display_top_countries_trend_chart(df_top_countries):
         st.warning("No data available to plot.")
         return
 
-    # Pivot the DataFrame to have countries as columns for plotting
     df_pivot = df_top_countries.pivot(
-        index='date', 
-        columns='country', 
+        index='date',
+        columns='country',
         values='streams'
     )
 
-    # Create the line chart
     fig = px.line(
-        df_pivot, 
-        x=df_pivot.index, 
+        df_pivot,
+        x=df_pivot.index,
         y=df_pivot.columns,
         title="Streaming Trends for Top 10 Countries",
         labels={'value': 'Daily Streams', 'date': 'Date', 'country': 'Country'}
     )
-    
+
     fig.update_layout(
         hovermode="x unified",
         yaxis_tickformat=",.0f",
         legend_title_text='Countries'
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
