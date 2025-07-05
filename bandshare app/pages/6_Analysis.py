@@ -24,6 +24,10 @@ if 'selected_global_song_uuid' not in st.session_state:
 # This is still needed to store results from the per-song analysis
 if 'global_spike_analysis_results' not in st.session_state:
     st.session_state.global_spike_analysis_results = {}
+# --- MODIFICATION: Added new session state for Prophet results ---
+if 'global_prophet_analysis_results' not in st.session_state:
+    st.session_state.global_prophet_analysis_results = {}
+
 
 # --- Page UI ---
 st.title("Global Playlist Analysis")
