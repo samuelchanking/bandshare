@@ -19,7 +19,7 @@ from streamlit_caching import (
     get_song_details, get_full_song_data_from_db,
     get_song_audience_data, get_playlist_audience_data, get_playlists_for_song,
     get_tracks_for_playlist, get_playlist_placements_for_songs,
-    get_global_song_audience_data, # Add this import
+    get_global_song_audience_data, get_song_popularity_data,# Add this import
 )
 from datetime import datetime, date, timedelta
 import plotly.express as px
@@ -857,8 +857,15 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
                 fig.add_annotation(x=entry_date_val, y=df['value'].max(), text="Song Entry", showarrow=True, arrowhead=2, ax=0, ay=-40)
         if song_release_date and not df.empty:
             release_date_dt = pd.to_datetime(song_release_date)
-            chart_start_date = df['date'].min()
-            chart_end_date = df['date'].max()
+            
+            # Handle if 'date' is a column or the index
+            if 'date' in df.columns:
+                chart_start_date = df['date'].min()
+                chart_end_date = df['date'].max()
+            else:
+                chart_start_date = df.index.min()
+                chart_end_date = df.index.max()
+
             if not pd.isna(chart_start_date) and not pd.isna(chart_end_date) and chart_start_date <= release_date_dt <= chart_end_date:
                 fig.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
                 fig.add_annotation(x=release_date_dt, y=df['value'].max(), text="Song Release", showarrow=True, arrowhead=1, ax=20, ay=-60, font=dict(color="green"))
@@ -920,11 +927,21 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
 def display_playlist_details(db_manager, item):
     """Displays the detailed view for a single playlist entry."""
     playlist = item.get('playlist', {})
-    song = item.get('song', {})
     playlist_name = playlist.get('name', 'N/A')
-    song_name = song.get('name', 'N/A')
     playlist_uuid = playlist.get('uuid')
-    song_uuid = song.get('uuid')
+
+    # Handle inconsistent data structures by checking for song_uuid in multiple places
+    song_uuid = item.get('song_uuid')
+    if not song_uuid:
+        song_uuid = item.get('song', {}).get('uuid')
+
+    song_name = "N/A"
+    if song_uuid:
+        # If a UUID is found, fetch the definitive song details to ensure data is correct
+        song_metadata = get_song_details(db_manager, song_uuid)
+        if song_metadata:
+            meta_obj = song_metadata.get('object', song_metadata)
+            song_name = meta_obj.get('name', 'N/A')
 
     if playlist_uuid:
         st.code(f"Playlist UUID: {playlist_uuid}", language=None)
@@ -990,6 +1007,8 @@ def display_playlist_details(db_manager, item):
                     st.error(f"Could not process the request. Error: {e}")
             else:
                 st.info("Cannot display performance graph without a song entry date.")
+
+
 
 
 def display_song_details(db_manager, song_uuid):
@@ -1181,20 +1200,20 @@ def display_playlists(db_manager, playlist_items):
         display_by_song_view(db_manager, playlist_items)
         return
 
-    selected_uuid = st.session_state.get('selected_playlist_uuid')
+    selected_id = st.session_state.get('selected_playlist_entry_id')
 
-    if selected_uuid:
-        selected_item = next((item for item in playlist_items if item.get('playlist', {}).get('uuid') == selected_uuid), None)
+    if selected_id:
+        selected_item = next((item for item in playlist_items if str(item.get('_id')) == selected_id), None)
         if selected_item:
             playlist_name = selected_item.get('playlist', {}).get('name', 'Unknown Playlist')
             st.subheader(f"Details for: {playlist_name}")
             if st.button("⬅️ Back to all playlists"):
-                st.session_state.selected_playlist_uuid = None
+                st.session_state.selected_playlist_entry_id = None
                 st.rerun()
             display_playlist_details(db_manager, selected_item)
         else:
             st.error("Could not find selected playlist details.")
-            st.session_state.selected_playlist_uuid = None
+            st.session_state.selected_playlist_entry_id = None
             st.rerun()
     else:
         controls_cols = st.columns([2, 1, 1])
@@ -1242,15 +1261,25 @@ def display_playlists(db_manager, playlist_items):
                             st.image("https://i.imgur.com/3gMbdA5.png", use_container_width=True)
 
                         st.caption(f"**{playlist_name}**")
-                        st.write(f"Song: *{item.get('song', {}).get('name', 'N/A')}*")
+                        
+                        # Handle inconsistent song name in grid view
+                        song_name_in_grid = item.get('song', {}).get('name')
+                        if song_name_in_grid:
+                            st.write(f"Song: *{song_name_in_grid}*")
+                        else:
+                            # If name isn't embedded, check for a song_uuid to imply details exist
+                            song_uuid_in_grid = item.get('song_uuid') or item.get('song', {}).get('uuid')
+                            if song_uuid_in_grid:
+                                st.write("Song: *(See Details)*")
+                            else:
+                                st.write("Song: N/A")
 
                         if playlist_uuid:
                             st.caption(f"UUID: `{playlist_uuid}`")
 
                         if st.button("Details", key=button_key, use_container_width=True):
-                            st.session_state.selected_playlist_uuid = playlist_uuid
+                            st.session_state.selected_playlist_entry_id = doc_id
                             st.rerun()
-
 
 def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_data=None, start_date=None, end_date=None):
     """Displays album and tracklist data from the database."""
@@ -1319,11 +1348,20 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_da
 
                     if start_date and end_date:
                         st.markdown("---")
+                        # Display Song Audience Chart
                         song_aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date, end_date)
                         display_timeseries_chart(
                             song_aud_data,
                             title="Song Audience Over Time",
                             chart_key=f"aud_chart_{song_uuid}"
+                        )
+                        # --- ADDED: Display Song Popularity Chart ---
+                        st.markdown("---")
+                        song_pop_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date, end_date)
+                        display_timeseries_chart(
+                            song_pop_data,
+                            title="Song Popularity Over Time",
+                            chart_key=f"pop_chart_{song_uuid}"
                         )
 
 def display_timeseries_chart(chart_data, title="", chart_key=None):
