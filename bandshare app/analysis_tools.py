@@ -9,6 +9,12 @@ import streamlit as st
 from typing import List, Dict, Tuple
 from prophet import Prophet
 from sklearn.metrics import mean_squared_error
+import os # <-- ADDED IMPORT
+import contextlib # <-- ADDED IMPORT
+import io
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+from prophet.plot import plot_plotly, plot_components_plotly
 
 
 # --- REMOVED: The apply_spike_shifting_logic function has been deleted. ---
@@ -111,10 +117,16 @@ def clean_and_prepare_cumulative_data(
 
     parsed_history = []
     for entry in history_data:
-        if 'date' in entry and 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
+        # This handles the two slightly different data structures for stream history
+        value = None
+        if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
             value = entry['plots'][0].get('value')
-            if value is not None:
-                parsed_history.append({'date': entry['date'], 'value': value})
+        elif 'value' in entry: # Handles global audience data structure
+            value = entry.get('value')
+
+        if entry.get('date') and value is not None:
+            parsed_history.append({'date': entry['date'], 'value': value})
+
 
     if not parsed_history:
         return pd.DataFrame(), pd.to_datetime([])
@@ -123,13 +135,17 @@ def clean_and_prepare_cumulative_data(
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
 
+    # Remove duplicate dates, keeping the last recorded value for that day
     df_processed = df.drop_duplicates(subset=['date'], keep='last').reset_index(drop=True)
 
+    # Identify and store dates where the cumulative value erroneously decreased
     decreasing_mask = df_processed['value'].diff() < 0
     decreasing_dates = df_processed.loc[decreasing_mask, 'date']
     
+    # Remove the rows with decreasing values
     df_processed = df_processed[~decreasing_mask].reset_index(drop=True)
     
+    # Apply the intelligent duplicate removal logic
     df_cleaned = handle_cumulative_duplicates(df_processed)
 
     return df_cleaned, decreasing_dates
@@ -146,6 +162,7 @@ def convert_cumulative_to_daily(cumulative_data: List[Dict]) -> List[Dict]:
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
 
+    # Calculate day-over-day difference and ensure no negative values
     df['value'] = df['value'].diff().fillna(df['value'])
     df['value'] = df['value'].clip(lower=0)
 
@@ -177,9 +194,11 @@ def detect_anomalous_spikes(data_tuple: Tuple, discretization_step: int = 7, sen
         df = df.loc[df['streams'].diff() != 0].copy()
         df.set_index('date', inplace=True)
 
+        # Interpolate to get a value for every day, which is necessary for the analysis
         full_date_range = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
         daily_cumulative = df.reindex(full_date_range).interpolate(method='time')
 
+        # Smooth the CUMULATIVE data first to reduce noise before discretization
         smoothed_cumulative = daily_cumulative['streams'].rolling(
             window=smoothing_window_size,
             center=True,
@@ -196,23 +215,29 @@ def detect_anomalous_spikes(data_tuple: Tuple, discretization_step: int = 7, sen
     if len(np.unique(days)) < 2:
         return format_error("Not enough unique days to perform interpolation after initial smoothing.")
 
+    # Create an interpolation function based on the smoothed cumulative data
     interpolator = interp1d(days, streams, kind='linear', fill_value='extrapolate')
 
     max_days = max(days)
     if max_days < discretization_step:
         return format_error(f"Data range ({int(max_days)} days) is smaller than the discretization step ({discretization_step} days).")
 
+    # Create a discretized grid and get stream values at those points
     grid_days = np.arange(0, max_days + 1, discretization_step)
     s = interpolator(grid_days)
 
+    # Smooth the discretized series to get the trend line 'Av'
     s_series = pd.Series(s)
     Av = s_series.rolling(window=smoothing_window_size, center=True, min_periods=1).mean().to_numpy()
 
+    # Calculate the rate of change (daily average) for both series
     s_diff = np.diff(s) / discretization_step
     Av_diff = np.diff(Av) / discretization_step
 
+    # Calculate the absolute deviation between the actual rate and the trend rate
     abs_diff_dev = np.abs(s_diff - Av_diff)
 
+    # Smooth the deviation to create a dynamic threshold
     if len(abs_diff_dev) > 0:
         smoothed_std = pd.Series(abs_diff_dev).rolling(window=smoothing_window_size, center=True, min_periods=1).mean().to_numpy()
     else:
@@ -221,16 +246,18 @@ def detect_anomalous_spikes(data_tuple: Tuple, discretization_step: int = 7, sen
     anomalies = []
     for i in range(len(abs_diff_dev)):
         threshold = sensitivity * smoothed_std[i]
+        # An anomaly is detected if the deviation exceeds the threshold
         if abs_diff_dev[i] > threshold and threshold > 0:
 
             spike_size_per_day = s_diff[i] - Av_diff[i]
             expected_rate_per_day = Av_diff[i]
             total_streams_on_day = s_diff[i]
 
+            # Calculate relative significance to quantify the spike's importance
             if expected_rate_per_day > 1:
                 relative_significance = spike_size_per_day / expected_rate_per_day
             else:
-                relative_significance = float('inf')
+                relative_significance = float('inf') # Avoid division by zero
 
             anomaly_date = start_date + timedelta(days=int(grid_days[i+1]))
             anomalies.append({
@@ -240,6 +267,7 @@ def detect_anomalous_spikes(data_tuple: Tuple, discretization_step: int = 7, sen
                 'total_streams_on_day': float(total_streams_on_day)
             })
 
+    # Package debug information for plotting
     debug_info = {
         'grid_days': grid_days.tolist(),
         'start_date': start_date.strftime('%Y-%m-%d'),
@@ -254,24 +282,20 @@ def detect_anomalous_spikes(data_tuple: Tuple, discretization_step: int = 7, sen
     return json.dumps({'anomalies': anomalies, 'debug': debug_info, 'error': ''})
 
 
-# --- Other functions (detect_additional_contribution, etc.) remain unchanged ---
-# (Code for other functions is omitted for brevity but should be kept in your file)
-def detect_additional_contribution(data, event_date, event_duration_days=30, is_cumulative=False, smoothing_window_size=7):
+def detect_additional_contribution(data, event_date, event_duration_days=30, smoothing_window_size=3):
     """
-    Detects the effect of an event with a known duration using Prophet's holiday modeling.
-    It now automatically finds the optimal holiday prior scale.
+    Detects the effect of an event (e.g., playlist add) with a known duration using
+    Prophet's holiday modeling. It automatically finds the optimal holiday prior scale
+    and now returns the full forecast data for plotting.
     """
     try:
+        # 1. Prepare data
         input_data = json.loads(data) if isinstance(data, str) else data
         df = pd.DataFrame({
             'ds': pd.to_datetime(input_data['dates']),
             'y': input_data['streams']
         })
 
-        if is_cumulative:
-            df['y'] = df['y'].diff().fillna(df['y'].iloc[0])
-            df = df.iloc[1:].copy()
-        
         if smoothing_window_size > 1:
             df['y'] = df['y'].rolling(window=smoothing_window_size, center=True, min_periods=1).mean()
 
@@ -280,96 +304,103 @@ def detect_additional_contribution(data, event_date, event_duration_days=30, is_
         if len(df) < 14:
             return json.dumps({'error': 'Insufficient data points (minimum 14 days required)'})
 
+        # 2. Define event holiday
         event_date_dt = datetime.strptime(event_date, '%Y-%m-%d')
         event_holiday = pd.DataFrame({
-            'holiday': 'long_event',
+            'holiday': 'playlist_event',
             'ds': [event_date_dt + timedelta(days=i) for i in range(event_duration_days)],
-            'lower_window': 0,
-            'upper_window': 0,
+            'lower_window': 0, 'upper_window': 0,
         })
 
+        # 3. Find optimal scale
         best_scale = 0.01
         best_mse = float('inf')
-        
-        scales_to_test = [0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 20.0]
+        scales_to_test = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 25.0]
 
         for scale in scales_to_test:
-            model_temp = Prophet(
-                daily_seasonality=True,
-                weekly_seasonality=True,
-                yearly_seasonality=True,
-                holidays=event_holiday,
-                changepoint_prior_scale=0.05,
-                holidays_prior_scale=scale
-            )
-            model_temp.fit(df)
+            with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
+                model_temp = Prophet(
+                    daily_seasonality=True, weekly_seasonality=True,
+                    yearly_seasonality=True, holidays=event_holiday,
+                    changepoint_prior_scale=0.05, holidays_prior_scale=scale
+                )
+                model_temp.fit(df)
             forecast_temp = model_temp.predict(df)
             mse = mean_squared_error(df['y'], forecast_temp['yhat'])
-            
             if mse < best_mse:
                 best_mse = mse
                 best_scale = scale
 
-        final_model = Prophet(
-            daily_seasonality=True,
-            weekly_seasonality=True,
-            yearly_seasonality=True,
-            holidays=event_holiday,
-            changepoint_prior_scale=0.05,
-            holidays_prior_scale=best_scale
-        )
-        final_model.fit(df)
+        # 4. Train final model
+        with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
+            final_model = Prophet(
+                daily_seasonality=True, weekly_seasonality=True,
+                yearly_seasonality=True, holidays=event_holiday,
+                changepoint_prior_scale=0.05, holidays_prior_scale=best_scale
+            )
+            final_model.fit(df)
         
-        future = final_model.make_future_dataframe(periods=event_duration_days)
-        forecast = final_model.predict(future)
-
-        holiday_effect = forecast[forecast['ds'].isin(event_holiday['ds'])][['ds', 'long_event']]
+        # 5. Get final forecast and holiday effect
+        forecast = final_model.predict(df)
+        holiday_effect = forecast[forecast['ds'].isin(event_holiday['ds'])][['ds', 'playlist_event']]
         if holiday_effect.empty:
             return json.dumps({'additional_contribution': {}, 'error': 'No holiday effect found for the specified event date'})
 
-        avg_additional_streams = holiday_effect['long_event'].mean()
+        avg_additional_streams = holiday_effect['playlist_event'].mean()
         if pd.isna(avg_additional_streams):
             avg_additional_streams = 0.0
 
-        result = {
+        result_contribution = {
             'event_start_date': event_date_dt.strftime('%Y-%m-%d'),
             'event_duration_days': event_duration_days,
             'average_additional_streams_per_day': float(avg_additional_streams),
             'optimal_prior_scale': float(best_scale)
         }
 
-        return json.dumps({'additional_contribution': result, 'error': ''})
+        # --- NEW: Add forecast data to the output ---
+        # Convert ds to string to ensure it's JSON serializable
+        forecast['ds'] = forecast['ds'].dt.strftime('%Y-%m-%d')
+        forecast_data = forecast.to_dict('records')
+        
+        return json.dumps({
+            'additional_contribution': result_contribution, 
+            'forecast_data': forecast_data, # Add forecast data here
+            'error': ''
+        })
 
     except Exception as e:
         return json.dumps({'error': f'Error processing data: {str(e)}'})
 
-def detect_prophet_anomalies(data: Dict, is_cumulative: bool = False, interval_width: float = 0.95, smoothing_window_size: int = 1) -> str:
+    
+def detect_prophet_anomalies(data: Dict, interval_width: float = 0.95) -> str:
     """
-    Detects anomalous spikes in time-series data using Prophet's forecast uncertainty intervals.
+    Detects anomalies in DAILY time-series data using Prophet's forecast intervals,
+    determines the dominant seasonality, and returns INTERACTIVE PLOTS for visualization
+    with a layout similar to other charts in the app.
     """
     try:
+        # 1. Prepare DataFrame
         df = pd.DataFrame({
             'ds': pd.to_datetime(data['dates']),
             'y': data['streams']
         })
-
-        if is_cumulative:
-            df['y'] = df['y'].diff().fillna(df['y'].iloc[0])
-            df = df.iloc[1:].copy()
         
-        if smoothing_window_size > 1:
-            df['y'] = df['y'].rolling(window=smoothing_window_size, center=True, min_periods=1).mean()
-        
-        if df.empty or len(df) < 2:
-             return json.dumps({'anomalies': [], 'forecast_df': None, 'error': "Insufficient data for anomaly detection."})
+        if df.empty or len(df) < 14:
+             return json.dumps({
+                'anomalies': [], 
+                'error': "Insufficient data for anomaly detection (requires at least 14 days)."
+            })
 
+        # 2. Initialize, configure, and fit the Prophet model
         model = Prophet(interval_width=interval_width, daily_seasonality=True)
+        model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
         model.fit(df)
         
+        # 3. Predict to get forecast bounds
         forecast = model.predict(df)
         
+        # 4. Identify anomalies
         results_df = pd.concat([df.set_index('ds')['y'], forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']]], axis=1).reset_index()
-        
         results_df['anomaly'] = (results_df['y'] > results_df['yhat_upper']) | (results_df['y'] < results_df['yhat_lower'])
         anomalies = results_df[results_df['anomaly']].copy()
 
@@ -380,117 +411,59 @@ def detect_prophet_anomalies(data: Dict, is_cumulative: bool = False, interval_w
             anomalies['ds'] = anomalies['ds'].dt.strftime('%Y-%m-%d')
             anomalies_list = anomalies[['ds', 'y', 'yhat', 'difference']].to_dict('records')
 
-        results_df['ds'] = results_df['ds'].dt.strftime('%Y-%m-%d')
-        forecast_plot_data = results_df[['ds', 'y', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
+        # 5. Determine the best seasonality
+        best_seasonality = "None"
+        max_magnitude = -1
+        seasonalities = {
+            'yearly': forecast['yearly'] if 'yearly' in forecast else None,
+            'weekly': forecast['weekly'] if 'weekly' in forecast else None,
+            'daily': forecast['daily'] if 'daily' in forecast else None,
+            'monthly': forecast['monthly'] if 'monthly' in forecast else None
+        }
+        for name, component in seasonalities.items():
+            if component is not None:
+                magnitude = np.mean(np.abs(component))
+                if magnitude > max_magnitude:
+                    max_magnitude = magnitude
+                    best_seasonality = name.capitalize()
         
+        # 6. Generate and serialize INTERACTIVE plots
+        fig_forecast = plot_plotly(model, forecast)
+        if not anomalies.empty:
+            fig_forecast.add_trace(go.Scatter(
+                x=pd.to_datetime(anomalies['ds']), 
+                y=anomalies['y'], 
+                mode='markers', 
+                marker=dict(color='red', size=8, symbol='x'), 
+                name='Anomaly'
+            ))
+
+        fig_components = plot_components_plotly(model, forecast)
+        
+        # --- NEW: Update plot layouts for consistency ---
+        fig_forecast.update_layout(
+            yaxis_title="Daily Streams",
+            hovermode='x unified'
+        )
+        fig_components.update_layout(
+            hovermode='x unified'
+        )
+        # --------------------------------------------------
+
+        # Serialize Plotly figures to JSON strings
+        plots_json = {
+            'forecast_plot': fig_forecast.to_json(),
+            'components_plot': fig_components.to_json()
+        }
+
+        # 7. Package final results into JSON
         return json.dumps({
             'anomalies': anomalies_list,
-            'forecast_df': forecast_plot_data,
+            'best_seasonality': best_seasonality,
+            'plots_json': plots_json,
             'error': ''
         })
 
     except Exception as e:
-        return json.dumps({'anomalies': [], 'forecast_df': None, 'error': f'An error occurred: {str(e)}'})
+        return json.dumps({'anomalies': [], 'plots_json': None, 'error': f'An error occurred: {str(e)}'})
 
-def detect_event_effect(data: Dict, start_date: str, end_date: str, is_cumulative: bool = False, baseline_period_days: int = 30, smoothing_window_size: int = 7) -> str:
-    """
-    Detects the effect of an event with a known start and end date by comparing the average
-    of a smoothed time-series during the event to a baseline period.
-    """
-    try:
-        df = pd.DataFrame({
-            'date': pd.to_datetime(data['dates']),
-            'value': data['streams']
-        })
-        df.set_index('date', inplace=True)
-        df.sort_index(inplace=True)
-
-        if is_cumulative:
-            full_range = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
-            df = df.reindex(full_range).interpolate(method='time')
-            df['value'] = df['value'].diff().fillna(0).clip(lower=0)
-
-        if smoothing_window_size > 1:
-            df['value'] = df['value'].rolling(window=smoothing_window_size, center=True, min_periods=1).mean()
-
-        start_date_dt = pd.to_datetime(start_date)
-        end_date_dt = pd.to_datetime(end_date)
-        baseline_start_dt = start_date_dt - timedelta(days=baseline_period_days)
-
-        baseline_df = df[(df.index >= baseline_start_dt) & (df.index < start_date_dt)]
-        event_df = df[(df.index >= start_date_dt) & (df.index <= end_date_dt)]
-
-        if baseline_df.empty:
-            return json.dumps({'error': 'Not enough data to establish a baseline before the event start date.'})
-        if event_df.empty:
-            return json.dumps({'error': 'No data available within the specified event period.'})
-
-        baseline_avg = baseline_df['value'].mean()
-        event_avg = event_df['value'].mean()
-
-        absolute_increase = event_avg - baseline_avg
-        relative_increase = (absolute_increase / baseline_avg) if baseline_avg > 0 else float('inf')
-
-        result = {
-            'baseline_period_avg': float(baseline_avg),
-            'event_period_avg': float(event_avg),
-            'absolute_increase_per_day': float(absolute_increase),
-            'relative_increase': float(relative_increase)
-        }
-        
-        return json.dumps({'event_effect': result, 'error': ''})
-
-    except Exception as e:
-        return json.dumps({'error': f'An error occurred: {str(e)}'})
-
-def detect_changepoint_effect(data: Dict, changepoint_date: str, is_cumulative: bool = False, window_days: int = 14, smoothing_window_size: int = 7) -> str:
-    """
-    Detects an effect around a single point in time by comparing a window of time
-    before and after the changepoint.
-    """
-    try:
-        df = pd.DataFrame({
-            'date': pd.to_datetime(data['dates']),
-            'value': data['streams']
-        })
-        df.set_index('date', inplace=True)
-        df.sort_index(inplace=True)
-
-        if is_cumulative:
-            full_range = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
-            df = df.reindex(full_range).interpolate(method='time')
-            df['value'] = df['value'].diff().fillna(0).clip(lower=0)
-
-        if smoothing_window_size > 1:
-            df['value'] = df['value'].rolling(window=smoothing_window_size, center=True, min_periods=1).mean()
-
-        changepoint_dt = pd.to_datetime(changepoint_date)
-        
-        before_start_dt = changepoint_dt - timedelta(days=window_days)
-        after_end_dt = changepoint_dt + timedelta(days=window_days)
-
-        before_df = df[(df.index >= before_start_dt) & (df.index < changepoint_dt)]
-        after_df = df[(df.index >= changepoint_dt) & (df.index <= after_end_dt)]
-
-        if before_df.empty:
-            return json.dumps({'error': f'Not enough data in the {window_days}-day window before the changepoint.'})
-        if after_df.empty:
-            return json.dumps({'error': f'No data available in the {window_days}-day window after the changepoint.'})
-
-        before_avg = before_df['value'].mean()
-        after_avg = after_df['value'].mean()
-
-        absolute_increase = after_avg - before_avg
-        relative_increase = (absolute_increase / before_avg) if before_avg > 0 else float('inf')
-
-        result = {
-            'before_period_avg': float(before_avg),
-            'after_period_avg': float(after_avg),
-            'absolute_increase_per_day': float(absolute_increase),
-            'relative_increase': float(relative_increase)
-        }
-        
-        return json.dumps({'changepoint_effect': result, 'error': ''})
-
-    except Exception as e:
-        return json.dumps({'error': f'An error occurred: {str(e)}'})
