@@ -2,6 +2,7 @@
 
 # --- ADD THESE IMPORTS TO THE TOP OF THE FILE ---
 import json
+from plotly.subplots import make_subplots
 import plotly.express as px
 import numpy as np
 # --- MODIFICATION: Removed detect_event_effect and detect_changepoint_effect ---
@@ -9,7 +10,8 @@ from analysis_tools import (
     detect_anomalous_spikes, convert_cumulative_to_daily,
     detect_additional_contribution,
     detect_prophet_anomalies,
-    clean_and_prepare_cumulative_data
+    clean_and_prepare_cumulative_data,
+    detect_wavelet_spikes
 )
 import streamlit as st
 import pandas as pd
@@ -19,12 +21,13 @@ from streamlit_caching import (
     get_song_details, get_full_song_data_from_db,
     get_song_audience_data, get_playlist_audience_data, get_playlists_for_song,
     get_tracks_for_playlist, get_playlist_placements_for_songs,
-    get_global_song_audience_data, get_song_popularity_data,# Add this import
+    get_global_song_audience_data,
+    get_song_popularity_data 
 )
 from datetime import datetime, date, timedelta
 import plotly.express as px
 from itertools import zip_longest
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from client_setup import initialize_clients
 import config
 from itertools import zip_longest
@@ -36,6 +39,7 @@ import plotly.io as pio
 def get_clients():
     api_client, db_manager = initialize_clients(config)
     return api_client, db_manager
+
 
 def _get_optimal_y_range(dataframe, columns):
     """Calculates an optimal Y-axis range with padding for a given set of data columns."""
@@ -75,7 +79,14 @@ def display_all_songs_audience_chart(songs_with_data):
     for song_name, audience_data in songs_with_data.items():
         if audience_data:
             parsed_data = []
-            history = audience_data.get('history', audience_data)
+            history = audience_data
+            if isinstance(audience_data, dict):
+                history = audience_data.get('history', audience_data.get('items', audience_data))
+
+            if not isinstance(history, list):
+                st.warning(f"Could not parse audience data for '{song_name}'. Expected a list.")
+                continue
+
             for entry in history:
                 date_val = entry.get('date')
                 if not date_val: continue
@@ -828,6 +839,7 @@ def display_global_playlist_tracks(db_manager, playlist_uuid: str, playlist_name
                     fig_daily.update_layout(yaxis_title="Calculated Daily Streams", showlegend=False, hovermode='x unified')
                     st.plotly_chart(fig_daily, use_container_width=True)
 
+# --- MODIFIED: Handles inconsistent date column/index ---
 def display_playlist_audience_chart(audience_data: list, entry_date_str: str, song_release_date: str, chart_key: str):
     """
     Takes playlist audience data and plots both the original cumulative data and the
@@ -923,7 +935,7 @@ def display_playlist_audience_chart(audience_data: list, entry_date_str: str, so
     add_markers_to_fig(fig_daily, sorted_df_daily)
     st.plotly_chart(fig_daily, use_container_width=True, key=f"{chart_key}_daily")
 
-
+# --- MODIFIED: Handles inconsistent song data structures ---
 def display_playlist_details(db_manager, item):
     """Displays the detailed view for a single playlist entry."""
     playlist = item.get('playlist', {})
@@ -936,12 +948,14 @@ def display_playlist_details(db_manager, item):
         song_uuid = item.get('song', {}).get('uuid')
 
     song_name = "N/A"
+    song_release_date = None
     if song_uuid:
         # If a UUID is found, fetch the definitive song details to ensure data is correct
         song_metadata = get_song_details(db_manager, song_uuid)
         if song_metadata:
             meta_obj = song_metadata.get('object', song_metadata)
             song_name = meta_obj.get('name', 'N/A')
+            song_release_date = meta_obj.get('releaseDate')
 
     if playlist_uuid:
         st.code(f"Playlist UUID: {playlist_uuid}", language=None)
@@ -969,31 +983,27 @@ def display_playlist_details(db_manager, item):
     col3.metric("Song Peak Date", str(peak_date)[:10] if peak_date else "N/A")
     
     st.markdown("---")
-    st.subheader("Song Performance Analysis")
-    st.write("Analyze the song's streaming performance around its placement on this playlist.")
+    st.subheader("Performance Analysis")
+    st.write("Analyze the playlist's follower growth and the song's popularity around its entry date.")
 
     if song_uuid and playlist_uuid:
         graph_button_key = f"graph_btn_{playlist_uuid}_{song_uuid}"
         session_key = f"show_graph_{playlist_uuid}_{song_uuid}"
 
-        if st.button("Show Playlist Audience Growth Chart", key=graph_button_key, use_container_width=True):
+        if st.button("Show Performance Charts", key=graph_button_key, use_container_width=True):
             st.session_state[session_key] = not st.session_state.get(session_key, False)
 
         if st.session_state.get(session_key, False):
             if entry_date:
                 try:
                     _, db_manager_local = get_clients()
-
-                    song_details_data = get_song_details(db_manager_local, song_uuid)
-                    song_release_date = None
-                    if song_details_data:
-                        song_release_date = song_details_data.get('object', song_details_data).get('releaseDate')
-
+                    
                     entry_date_dt = datetime.fromisoformat(entry_date.replace('Z', '+00:00')).date()
                     start_date_req = entry_date_dt - timedelta(days=90)
                     end_date_req = entry_date_dt + timedelta(days=90)
 
-                    with st.spinner(f"Loading audience data for playlist '{playlist_name}' from database..."):
+                    with st.spinner(f"Loading data for playlist '{playlist_name}' and song '{song_name}'..."):
+                        # Playlist Audience
                         audience_data = get_playlist_audience_data(db_manager_local, playlist_uuid, start_date_req, end_date_req)
                         st.write(f"##### Follower Growth for **{playlist_name}**")
                         display_playlist_audience_chart(
@@ -1003,21 +1013,59 @@ def display_playlist_details(db_manager, item):
                             chart_key=f"chart_playlist_{playlist_uuid}_{song_uuid}"
                         )
 
+                        # Song Popularity
+                        st.markdown("---")
+                        st.write(f"##### Popularity Score for **{song_name}**")
+                        popularity_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date_req, end_date_req)
+                        display_timeseries_chart(
+                            popularity_data,
+                            title="", # Title is handled by the st.write above
+                            chart_key=f"chart_song_pop_{playlist_uuid}_{song_uuid}"
+                        )
+
+
                 except (ValueError, TypeError) as e:
                     st.error(f"Could not process the request. Error: {e}")
             else:
                 st.info("Cannot display performance graph without a song entry date.")
 
 
-
-
 def display_song_details(db_manager, song_uuid):
     """
-    Displays the detailed view for a single song by fetching all its data from the DB.
+    Displays the detailed view for a single song, including performance and popularity charts.
     """
+    api_client, _ = get_clients()
     song_metadata = get_song_details(db_manager, song_uuid)
     song_playlist_entries = get_playlists_for_song(db_manager, song_uuid)
 
+    # --- Date Calculation & Update Logic ---
+    start_date_filter = None
+    end_date_filter = None
+    can_update = False
+
+    if song_playlist_entries:
+        entry_dates = []
+        for entry in song_playlist_entries:
+            if entry_date_str := entry.get('entryDate'):
+                try:
+                    entry_dates.append(datetime.fromisoformat(entry_date_str.replace('Z', '+00:00')).date())
+                except ValueError:
+                    continue
+        
+        if entry_dates:
+            min_entry_date = min(entry_dates)
+            max_entry_date = max(entry_dates)
+            
+            start_date_filter = min_entry_date - timedelta(days=90)
+            end_date_filter = max_entry_date + timedelta(days=90)
+            can_update = True
+
+    # Use a default 1-year range if no playlist entries are found
+    if not can_update:
+        end_date_filter = date.today()
+        start_date_filter = end_date_filter - timedelta(days=365)
+
+    # --- Display Metadata ---
     release_date_for_chart = None
     if song_metadata:
         meta_obj = song_metadata.get('object', song_metadata)
@@ -1044,7 +1092,6 @@ def display_song_details(db_manager, song_uuid):
                 for sub_genre in genre_info.get('sub', []):
                     genre_tags.add(sub_genre.capitalize())
             st.write(f"**Genres:** {', '.join(sorted(list(genre_tags)))}")
-
     else:
         st.info("Additional song metadata not found. Please update artist data on the homepage.")
 
@@ -1061,20 +1108,46 @@ def display_song_details(db_manager, song_uuid):
 
     st.markdown("---")
     
-    st.subheader("Analysis Tools")
-    st.info("Analysis tools have been removed from this view.")
-    
+    st.write("**Update Performance Data**")
+    st.caption(f"This will fetch audience and popularity data from **{start_date_filter.strftime('%Y-%m-%d')}** to **{end_date_filter.strftime('%Y-%m-%d')}**.")
+    if st.button("Fetch and Store Song Data", use_container_width=True, type="primary"):
+        with st.spinner("Fetching and updating song data..."):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                future_aud = executor.submit(api_client.get_song_streaming_audience, song_uuid, 'spotify', start_date_filter, end_date_filter)
+                future_pop = executor.submit(api_client.get_song_popularity, song_uuid, 'spotify', start_date_filter, end_date_filter)
+                
+                aud_data = future_aud.result()
+                pop_data = future_pop.result()
+
+                data_found = False
+                if aud_data and aud_data.get('items'):
+                    db_manager.store_song_audience_data(song_uuid, aud_data)
+                    data_found = True
+                
+                if pop_data and pop_data.get('items'):
+                    db_manager.store_song_popularity_data(song_uuid, pop_data)
+                    data_found = True
+
+                if data_found:
+                    get_full_song_data_from_db.clear()
+                    get_song_audience_data.clear()
+                    get_song_popularity_data.clear()
+                    st.success("Track data updated successfully.")
+                    st.rerun()
+                else:
+                    st.info("No new data was found for the specified range.")
     st.markdown("---")
 
+    st.subheader("Analysis Tools")
     session_key = f"show_song_graph_{song_uuid}"
-    if st.button("Show Full Performance Graph", key=f"song_graph_btn_{song_uuid}", use_container_width=True):
+    if st.button("Show Performance Graph", key=f"song_graph_btn_{song_uuid}", use_container_width=True):
         st.session_state[session_key] = not st.session_state.get(session_key, False)
 
     if st.session_state.get(session_key, False):
+        # Display Audience Chart
         song_full_data = get_full_song_data_from_db(db_manager, song_uuid)
         if song_full_data and song_full_data.get('history'):
             song_name_for_title = song_metadata.get('object', {}).get('name', 'this song') if song_metadata else "this song"
-
             playlist_annotations = []
             for entry in song_playlist_entries:
                 playlist_info = entry.get('playlist', {})
@@ -1084,7 +1157,6 @@ def display_song_details(db_manager, song_uuid):
                     'entryDate': entry.get('entryDate'),
                     'entrySubscribers': None
                 })
-
             with st.spinner(f"Loading aggregated performance for '{song_name_for_title}'..."):
                 display_full_song_streaming_chart(
                     db_manager,
@@ -1094,9 +1166,23 @@ def display_song_details(db_manager, song_uuid):
                     song_release_date=release_date_for_chart
                 )
         else:
-            st.warning("Aggregated streaming history not found. Please update the artist data on the homepage to fetch it.")
+            st.warning("Aggregated streaming history not found. Please use the 'Update Performance Data' section above to fetch it.")
 
+        # --- NEW: Display Popularity Chart ---
+        st.markdown("---")
+        with st.spinner("Loading popularity data..."):
+            popularity_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
+        
+        if popularity_data:
+            display_timeseries_chart(
+               popularity_data,
+               title="Song Popularity Over Time",
+               chart_key=f"chart_song_pop_{song_uuid}"
+           )
+        else:
+            st.info("Popularity data not found for this period. Use the update button to fetch it.")
 
+# --- MODIFIED: This function now handles inconsistent data structures ---
 def display_by_song_view(db_manager, playlist_items):
     """
     Displays songs found on playlists in an interactive grid, similar to the main playlist view.
@@ -1116,7 +1202,13 @@ def display_by_song_view(db_manager, playlist_items):
         return
 
     with st.spinner("Aggregating song information..."):
-        song_uuids_on_playlists = {item.get('song_uuid') for item in playlist_items if item.get('song_uuid')}
+        # Handle both {'song_uuid':...} and {'song':{'uuid':...}} structures
+        song_uuids_on_playlists = set()
+        for item in playlist_items:
+            song_uuid = item.get('song_uuid') or item.get('song', {}).get('uuid')
+            if song_uuid:
+                song_uuids_on_playlists.add(song_uuid)
+
 
         if not song_uuids_on_playlists:
             st.info("Could not identify any songs from the playlist data. The data may be malformed.")
@@ -1185,6 +1277,7 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
 
+# --- MODIFIED: Handles inconsistent song data structures ---
 def display_playlists(db_manager, playlist_items):
     """Displays playlist data, now with searching and sorting."""
     st.subheader("Featured On Playlists (Spotify)")
@@ -1281,6 +1374,7 @@ def display_playlists(db_manager, playlist_items):
                             st.session_state.selected_playlist_entry_id = doc_id
                             st.rerun()
 
+
 def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_data=None, start_date=None, end_date=None):
     """Displays album and tracklist data from the database."""
     if not album_data:
@@ -1363,6 +1457,7 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_da
                             title="Song Popularity Over Time",
                             chart_key=f"pop_chart_{song_uuid}"
                         )
+
 
 def display_timeseries_chart(chart_data, title="", chart_key=None):
     """
@@ -1462,102 +1557,47 @@ def display_popularity_chart(popularity_data):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def display_streaming_audience_chart(streaming_data):
-    """Displays streaming audience data in a line chart."""
-    st.subheader("Streaming Audience (Spotify)")
+def display_streaming_audience_chart(streaming_data, spikes=None):
+    """MODIFIED: Displays streaming audience data and optional spikes."""
+    st.subheader("Streaming Audience")
     if not streaming_data:
         st.info("No streaming audience data available for the selected period.")
         return
-
     df = pd.DataFrame(streaming_data).rename(columns={'value': 'Streams'})
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values(by='date', inplace=True)
-
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df['date'], y=df['Streams'], mode='lines', name='Streams', connectgaps=False,
-                             hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,.0f}<extra></extra>'))
+    fig.add_trace(go.Scatter(x=df['date'], y=df['Streams'], mode='lines', name='Streams', connectgaps=False, line=dict(color='#2ca02c'), hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,.0f}<extra></extra>'))
+    if spikes is not None and not spikes.empty:
+        fig.add_trace(go.Scatter(
+            x=spikes.index, y=spikes['streams'], mode='markers', name='Detected Spikes', 
+            marker=dict(color='red', size=8, symbol='x'),
+            hoverinfo='text',
+            hovertext=[f"Spike: {s:,.0f} streams<br>Date: {d.strftime('%Y-%m-%d')}<br>Type: {t}" for d, s, t in zip(spikes.index, spikes['streams'], spikes['type'])]
+        ))
     y_range = _get_optimal_y_range(df, ['Streams'])
-    fig.update_layout(title="Total Streams Over Time", yaxis_range=y_range, yaxis_tickformat=",.0f", showlegend=False, hovermode='x unified')
+    fig.update_layout(yaxis_range=y_range, yaxis_tickformat=",.0f", showlegend=False, hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
 
 
-def display_local_streaming_plots(local_streaming_data):
-    """Creates interactive dropdowns to plot local streaming data."""
-    st.subheader("Local Streaming Performance")
-    if not local_streaming_data:
-        st.info("No local streaming data available for this period.")
-        return
-
-    all_countries = set()
-    country_to_cities = {}
-    plot_data = []
-
-    for daily_entry in local_streaming_data:
-        date_val = daily_entry.get('date')
-        for country_plot in daily_entry.get('countryPlots', []):
-            country_name = country_plot.get('countryName')
-            if country_name:
-                all_countries.add(country_name)
-                plot_data.append({'date': date_val, 'country': country_name, 'city': None, 'streams': country_plot.get('value')})
-        for city_plot in daily_entry.get('cityPlots', []):
-            country_name = city_plot.get('countryName')
-            city_name = city_plot.get('cityName')
-            if country_name and city_name:
-                all_countries.add(country_name)
-                if country_name not in country_to_cities: country_to_cities[country_name] = set()
-                country_to_cities[country_name].add(city_name)
-                plot_data.append({'date': date_val, 'country': country_name, 'city': city_name, 'streams': city_plot.get('value')})
-
-    if not plot_data:
-        st.info("Could not find any stream data in the local breakdown.")
-        return
-
-    df = pd.DataFrame(plot_data)
-    df['date'] = pd.to_datetime(df['date'])
-    df.sort_values(by='date', inplace=True)
-
-    sorted_countries = sorted(list(all_countries))
-    selected_country = st.selectbox("Select a Country", sorted_countries)
-
-    if selected_country:
-        cities = sorted(list(country_to_cities.get(selected_country, [])))
-        city_options = ["All Cities"] + cities
-        selected_city = st.selectbox("Select a City", city_options)
-
-        title = f"Daily Streams in {selected_country}"
-        if selected_city and selected_city != "All Cities":
-            filtered_df = df[(df['country'] == selected_country) & (df['city'] == selected_city)]
-            title = f"Daily Streams in {selected_city}, {selected_country}"
-        else:
-            filtered_df = df[(df['country'] == selected_country) & (df['city'].isnull())]
-
-        if not filtered_df.empty:
-
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=filtered_df['date'], y=filtered_df['streams'], mode='lines', name='Streams', connectgaps=False,
-                                     hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,.0f}<extra></extra>'))
-            y_range = _get_optimal_y_range(filtered_df, ['streams'])
-            fig.update_layout(title=title, yaxis_range=y_range, yaxis_tickformat=",.0f", showlegend=False, hovermode='x unified')
-
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info(f"No streaming data found for the selected location.")
 
 
-def display_top_countries_trend_chart(df_top_countries):
+def display_top_countries_trend_chart(df_top_countries, anomalies: list = None, spikes: dict = None):
     """
     Takes a DataFrame of daily stream data for the top countries and
-    plots it as a multi-line trend chart.
+    plots it as a multi-line trend chart. Can now overlay anomalies from divergence
+    analysis and spikes from systematic peak detection.
     """
     if df_top_countries.empty:
         st.warning("No data available to plot.")
         return
 
-    df_pivot = df_top_countries.pivot(
+    df_pivot = df_top_countries.pivot_table(
         index='date',
         columns='country',
-        values='streams'
-    )
+        values='streams',
+        aggfunc='sum'
+    ).fillna(0)
 
     fig = px.line(
         df_pivot,
@@ -1567,6 +1607,34 @@ def display_top_countries_trend_chart(df_top_countries):
         labels={'value': 'Daily Streams', 'date': 'Date', 'country': 'Country'}
     )
 
+    # This section handles overlaying anomalous periods from the divergence analysis
+    if anomalies:
+        for anomaly in anomalies:
+            fig.add_vrect(
+                x0=anomaly.get('start'),
+                x1=anomaly.get('end'),
+                fillcolor="rgba(255, 0, 0, 0.2)",
+                layer="below",
+                line_width=0,
+                annotation_text=f"Divergence: {anomaly.get('country')}",
+                annotation_position="top left"
+            )
+
+    # This new section handles overlaying the detected spikes
+    if spikes:
+        for country, spike_df in spikes.items():
+            if not spike_df.empty:
+                fig.add_trace(go.Scatter(
+                    x=spike_df.index,
+                    y=spike_df['streams'],
+                    mode='markers',
+                    name=f'{country} Spikes',
+                    marker=dict(symbol='x', color='red', size=10, line=dict(width=2)),
+                    hoverinfo='text',
+                    # Create a custom hover text for each spike marker
+                    hovertext=[f"Spike: {s:,.0f} streams<br>Date: {d.strftime('%Y-%m-%d')}<br>Country: {country}" for d, s in zip(spike_df.index, spike_df['streams'])]
+                ))
+
     fig.update_layout(
         hovermode="x unified",
         yaxis_tickformat=",.0f",
@@ -1574,3 +1642,386 @@ def display_top_countries_trend_chart(df_top_countries):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+    
+def display_country_statistics_charts(df: pd.DataFrame, std_threshold: float, window_size: int):
+    """
+    Displays individual charts for each country showing the streaming data,
+    its rolling average, and a shaded band for the rolling standard deviation.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing 'date', 'country', and 'streams'.
+        std_threshold (float): The multiplier for the standard deviation band.
+        window_size (int): The window size for the rolling calculations.
+    """
+    countries = df['country'].unique()
+    
+    st.caption(f"Showing daily streams with a {window_size}-day rolling average and a {std_threshold:.1f}x standard deviation band for each country.")
+
+    for country in countries:
+        st.write(f"**Analysis for {country}**")
+        country_df = df[df['country'] == country].set_index('date').sort_index()
+        
+        if country_df.empty or len(country_df) < window_size:
+            st.info(f"Not enough data for {country} to calculate rolling statistics with a {window_size}-day window.")
+            continue
+            
+        # Calculate rolling statistics
+        rolling_mean = country_df['streams'].rolling(window=window_size, center=True, min_periods=1).mean()
+        rolling_std = country_df['streams'].rolling(window=window_size, center=True, min_periods=1).std()
+        
+        # Calculate the upper and lower bands using the threshold
+        upper_band = rolling_mean + (std_threshold * rolling_std)
+        lower_band = (rolling_mean - (std_threshold * rolling_std)).clip(lower=0)
+
+        fig = go.Figure()
+        
+        # Original streams line
+        fig.add_trace(go.Scatter(
+            x=country_df.index, y=country_df['streams'], mode='lines', name='Daily Streams', line=dict(color='#1f77b4')
+        ))
+
+        # Standard deviation band
+        fig.add_trace(go.Scatter(
+            x=rolling_mean.index, y=upper_band, mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'
+        ))
+        fig.add_trace(go.Scatter(
+            x=rolling_mean.index, y=lower_band, mode='lines', line=dict(width=0),
+            fill='tonexty', fillcolor='rgba(255, 127, 14, 0.2)', name=f'Mean +/- {std_threshold:.1f} SD', hoverinfo='skip'
+        ))
+
+        # Rolling average line
+        fig.add_trace(go.Scatter(
+            x=rolling_mean.index, y=rolling_mean, mode='lines', name='Rolling Average', line=dict(color='rgba(255, 127, 14, 0.8)', dash='dash')
+        ))
+
+        fig.update_layout(
+            yaxis_title="Daily Streams", hovermode="x unified",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig, use_container_width=True, key=f"stats_chart_{country}")# --- NEW FUNCTION for the Tracks page grid view ---
+def display_tracks_grid(songs: List[Dict[str, Any]]):
+    """Displays a searchable and sortable grid of all artist songs."""
+    st.subheader("All Artist Songs")
+    st.markdown("---")
+    
+    controls_cols = st.columns([2, 1, 1])
+    with controls_cols[0]:
+        search_term = st.text_input("Search by song name...", key="track_search")
+    with controls_cols[1]:
+        sort_key = st.selectbox("Sort by", ["Alphabetical", "Release Date"], key="track_sort_key")
+    with controls_cols[2]:
+        sort_order_label = st.radio("Order", ["A-Z / Newest", "Z-A / Oldest"], key="track_sort_order", horizontal=True)
+
+    display_songs = list(songs)
+    if search_term:
+        display_songs = [s for s in display_songs if search_term.lower() in s.get("name", "").lower()]
+
+    reverse_order = (sort_order_label == "Z-A / Oldest")
+    
+    # --- MODIFICATION START ---
+    # This logic is updated to ensure a string is always returned for comparison.
+    if sort_key == "Alphabetical":
+        # Provides an empty string for None names, which is safe.
+        sort_lambda = lambda s: (s.get("name") or "").lower()
+    else:  # Release Date
+        # Uses 'or' to provide a fallback string if the release date is None.
+        # This prevents the TypeError.
+        sort_lambda = lambda s: s.get("releaseDate") or "1900-01-01"
+    # --- MODIFICATION END ---
+
+    # Sort songs ensuring None values don't crash the sort
+    sorted_songs = sorted(
+        [s for s in display_songs if s.get('uuid')], 
+        key=sort_lambda, 
+        reverse=reverse_order
+    )
+
+    if not sorted_songs:
+        st.info("No songs match your search criteria.")
+        return
+
+    st.write(f"Displaying **{len(sorted_songs)}** song(s).")
+    st.markdown("---")
+
+    for song_chunk in grouper(sorted_songs, 4):
+        cols = st.columns(4)
+        for i, song_data in enumerate(song_chunk):
+            if song_data:
+                with cols[i]:
+                    song_uuid = song_data['uuid']
+                    song_name = song_data['name']
+                    image_url = song_data.get('imageUrl')
+
+                    st.image(image_url or "https://i.imgur.com/3gMbdA5.png", use_container_width=True)
+                    st.caption(f"**{song_name}**")
+                    # Use a fallback for displaying the release date as well
+                    release_display = song_data.get('releaseDate') or 'N/A'
+                    st.caption(f"Released: {release_display}")
+                    
+                    if st.button("Details", key=f"btn_track_{song_uuid}", use_container_width=True):
+                        st.session_state.selected_track_uuid = song_uuid
+                        st.rerun()
+
+# --- NEW FUNCTION for the Tracks page detail view ---
+def display_track_details_page(api_client, db_manager, song_uuid: str):
+    """Displays the comprehensive detail view for a single track."""
+    if st.button("⬅️ Back to all tracks"):
+        st.session_state.selected_track_uuid = None
+        st.rerun()
+
+    song_details = get_song_details(db_manager, song_uuid)
+    if not song_details:
+        st.error(f"Could not load details for song UUID: {song_uuid}")
+        return
+
+    meta_obj = song_details.get('object', song_details)
+    song_name = meta_obj.get('name', 'Unknown Song')
+    
+    st.subheader(f"Details for: {song_name}")
+    
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        if image_url := meta_obj.get("imageUrl"):
+            st.image(image_url, use_container_width=True)
+    with col2:
+        m_col1, m_col2 = st.columns(2)
+        release_date = meta_obj.get('releaseDate', 'N/A')
+        m_col1.metric("Release Date", str(release_date)[:10])
+        
+        duration_seconds = meta_obj.get('duration')
+        if duration_seconds is not None:
+            minutes = duration_seconds // 60
+            seconds = duration_seconds % 60
+            m_col2.metric("Duration", f"{minutes}:{seconds:02d}")
+        
+        st.write(f"**ISRC:** `{meta_obj.get('isrc')}`")
+        st.caption(f"**UUID:** `{song_uuid}`")
+
+
+    st.markdown("---")
+    st.subheader("Performance Data")
+
+    start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=365), key=f"start_track_{song_uuid}")
+    end_date_filter = st.date_input("Chart End Date", date.today(), key=f"end_track_{song_uuid}")
+    
+    if st.button("Update Track Data", use_container_width=True, type="primary"):
+        with st.spinner("Fetching and updating Audience and Popularity data..."):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                future_aud = executor.submit(api_client.get_song_streaming_audience, song_uuid, 'spotify', start_date_filter, end_date_filter)
+                future_pop = executor.submit(api_client.get_song_popularity, song_uuid, 'spotify', start_date_filter, end_date_filter)
+                
+                aud_data = future_aud.result()
+                pop_data = future_pop.result()
+
+                data_found = False
+                if aud_data and not aud_data.get('error') and aud_data.get('items'):
+                    db_manager.store_song_audience_data(song_uuid, aud_data)
+                    data_found = True
+                
+                if pop_data and not pop_data.get('error') and pop_data.get('items'):
+                    db_manager.store_song_popularity_data(song_uuid, pop_data)
+                    data_found = True
+
+                if data_found:
+                    get_song_audience_data.clear()
+                    get_song_popularity_data.clear()
+                    st.success("Track data updated successfully.")
+                    st.rerun()
+                else:
+                    st.info("No new data was found for the specified range.")
+
+
+    # --- Display Charts ---
+    c1, c2 = st.columns(2)
+    with c1:
+        aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
+        display_timeseries_chart(aud_data, title="Song Audience Over Time", chart_key=f"track_aud_{song_uuid}")
+    with c2:
+        pop_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
+        display_timeseries_chart(pop_data, title="Song Popularity Over Time", chart_key=f"track_pop_{song_uuid}")
+    st.markdown("---")
+    display_retention_chart(
+        audience_data=aud_data,
+        popularity_data=pop_data,
+        chart_key=f"track_retention_{song_uuid}"
+    )  
+    st.markdown("---")
+
+    # --- Display Playlist Placements ---
+    st.subheader("Playlist Placements")
+    playlist_entries = get_playlists_for_song(db_manager, song_uuid)
+    if not playlist_entries:
+        st.info("This song has not been found on any playlists in the database.")
+    else:
+        st.write(f"Found this song on **{len(playlist_entries)}** playlist(s):")
+        for entry in playlist_entries:
+            playlist_info = entry.get('playlist', {})
+            entry_date = entry.get('entryDate', 'N/A')
+            with st.container(border=True):
+                st.write(f"**{playlist_info.get('name', 'N/A')}**")
+                st.caption(f"Added on: {str(entry_date)[:10]}")
+                st.write(f"Subscribers on entry: {playlist_info.get('latestSubscriberCount', 'N/A'):,}")
+
+def display_retention_chart(audience_data: list, popularity_data: list, chart_key: str):
+    """
+    Calculates and displays a retention rate chart based on audience and popularity data.
+    Retention Rate = (Popularity Score / Audience Count)
+    """
+    st.subheader("Audience Engagement Rate (Popularity / Audience)")
+
+    # --- MODIFIED SECTION ---
+    # Helper function to correctly parse nested data structures
+    def parse_timeseries_data(raw_data):
+        source_list = raw_data.get('history') if isinstance(raw_data, dict) else raw_data
+        if not source_list:
+            return []
+
+        parsed_list = []
+        for entry in source_list:
+            date_val = entry.get('date')
+            value = None
+            # Handle the nested 'plots' structure for popularity/audience
+            if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
+                value = entry['plots'][0].get('value')
+            # Handle simpler structures
+            elif 'value' in entry:
+                value = entry.get('value')
+
+            if date_val and value is not None:
+                parsed_list.append({'date': date_val, 'value': value})
+        return parsed_list
+
+    # Parse both audience and popularity data using the helper
+    parsed_aud_data = parse_timeseries_data(audience_data)
+    parsed_pop_data = parse_timeseries_data(popularity_data)
+
+    if not parsed_aud_data or not parsed_pop_data:
+        st.info("Both Audience and Popularity data are required to calculate the engagement rate.")
+        return
+
+    # Create DataFrames from the correctly parsed lists
+    df_aud = pd.DataFrame(parsed_aud_data)
+    df_pop = pd.DataFrame(parsed_pop_data)
+    # --- END OF MODIFIED SECTION ---
+
+    # The rest of the function remains the same
+    df_aud['date'] = pd.to_datetime(df_aud['date'])
+    df_aud.set_index('date', inplace=True)
+    df_aud.rename(columns={'value': 'audience'}, inplace=True)
+
+    df_pop['date'] = pd.to_datetime(df_pop['date'])
+    df_pop.set_index('date', inplace=True)
+    df_pop.rename(columns={'value': 'popularity'}, inplace=True)
+
+    df_merged = pd.merge(df_aud, df_pop, left_index=True, right_index=True, how='inner')
+    df_merged.sort_index(inplace=True)
+    if df_merged.empty:
+        st.warning("Could not find any overlapping dates between audience and popularity data.")
+        return
+
+    df_merged['retention_rate'] = (df_merged['popularity'] / df_merged['audience']).replace([np.inf, -np.inf], 0)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df_merged.index,
+        y=df_merged['retention_rate'],
+        mode='lines',
+        name='Engagement Rate',
+        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Rate</b>: %{y:.2%}<extra></extra>'
+    ))
+
+    fig.update_layout(
+        title="",
+        yaxis_tickformat=".2%",
+        showlegend=False,
+        hovermode='x unified'
+    )
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)
+    
+def display_single_timeseries_stats_chart(df: pd.DataFrame, std_threshold: float, window_size: int):
+    """
+    Displays a single chart showing time-series data, its rolling average, 
+    and a shaded band for the rolling standard deviation.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the time-series data in a 'streams' column.
+        std_threshold (float): The multiplier for the standard deviation band.
+        window_size (int): The window size for the rolling calculations.
+    """
+    st.caption(f"Showing daily streams with a {window_size}-day rolling average and a {std_threshold:.1f}x standard deviation band.")
+
+    if df.empty or len(df) < window_size:
+        st.info(f"Not enough data to calculate rolling statistics with a {window_size}-day window.")
+        return
+        
+    # Calculate rolling statistics
+    rolling_mean = df['streams'].rolling(window=window_size, center=True, min_periods=1).mean()
+    rolling_std = df['streams'].rolling(window=window_size, center=True, min_periods=1).std()
+    
+    # Calculate the upper and lower bands using the threshold
+    upper_band = rolling_mean + (std_threshold * rolling_std)
+    lower_band = (rolling_mean - (std_threshold * rolling_std)).clip(lower=0)
+
+    fig = go.Figure()
+    
+    # Original streams line
+    fig.add_trace(go.Scatter(
+        x=df.index, y=df['streams'], mode='lines', name='Daily Streams', line=dict(color='#2ca02c')
+    ))
+
+    # Standard deviation band
+    fig.add_trace(go.Scatter(
+        x=rolling_mean.index, y=upper_band, mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'
+    ))
+    fig.add_trace(go.Scatter(
+        x=rolling_mean.index, y=lower_band, mode='lines', line=dict(width=0),
+        fill='tonexty', fillcolor='rgba(255, 127, 14, 0.2)', name=f'Mean +/- {std_threshold:.1f} SD', hoverinfo='skip'
+    ))
+
+    # Rolling average line
+    fig.add_trace(go.Scatter(
+        x=rolling_mean.index, y=rolling_mean, mode='lines', name='Rolling Average', line=dict(color='rgba(255, 127, 14, 0.8)', dash='dash')
+    ))
+
+    fig.update_layout(
+        yaxis_title="Daily Streams", hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig, use_container_width=True, key="sa_stats_chart")
+
+def display_single_wavelet_analysis(plot_json: str, spikes_df: pd.DataFrame, chart_key: str, title: str = ""):
+    """
+    Displays the results of a single wavelet analysis run.
+    The plot_json is now expected to contain the spike markers already.
+    """
+    if title:
+        st.write(f"**{title}**")
+
+    # Display the table of detected spikes
+    if spikes_df is None or spikes_df.empty:
+        st.info("No significant spikes were detected with the current settings.")
+    else:
+        st.success(f"Detected {len(spikes_df)} potential spike(s).")
+        if 'streams' in spikes_df.columns:
+            st.dataframe(
+                spikes_df.style.format({"streams": "{:,.0f}"}),
+                use_container_width=True
+            )
+        else:
+            st.dataframe(spikes_df, use_container_width=True)
+
+    # Display the decomposition plot
+    if not plot_json:
+        st.warning("Decomposition plot is not available for display.")
+        return
+
+    try:
+        # --- BUG FIX ---
+        # The plot_json now contains everything needed. We just load and display it.
+        # The previous logic that tried to add traces here has been removed.
+        fig = pio.from_json(plot_json)
+        st.plotly_chart(fig, use_container_width=True, key=f"wavelet_plot_{chart_key}")
+
+    except Exception as e:
+        st.error(f"Failed to render the wavelet decomposition plot. Error: {e}")
+
