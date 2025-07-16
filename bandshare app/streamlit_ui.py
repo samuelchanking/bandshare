@@ -22,7 +22,7 @@ from streamlit_caching import (
     get_song_audience_data, get_playlist_audience_data, get_playlists_for_song,
     get_tracks_for_playlist, get_playlist_placements_for_songs,
     get_global_song_audience_data,
-    get_song_popularity_data 
+    get_song_popularity_data,
 )
 from datetime import datetime, date, timedelta
 import plotly.express as px
@@ -33,6 +33,7 @@ import config
 from itertools import zip_longest
 import base64
 import plotly.io as pio
+import textwrap
 
 # --- Helper to get api_client and db_manager ---
 @st.cache_resource
@@ -222,6 +223,7 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
         daily_values = interpolated_df['value'].diff().clip(lower=0)
         df_daily = pd.DataFrame({'date': daily_values.index, 'value': daily_values.values})
 
+    
 
     st.subheader("Raw Data: Total Accumulated Streams")
     st.caption("This chart shows the cumulative stream data. Gaps from decreasing values are shown, while gaps from duplicate days are interpolated.")
@@ -248,6 +250,8 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
 
     if len(df_daily) > 1:
         df_daily = df_daily.iloc[1:].copy()
+        
+    
 
     fig_daily = go.Figure()
     fig_daily.add_trace(go.Scatter(
@@ -295,7 +299,97 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
     y_range = _get_optimal_y_range(df_daily, ['value'])
     fig_daily.update_layout(yaxis_range=y_range, showlegend=False, hovermode="x unified", yaxis_tickformat=",.0f")
     st.plotly_chart(fig_daily, use_container_width=True, key=f"daily_chart_{chart_key}")
+    st.markdown("---")
+    st.subheader("Dual Axis View: Daily (Left) and Cumulative (Right) Streams")
+    st.caption("This chart combines daily and cumulative streams on a dual y-axis for comparison.")
 
+    fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Add daily streams to primary y-axis (left)
+    fig_dual.add_trace(
+        go.Scatter(
+            x=df_daily['date'], 
+            y=df_daily['value'], 
+            mode='lines', 
+            name='Daily Streams',
+            connectgaps=False, 
+            line=dict(color='#1f77b4'),
+            hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily Streams</b>: %{y:,.0f}<extra></extra>'
+        ), 
+        secondary_y=False
+    )
+
+    # Add cumulative streams to secondary y-axis (right)
+    fig_dual.add_trace(
+        go.Scatter(
+            x=interpolated_df.index, 
+            y=interpolated_df['value'],
+            mode='lines', 
+            name='Cumulative Streams',
+            connectgaps=True,
+            line=dict(color='#ff7f0e'),
+            customdata=interpolated_df['hover_text'],
+            hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Cumulative Streams</b>: %{y:,.0f}%{customdata}<extra></extra>'
+        ), 
+        secondary_y=True
+    )
+
+    # Add playlist entry annotations (copied from fig_daily)
+    y_max_daily = df_daily['value'].max() if not df_daily.empty else 0
+    sorted_entry_points = sorted(entry_points, key=lambda x: x.get('entryDate', ''))
+    last_entry_date = None
+    y_shift_offset = 15
+    for entry in sorted_entry_points:
+        try:
+            entry_date_dt = datetime.fromisoformat(entry['entryDate'].replace('Z', '+00:00'))
+            entry_date_val = entry_date_dt.date()
+            if last_entry_date and (entry_date_val - last_entry_date) < timedelta(days=30): y_shift_offset += 35
+            else: y_shift_offset = 15
+            fig_dual.add_vline(x=entry_date_val, line_width=2, line_dash="dash", line_color="red")
+            playlist_name = entry.get('name', 'N/A')
+            playlist_uuid = entry.get('uuid')
+            entry_subscribers = entry.get('entrySubscribers')
+            if entry_subscribers is None and playlist_uuid: entry_subscribers = db_manager.get_timeseries_value_for_date('playlist_audience', {'playlist_uuid': playlist_uuid}, entry_date_dt)
+            subscribers_formatted = f"{entry_subscribers:,}" if entry_subscribers is not None else "N/A"
+            annotation_text = f"{playlist_name}<br>{subscribers_formatted} subs"
+            hover_text = f"Added to '{playlist_name}' ({subscribers_formatted} subs) on {entry_date_val.strftime('%Y-%m-%d')}"
+            fig_dual.add_annotation(x=entry_date_val, y=y_max_daily, text=annotation_text, showarrow=False, yshift=y_shift_offset, font=dict(color="white"), bgcolor="rgba(255, 0, 0, 0.6)", borderpad=4, hovertext=hover_text)
+            last_entry_date = entry_date_val
+        except (ValueError, KeyError) as e:
+            print(f"Could not process playlist annotation. Error: {e}")
+            continue
+
+    # Add song release date marker (copied from fig_daily)
+    if song_release_date:
+        try:
+            release_date_dt = pd.to_datetime(song_release_date)
+            if not df_daily.empty and 'date' in df_daily.columns:
+                chart_start_date = df_daily['date'].min()
+                chart_end_date = df_daily['date'].max()
+                if not pd.isna(chart_start_date) and not pd.isna(chart_end_date) and chart_start_date <= release_date_dt <= chart_end_date:
+                    fig_dual.add_vline(x=release_date_dt, line_width=2, line_dash="solid", line_color="green")
+                    fig_dual.add_annotation(x=release_date_dt, y=y_max_daily, text="Song Release", showarrow=True, arrowhead=1, ax=-25, ay=-60, font=dict(color="green"), bgcolor="rgba(0, 200, 0, 0.6)")
+        except (ValueError, TypeError) as e:
+            st.warning(f"Could not plot release date marker due to an issue with the date format: {e}")
+
+    # Set optimal y-ranges
+    y_range_daily = _get_optimal_y_range(df_daily, ['value'])
+    y_range_cum = _get_optimal_y_range(interpolated_df, ['value'])
+
+    # Update layout
+    fig_dual.update_layout(
+        yaxis_range=y_range_daily,
+        yaxis2_range=y_range_cum,
+        yaxis_title="Daily Streams",
+        yaxis2_title="Cumulative Streams",
+        yaxis_tickformat=",.0f",
+        yaxis2_tickformat=",.0f",
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hovermode="x unified"
+    )
+
+    st.plotly_chart(fig_dual, use_container_width=True, key=f"dual_chart_{chart_key}")
 
     analysis_session_key = f"analysis_results_{chart_key}"
     with st.expander("🔬 Analyze Streaming Spikes"):
@@ -382,6 +476,73 @@ def display_typed_playlists(playlists: List[Dict[str, Any]], title: str):
                     if st.button("Details", key=f"btn_global_{playlist_uuid}", use_container_width=True):
                         st.session_state.selected_playlist_uuid = playlist_uuid
                         st.rerun()
+
+# --- NEW FUNCTION ---
+def display_spike_timeline(spikes_df: pd.DataFrame, start_date: date, end_date: date):
+    """
+    Displays a timeline of detected spikes, grouped by category.
+    """
+    if spikes_df.empty:
+        st.info("No spikes were detected to display on the timeline.")
+        return
+
+    # Ensure date column is in datetime format
+    spikes_df['date'] = pd.to_datetime(spikes_df['date'])
+
+    # FIXED: Check if 'category' column exists, otherwise fallback to 'metric'
+    grouping_col = 'category' if 'category' in spikes_df.columns else 'metric'
+    
+    # Use the selected column for grouping on the y-axis
+    groups = spikes_df[grouping_col].unique()
+    group_levels = {group: i for i, group in enumerate(groups)}
+    spikes_df['level'] = spikes_df[grouping_col].map(group_levels)
+
+    fig = go.Figure()
+
+    # Create a line for each group level
+    for i, group in enumerate(groups):
+        fig.add_shape(
+            type='line',
+            x0=start_date, y0=i,
+            x1=end_date, y1=i,
+            line=dict(color='grey', width=1, dash='dot')
+        )
+
+    # Add markers for each spike
+    fig.add_trace(go.Scatter(
+        x=spikes_df['date'],
+        y=spikes_df['level'],
+        mode='markers',
+        marker=dict(
+            size=15,
+            symbol='x',
+            color='red'
+        ),
+        hoverinfo='text',
+        hovertext=spikes_df.apply(
+            lambda row: f"<b>Date:</b> {row['date'].strftime('%Y-%m-%d')}<br>"
+                        f"<b>Metric:</b> {row['metric']}<br>"
+                        f"<b>Value:</b> {row['value']:,.0f}",
+            axis=1
+        ),
+        name='Spikes'
+    ))
+
+    fig.update_layout(
+        title="Spike Event Timeline",
+        xaxis_title="Date",
+        yaxis=dict(
+            tickmode='array',
+            tickvals=list(range(len(groups))),
+            ticktext=groups,
+            showgrid=False
+        ),
+        showlegend=False,
+        height=max(400, len(groups) * 60) # Adjust height based on number of groups
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
 
 # --- MODIFIED FUNCTION ---
 def display_global_playlist_tracks(db_manager, playlist_uuid: str, playlist_name: str):
@@ -1063,7 +1224,7 @@ def display_song_details(db_manager, song_uuid):
     # Use a default 1-year range if no playlist entries are found
     if not can_update:
         end_date_filter = date.today()
-        start_date_filter = end_date_filter - timedelta(days=365)
+        start_date_filter = end_date_filter - timedelta(days=1095)
 
     # --- Display Metadata ---
     release_date_for_chart = None
@@ -1459,10 +1620,11 @@ def display_album_and_tracks(db_manager, album_data, tracklist_data, audience_da
                         )
 
 
-def display_timeseries_chart(chart_data, title="", chart_key=None):
+def display_timeseries_chart(chart_data, title="", chart_key=None, show_daily=False):
     """
     Displays a generic time-series chart, ensuring data is sorted and
-    gaps are not connected.
+    gaps are not connected. If show_daily=True, computes and plots daily changes on the left y-axis
+    and cumulative on the right y-axis.
     """
     st.subheader(title)
     if not chart_data:
@@ -1496,19 +1658,61 @@ def display_timeseries_chart(chart_data, title="", chart_key=None):
         st.warning("Could not parse any valid data points to plot.")
         return
 
-    df = pd.DataFrame(parsed_data)
-    df.sort_values(by='date', inplace=True)
-    df.set_index('date', inplace=True)
+    df_cum = pd.DataFrame(parsed_data)
+    df_cum.sort_values(by='date', inplace=True)
+    df_cum.set_index('date', inplace=True)
 
-    if df.empty or 'value' not in df.columns:
+    if df_cum.empty or 'value' not in df_cum.columns:
         st.warning("Could not find any valid data to plot after parsing.")
         return
 
+    if show_daily:
+        if len(df_cum) < 2:
+            st.info("Not enough data to compute daily changes. Displaying cumulative only.")
+            show_daily = False  # Fallback to cumulative only
+        else:
+            daily_values = df_cum['value'].diff().clip(lower=0)
+            df_daily = pd.DataFrame(daily_values, columns=['value'], index=df_cum.index)[1:]  # Drop first NaN
+
+            fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+            # Daily on primary (left) y-axis
+            fig.add_trace(go.Scatter(
+                x=df_daily.index, y=df_daily['value'], mode='lines', name='Daily Value', connectgaps=False,
+                line=dict(color='#1f77b4'),
+                hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Daily</b>: %{y:,.0f}<extra></extra>'
+            ), secondary_y=False)
+
+            # Cumulative on secondary (right) y-axis
+            fig.add_trace(go.Scatter(
+                x=df_cum.index, y=df_cum['value'], mode='lines', name='Cumulative Value', connectgaps=False,
+                line=dict(color='#ff7f0e'),
+                hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Cumulative</b>: %{y:,.0f}<extra></extra>'
+            ), secondary_y=True)
+
+            y_range_daily = _get_optimal_y_range(df_daily, ['value'])
+            y_range_cum = _get_optimal_y_range(df_cum, ['value'])
+
+            fig.update_layout(
+                yaxis_range=y_range_daily if y_range_daily else None,
+                yaxis2_range=y_range_cum if y_range_cum else None,
+                yaxis_title="Daily Value",
+                yaxis2_title="Cumulative Value",
+                yaxis_tickformat=",.0f",
+                yaxis2_tickformat=",.0f",
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                hovermode='x unified'
+            )
+            st.plotly_chart(fig, use_container_width=True, key=chart_key)
+            return
+
+    # Fallback to original single-axis plot if not show_daily
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.index, y=df['value'], mode='lines', name='Value', connectgaps=False,
+    fig.add_trace(go.Scatter(x=df_cum.index, y=df_cum['value'], mode='lines', name='Value', connectgaps=False,
                              hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Value</b>: %{y:,.0f}<extra></extra>'))
 
-    y_range = _get_optimal_y_range(df, ['value'])
+    y_range = _get_optimal_y_range(df_cum, ['value'])
     fig.update_layout(
         title="",
         yaxis_range=y_range,
@@ -1517,7 +1721,6 @@ def display_timeseries_chart(chart_data, title="", chart_key=None):
         hovermode='x unified'
     )
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
-
 
 def display_audience_chart(audience_data):
     """Displays audience chart data."""
@@ -1557,8 +1760,11 @@ def display_popularity_chart(popularity_data):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def display_streaming_audience_chart(streaming_data, spikes=None):
-    """MODIFIED: Displays streaming audience data and optional spikes."""
+def display_streaming_audience_chart(db_manager, streaming_data, spikes=None, events=None):
+    """MODIFIED: Displays streaming audience data and optional spikes and events."""
+    if spikes is None:
+        spikes = st.session_state.get('streaming_audience_spikes')
+    
     st.subheader("Streaming Audience")
     if not streaming_data:
         st.info("No streaming audience data available for the selected period.")
@@ -1568,18 +1774,112 @@ def display_streaming_audience_chart(streaming_data, spikes=None):
     df.sort_values(by='date', inplace=True)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df['date'], y=df['Streams'], mode='lines', name='Streams', connectgaps=False, line=dict(color='#2ca02c'), hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Streams</b>: %{y:,.0f}<extra></extra>'))
+    
     if spikes is not None and not spikes.empty:
         fig.add_trace(go.Scatter(
-            x=spikes.index, y=spikes['streams'], mode='markers', name='Detected Spikes', 
+            x=spikes.index, y=spikes['streams'], mode='markers', name='Detected Spikes',
             marker=dict(color='red', size=8, symbol='x'),
             hoverinfo='text',
             hovertext=[f"Spike: {s:,.0f} streams<br>Date: {d.strftime('%Y-%m-%d')}<br>Type: {t}" for d, s, t in zip(spikes.index, spikes['streams'], spikes['type'])]
         ))
+
+    # This block adds annotations for artist events.
+    if events:
+        y_max = df['Streams'].max() if not df.empty else 0
+        chart_start_date = df['date'].min()
+        chart_end_date = df['date'].max()
+
+        filtered_events = [
+            e for e in events if 'date' in e and pd.notna(e['date']) and
+            chart_start_date <= pd.to_datetime(e['date']) <= chart_end_date
+        ]
+        
+        sorted_events = sorted(filtered_events, key=lambda x: pd.to_datetime(x.get('date')))
+        
+        # Fetch venue and festival metadata
+        venue_uuids = set()
+        festival_uuids = set()
+        for event in sorted_events:
+            if event.get('type') == 'festival' and (festival := event.get('festival')) and isinstance(festival, dict):
+                if uuid := festival.get('uuid'):
+                    festival_uuids.add(uuid)
+            elif (venue := event.get('venue')) and isinstance(venue, dict):
+                if uuid := venue.get('uuid'):
+                    venue_uuids.add(uuid)
+
+        venues_dict = {}
+        if venue_uuids:
+            venues_cursor = db_manager.collections['venues'].find({'uuid': {'$in': list(venue_uuids)}})
+            for venue_doc in venues_cursor:
+                venues_dict[venue_doc['uuid']] = venue_doc
+
+        festivals_dict = {}
+        if festival_uuids:
+            festivals_cursor = db_manager.collections['festivals'].find({'uuid': {'$in': list(festival_uuids)}})
+            for festival_doc in festivals_cursor:
+                festivals_dict[festival_doc['uuid']] = festival_doc
+
+        def get_capacity(event):
+            if event.get('type') == 'festival':
+                if (festival := event.get('festival')) and isinstance(festival, dict):
+                    uuid = festival.get('uuid')
+                    meta = festivals_dict.get(uuid, {})
+                    cap = meta.get('capacity')
+                    return f"{int(cap):,}" if cap is not None else 'N/A'
+            else:
+                if (venue := event.get('venue')) and isinstance(venue, dict):
+                    uuid = venue.get('uuid')
+                    meta = venues_dict.get(uuid, {})
+                    cap = meta.get('capacity')
+                    return f"{int(cap):,}" if cap is not None else 'N/A'
+            return 'N/A'
+        
+        last_event_date = None
+        y_shift_offset = 20 # Initial vertical offset for the annotation text
+
+        for event in sorted_events:
+            try:
+                event_date_dt = pd.to_datetime(event['date'])
+                event_date_val = event_date_dt.date()
+
+                # Prevents annotation text from overlapping if events are close together
+                if last_event_date and (event_date_val - last_event_date).days < 45:
+                    y_shift_offset += 40
+                else:
+                    y_shift_offset = 20 # Reset offset
+
+                fig.add_vline(x=event_date_dt, line_width=1.5, line_dash="dot", line_color="rgba(171, 99, 250, 1)")
+
+                event_name = event.get('name')
+                venue_name = event.get('venue', {}).get('name')
+                
+                # Use event name if available, otherwise fallback to venue name
+                display_name = event_name if event_name else venue_name if venue_name else "Event"
+
+                # Wrap the name for better display
+                wrapped_name = '<br>'.join(textwrap.wrap(display_name, width=20))
+                
+                capacity = get_capacity(event)
+
+                annotation_text = f"{wrapped_name}<br>Capacity: {capacity}"
+                hover_text = f"<b>Event:</b> {display_name}<br><b>Date:</b> {event_date_val.strftime('%Y-%m-%d')}<br><b>Capacity:</b> {capacity}"
+
+                fig.add_annotation(
+                    x=event_date_dt, y=y_max, text=annotation_text,
+                    showarrow=True, arrowhead=4, arrowwidth=1.5, arrowcolor="rgba(171, 99, 250, 0.8)",
+                    yshift=y_shift_offset, ax=0, ay=-40,
+                    font=dict(color="white"), bgcolor="rgba(171, 99, 250, 0.8)",
+                    borderpad=3, hovertext=hover_text
+                )
+                last_event_date = event_date_val
+            except (ValueError, KeyError) as e:
+                st.warning(f"Could not process an event annotation due to an error: {e}")
+                continue
+
     y_range = _get_optimal_y_range(df, ['Streams'])
     fig.update_layout(yaxis_range=y_range, yaxis_tickformat=",.0f", showlegend=False, hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
-
-
+    
 
 
 def display_top_countries_trend_chart(df_top_countries, anomalies: list = None, spikes: dict = None):
@@ -1762,7 +2062,7 @@ def display_tracks_grid(songs: List[Dict[str, Any]]):
                         st.session_state.selected_track_uuid = song_uuid
                         st.rerun()
 
-# --- NEW FUNCTION for the Tracks page detail view ---
+
 def display_track_details_page(api_client, db_manager, song_uuid: str):
     """Displays the comprehensive detail view for a single track."""
     if st.button("⬅️ Back to all tracks"):
@@ -1801,7 +2101,7 @@ def display_track_details_page(api_client, db_manager, song_uuid: str):
     st.markdown("---")
     st.subheader("Performance Data")
 
-    start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=365), key=f"start_track_{song_uuid}")
+    start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=1095), key=f"start_track_{song_uuid}")
     end_date_filter = st.date_input("Chart End Date", date.today(), key=f"end_track_{song_uuid}")
     
     if st.button("Update Track Data", use_container_width=True, type="primary"):
@@ -1832,13 +2132,100 @@ def display_track_details_page(api_client, db_manager, song_uuid: str):
 
 
     # --- Display Charts ---
+    aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
+    pop_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
+    
+    
+    # --- Display Charts ---
+    def parse_timeseries_data(raw_data):
+        source_list = raw_data.get('history') if isinstance(raw_data, dict) else raw_data
+        if not source_list:
+            return []
+        parsed_list = []
+        for entry in source_list:
+            date_val = entry.get('date')
+            value = None
+            if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
+                value = entry['plots'][0].get('value')
+            elif 'value' in entry:
+                value = entry.get('value')
+            if date_val and value is not None:
+                parsed_list.append({'date': date_val, 'value': value})
+        return parsed_list
+
+    parsed_aud = parse_timeseries_data(aud_data)
+    if parsed_aud:
+        daily_list = convert_cumulative_to_daily(parsed_aud)
+        df_aud_cum = pd.DataFrame(parsed_aud)
+        df_aud_cum['date'] = pd.to_datetime(df_aud_cum['date'])
+        df_aud_cum = df_aud_cum.set_index('date').sort_index()
+        df_daily_aud = pd.DataFrame(daily_list)
+        df_daily_aud['date'] = pd.to_datetime(df_daily_aud['date'])
+        df_daily_aud = df_daily_aud.set_index('date').sort_index()
+    else:
+        df_aud_cum = pd.DataFrame()
+        df_daily_aud = pd.DataFrame()
+
+    parsed_pop = parse_timeseries_data(pop_data)
+    if parsed_pop:
+        df_pop = pd.DataFrame(parsed_pop)
+        df_pop['date'] = pd.to_datetime(df_pop['date'])
+        df_pop = df_pop.set_index('date').sort_index()
+    else:
+        df_pop = pd.DataFrame()
+
     c1, c2 = st.columns(2)
     with c1:
-        aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
-        display_timeseries_chart(aud_data, title="Song Audience Over Time", chart_key=f"track_aud_{song_uuid}")
+        st.subheader("Song Audience Over Time")
+        if not df_aud_cum.empty:
+            fig_aud = make_subplots(specs=[[{"secondary_y": True}]])
+            # Daily on left
+            fig_aud.add_trace(
+                go.Scatter(x=df_daily_aud.index, y=df_daily_aud['value'], mode='lines', name='Daily Streams', line=dict(color='#1f77b4')),
+                secondary_y=False
+            )
+            # Cumulative on right
+            fig_aud.add_trace(
+                go.Scatter(x=df_aud_cum.index, y=df_aud_cum['value'], mode='lines', name='Cumulative Streams', line=dict(color='#ff7f0e')),
+                secondary_y=True
+            )
+            y_range_daily = _get_optimal_y_range(df_daily_aud, ['value'])
+            y_range_cum = _get_optimal_y_range(df_aud_cum, ['value'])
+            fig_aud.update_layout(
+                yaxis_range=y_range_daily,
+                yaxis2_range=y_range_cum,
+                yaxis_title="Daily Streams",
+                yaxis2_title="Cumulative Streams",
+                yaxis_tickformat=",.0f",
+                yaxis2_tickformat=",.0f",
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig_aud, use_container_width=True, key=f"track_aud_{song_uuid}")
+        else:
+            st.info("No audience data to display.")
+
     with c2:
-        pop_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
-        display_timeseries_chart(pop_data, title="Song Popularity Over Time", chart_key=f"track_pop_{song_uuid}")
+        st.subheader("Song Popularity Over Time")
+        if not df_pop.empty:
+            fig_pop = go.Figure()
+            fig_pop.add_trace(
+                go.Scatter(x=df_pop.index, y=df_pop['value'], mode='lines', name='Popularity Score', line=dict(color='#1f77b4'))
+            )
+            y_range_pop = _get_optimal_y_range(df_pop, ['value'])
+            fig_pop.update_layout(
+                yaxis_range=y_range_pop,
+                yaxis_title="Popularity Score",
+                yaxis_tickformat=",.0f",
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig_pop, use_container_width=True, key=f"track_pop_{song_uuid}")
+        else:
+            st.info("No popularity data to display.")
+
     st.markdown("---")
     display_retention_chart(
         audience_data=aud_data,
@@ -2025,3 +2412,159 @@ def display_single_wavelet_analysis(plot_json: str, spikes_df: pd.DataFrame, cha
     except Exception as e:
         st.error(f"Failed to render the wavelet decomposition plot. Error: {e}")
 
+def display_artist_events(db_manager, events_data: List[Dict[str, Any]]):
+    """
+    Displays upcoming and past artist events in separate tables.
+    Handles cases where ticketing and capacity information may be missing.
+    """
+    st.subheader("Artist Events")
+
+    if not events_data:
+        st.info("No event data found for this artist. Try updating the artist data.")
+        return
+
+    df = pd.DataFrame(events_data)
+    if 'date' not in df.columns:
+        st.warning("Event data is missing the 'date' column and cannot be displayed.")
+        return
+        
+    df['date'] = pd.to_datetime(df['date']).dt.date
+
+    # Fetch venue and festival metadata for all unique UUIDs
+    venue_uuids = set()
+    festival_uuids = set()
+    for _, row in df.iterrows():
+        if row.get('type') == 'festival' and (festival := row.get('festival')) and isinstance(festival, dict):
+            if uuid := festival.get('uuid'):
+                festival_uuids.add(uuid)
+        elif (venue := row.get('venue')) and isinstance(venue, dict):
+            if uuid := venue.get('uuid'):
+                venue_uuids.add(uuid)
+
+    # Fetch venues
+    venues_dict = {}
+    if venue_uuids:
+        venues_cursor = db_manager.collections['venues'].find({'uuid': {'$in': list(venue_uuids)}})
+        for venue_doc in venues_cursor:
+            venues_dict[venue_doc['uuid']] = venue_doc
+
+    # Fetch festivals
+    festivals_dict = {}
+    if festival_uuids:
+        festivals_cursor = db_manager.collections['festivals'].find({'uuid': {'$in': list(festival_uuids)}})
+        for festival_doc in festivals_cursor:
+            festivals_dict[festival_doc['uuid']] = festival_doc
+
+    # Add columns with metadata
+    def get_event_name(row):
+        return row.get('name', 'N/A')
+
+    def get_event_type(row):
+        return row.get('type', 'Concert').capitalize()
+
+    def get_venue_name(row):
+        if row.get('type') == 'festival':
+            if (festival := row.get('festival')) and isinstance(festival, dict):
+                uuid = festival.get('uuid')
+                meta = festivals_dict.get(uuid, {})
+                return meta.get('name', festival.get('name', 'N/A'))
+        else:
+            if (venue := row.get('venue')) and isinstance(venue, dict):
+                uuid = venue.get('uuid')
+                meta = venues_dict.get(uuid, {})
+                return meta.get('name', venue.get('name', 'N/A'))
+        return 'N/A'
+
+    def get_location(row):
+        if row.get('type') == 'festival':
+            if (festival := row.get('festival')) and isinstance(festival, dict):
+                uuid = festival.get('uuid')
+                meta = festivals_dict.get(uuid, {})
+                city = meta.get('cityName', 'N/A')
+                country = meta.get('countryCode', 'N/A')
+                return f"{city}, {country}"
+        else:
+            if (venue := row.get('venue')) and isinstance(venue, dict):
+                uuid = venue.get('uuid')
+                meta = venues_dict.get(uuid, {})
+                city = meta.get('cityName', 'N/A')
+                country = meta.get('countryCode', 'N/A')
+                return f"{city}, {country}"
+        return 'N/A'
+
+    def get_capacity(row):
+        if row.get('type') == 'festival':
+            if (festival := row.get('festival')) and isinstance(festival, dict):
+                uuid = festival.get('uuid')
+                meta = festivals_dict.get(uuid, {})
+                cap = meta.get('capacity')
+                return f"{int(cap):,}" if cap is not None else 'N/A'
+        else:
+            if (venue := row.get('venue')) and isinstance(venue, dict):
+                uuid = venue.get('uuid')
+                meta = venues_dict.get(uuid, {})
+                cap = meta.get('capacity')
+                return f"{int(cap):,}" if cap is not None else 'N/A'
+        return 'N/A'
+
+    def get_uuid(row):
+        if row.get('type') == 'festival':
+            return row.get('festival', {}).get('uuid', 'N/A')
+        else:
+            return row.get('venue', {}).get('uuid', 'N/A')
+
+    df['event_name'] = df.apply(get_event_name, axis=1)
+    df['event_type'] = df.apply(get_event_type, axis=1)
+    df['venue_name'] = df.apply(get_venue_name, axis=1)
+    df['location'] = df.apply(get_location, axis=1)
+    df['capacity_formatted'] = df.apply(get_capacity, axis=1)
+    df['uuid'] = df.apply(get_uuid, axis=1)
+
+    # Safely access ticketing information
+    if 'ticketing' in df.columns:
+        df['tickets'] = df['ticketing'].apply(lambda x: x.get('url') if pd.notna(x) and isinstance(x, dict) else None)
+    else:
+        df['tickets'] = None
+
+    # Separate into upcoming and past events
+    today = datetime.now().date()
+    upcoming_events = df[df['date'] >= today].sort_values(by='date', ascending=True)
+    past_events = df[df['date'] < today].sort_values(by='date', ascending=False)
+
+    st.write("#### Upcoming Events")
+    if not upcoming_events.empty:
+        display_df = upcoming_events[['date', 'event_type', 'event_name', 'venue_name', 'location', 'capacity_formatted', 'uuid', 'tickets']]
+        display_df = display_df.rename(columns={
+            'date': 'Date',
+            'event_type': 'Type',
+            'event_name': 'Event Name',
+            'venue_name': 'Venue',
+            'location': 'Location',
+            'capacity_formatted': 'Capacity',
+            'uuid': 'UUID',
+            'tickets': 'Ticket Link'
+        })
+        st.dataframe(display_df, use_container_width=True, hide_index=True,
+            column_config={
+                "Ticket Link": st.column_config.LinkColumn("Tickets", display_text="Buy Tickets")
+            }
+        )
+    else:
+        st.info("No upcoming events found.")
+
+    st.write("#### Past Events")
+    if not past_events.empty:
+        with st.expander("Show Past Events"):
+            display_df_past = past_events[['date', 'event_type', 'event_name', 'venue_name', 'location', 'capacity_formatted', 'uuid']]
+            display_df_past = display_df_past.rename(columns={
+                'date': 'Date',
+                'event_type': 'Type',
+                'event_name': 'Event Name',
+                'venue_name': 'Venue',
+                'location': 'Location',
+                'capacity_formatted': 'Capacity',
+                'uuid': 'UUID'
+            })
+            st.dataframe(display_df_past, use_container_width=True, hide_index=True)
+    else:
+        st.info("No past events found in the database.")
