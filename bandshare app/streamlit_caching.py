@@ -5,6 +5,8 @@ import requests
 import streamlit as st
 from database_manager import DatabaseManager
 from soundcharts_client import SoundchartsAPIClient
+from typing import List, Dict, Any
+import pandas as pd
 
 @st.cache_data
 def get_all_artists(_db_manager): # This can be removed if not used in app.py
@@ -45,16 +47,36 @@ def get_song_details(_db_manager, song_uuid: str):
         return song  # Returns the document or None
     return None
 
-# --- NEW FUNCTION ---
+@st.cache_data
+def get_playlist_song_uuids_for_artist(_db_manager, artist_uuid: str):
+    """Fetches a set of all song UUIDs for an artist that appear in the 'songs_playlists' collection."""
+    if not artist_uuid:
+        return set()
+    
+    playlist_entries = _db_manager.collections['songs_playlists'].find(
+        {'artist_uuid': artist_uuid},
+        {'song.uuid': 1, 'song_uuid': 1, '_id': 0} # Projection to get only necessary fields
+    )
+    
+    song_uuids = set()
+    for item in playlist_entries:
+        # Handle both possible structures for song UUID
+        song_uuid = item.get('song_uuid') or item.get('song', {}).get('uuid')
+        if song_uuid:
+            song_uuids.add(song_uuid)
+            
+    return song_uuids
+
 @st.cache_data
 def get_playlists_for_song(_db_manager, song_uuid: str):
     """
     Fetches all playlist entries for a given song from the 'songs_playlists' collection.
     """
     if not song_uuid: return []
-    # Find all documents for the song and sort by entry date, most recent first
+    
+    # CORRECTED: Use dot notation 'song.uuid' to query the nested field.
     return list(_db_manager.collections['songs_playlists'].find(
-        {'song_uuid': song_uuid}
+        {'song.uuid': song_uuid}
     ).sort('entryDate', -1))
 
 
@@ -193,3 +215,43 @@ def get_typed_playlists_from_db(_db_manager, playlist_type: str, platform: str):
         return list(_db_manager.collections['typed_playlists'].find(query).sort('latestSubscriberCount', -1))
 
     return []
+
+@st.cache_data
+def get_song_popularity_data(_db_manager, song_uuid: str, platform: str, start_date, end_date):
+    """Gets song popularity data for a given date range from the database."""
+    if not all([song_uuid, platform, start_date, end_date]): return []
+    query_filter = {'song_uuid': song_uuid, 'platform': platform}
+    # Assumes storage in a 'song_popularity' collection.
+    return _db_manager.get_timeseries_data_for_display('song_popularity', query_filter, start_date, end_date)
+
+@st.cache_data
+def get_artist_events(_db_manager, artist_uuid: str) -> List[Dict[str, Any]]:
+    """
+    Fetches and caches all events for a given artist from the database.
+    """
+    if not artist_uuid:
+        return []
+    return _db_manager.get_artist_events_from_db(artist_uuid)
+
+@st.cache_data
+def get_cum_song_data(_db_manager, artist_uuid, start_date_filter, end_date_filter, _all_dates):
+    songs = get_all_songs_for_artist_from_db(_db_manager, artist_uuid)
+    song_streams = []
+    for song in songs:
+        song_uuid = song['uuid']
+        song_name = song.get('name', 'Unknown')
+        data = get_song_audience_data(_db_manager, song_uuid, 'spotify', start_date_filter, end_date_filter)
+        for entry in data:
+            date_val = entry.get('date')
+            plots = entry.get('plots', [])
+            value = plots[0].get('value') if plots else None
+            if date_val and value is not None:
+                song_streams.append({'date': pd.to_datetime(date_val), 'song': song_name, 'cumulative': value})
+    if not song_streams:
+        return None
+    df_songs = pd.DataFrame(song_streams)
+    df_pivot = df_songs.pivot_table(index='date', columns='song', values='cumulative', fill_value=0)
+    df_pivot = df_pivot.reindex(_all_dates, fill_value=0)
+    return df_pivot
+
+
