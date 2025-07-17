@@ -335,7 +335,13 @@ def parse_and_prepare_df(raw_data, primary_value_key, new_column_name):
     parsed_data = []
     for entry in data_source:
         date_val = entry.get('date')
-        value = entry.get(primary_value_key, entry.get('value'))
+        value = None
+        if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
+            value = entry['plots'][0].get('value')
+        elif primary_value_key in entry:
+            value = entry.get(primary_value_key)
+        elif 'value' in entry:
+            value = entry.get('value')
         if date_val and value is not None:
             parsed_data.append({'date': pd.to_datetime(date_val), new_column_name: value})
     if not parsed_data: return None
@@ -772,59 +778,115 @@ else:
     st.info("No streaming audience data available for this period.")
 
 st.markdown("---")
-st.subheader("Daily Streaming Composition by Song")
-st.caption("This stacked bar chart shows the daily artist streams broken down by individual song contributions (top 10 songs + 'Other').")
+st.subheader("Daily Artist Streaming Audience")
+st.caption("This bar chart shows the daily streaming audience for the artist.")
 
-if st.button("Update Song Audience Data", use_container_width=True, type="primary"):
+if streaming_data:
+    processed_data = []
+    for entry in streaming_data:
+        date_val, value = entry.get('date'), entry.get('value')
+        if date_val and value is not None:
+            processed_data.append({'date': pd.to_datetime(date_val), 'Streaming Audience': value})
+    
+    if processed_data:
+        df_artist = pd.DataFrame(processed_data).set_index('date').sort_index()
+        all_dates = df_artist.index.unique().sort_values()
+        
+        fig = px.bar(
+            df_artist.reset_index(),
+            x='date',
+            y='Streaming Audience',
+            title="",
+            labels={'Streaming Audience': 'Streaming Audience', 'date': 'Date'}
+        )
+        fig.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Streaming Audience",
+            yaxis_tickformat=",.0f",
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Could not process streaming audience data.")
+        all_dates = pd.DatetimeIndex([])
+else:
+    st.info("No streaming audience data available to display the chart.")
+    all_dates = pd.DatetimeIndex([])
+
+if st.button("Update Song Audience Data", use_container_width=True):
     update_song_audience_data(artist_uuid, start_date_filter, end_date_filter)
 
-# Fetch all songs
+st.subheader("Daily Streaming Audience by Top Songs (Stacked)")
+st.caption("This stacked bar chart shows the breakdown of daily streaming audience by the top 10 songs for each day, with the rest grouped as 'Other'. Note that the top songs may vary day to day.")
+
 songs = get_all_songs_for_artist_from_db(db_manager, artist_uuid)
 
-# Fetch and process song audience data
-song_daily_data = {}
+song_streams = []
 for song in songs:
     song_uuid = song['uuid']
-    song_aud = get_song_audience_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
-    if song_aud:
-        # Parse cumulative data
-        parsed_cum = parse_and_prepare_df(song_aud, 'value', song['name'])
-        if parsed_cum is not None:
-            # Compute daily streams
-            daily_streams = parsed_cum.diff().clip(lower=0).fillna(0)
-            song_daily_data[song['name']] = daily_streams
+    song_name = song.get('name', 'Unknown')
+    data = get_song_audience_data(db_manager, song_uuid, 'spotify', start_date_filter, end_date_filter)
+    for entry in data:
+        date_val = entry.get('date')
+        plots = entry.get('plots', [])
+        value = plots[0].get('value') if plots else None
+        if date_val and value is not None:
+            song_streams.append({'date': pd.to_datetime(date_val), 'song': song_name, 'streams': value})
 
-if song_daily_data:
-    # Concatenate all daily data into one DataFrame
-    all_daily_df = pd.concat(song_daily_data.values(), axis=1).fillna(0)
-
-    # Limit to top 10 songs by total streams
-    total_per_song = all_daily_df.sum()
-    top_songs = total_per_song.nlargest(10).index
-    other = all_daily_df.drop(columns=top_songs, errors='ignore').sum(axis=1)
-    plot_df = all_daily_df[top_songs]
-    plot_df['Other'] = other
-
-    # Create stacked bar chart
-    fig = px.bar(
-        plot_df.reset_index(),
-        x='date',
-        y=plot_df.columns,
-        title="",
-        labels={'value': 'Daily Streams', 'date': 'Date', 'variable': 'Song'}
-    )
-    fig.update_layout(
-        barmode='stack',
-        xaxis_title="Date",
-        yaxis_title="Daily Streams",
-        yaxis_tickformat=",.0f",
-        hovermode="x unified",
-        legend_title_text='Songs'
-    )
-    st.plotly_chart(fig, use_container_width=True)
+if song_streams and not all_dates.empty:
+    df_songs = pd.DataFrame(song_streams)
+    # Pivot to have dates as index, songs as columns, fill missing with 0
+    df_pivot = df_songs.pivot_table(index='date', columns='song', values='streams', fill_value=0)
+    # Reindex to match all artist dates, fill 0
+    df_pivot = df_pivot.reindex(all_dates, fill_value=0)
+    
+    stacked_data = []
+    for date in df_pivot.index:
+        df_day = df_pivot.loc[date].sort_values(ascending=False)
+        top_10 = df_day.head(10)
+        other_streams = df_day.iloc[10:].sum() if len(df_day) > 10 else 0
+        for song, streams in top_10.items():
+            stacked_data.append({'date': date, 'song': song, 'streams': streams})
+        if other_streams > 0:
+            stacked_data.append({'date': date, 'song': 'Other', 'streams': other_streams})
+    
+    if stacked_data:
+        df_stacked = pd.DataFrame(stacked_data)
+        fig_stacked = px.bar(
+            df_stacked,
+            x='date',
+            y='streams',
+            color='song',
+            title="",
+            labels={'streams': 'Streams', 'date': 'Date'}
+        )
+        fig_stacked.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Streams",
+            yaxis_tickformat=",.0f",
+            hovermode="x unified",
+            barmode='stack',
+            legend=dict(
+                font=dict(size=10),
+                itemwidth=30,
+                tracegroupgap=5,
+                itemsizing='constant'
+            ),
+            hoverlabel=dict(
+                font_size=12,
+                align='left'
+            )
+        )
+        fig_stacked.update_traces(
+            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Streams: %{y:,.0f}<extra></extra>'
+        )
+        st.plotly_chart(fig_stacked, use_container_width=True)
+    else:
+        st.info("No song streaming data available.")
 else:
-    st.info("No song audience data available to display the composition chart.")
-
+    st.info("No song streaming data available.")
+    
+        
 st.markdown("---")
 st.subheader("Event Management")
 st.caption("First, fetch the raw event list. Then, fetch the details for all associated venues and festivals.")
