@@ -5,6 +5,7 @@ import streamlit as st
 import config
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime
 from plotly.subplots import make_subplots
 import numpy as np
 from pymongo.errors import ConnectionFailure
@@ -15,7 +16,8 @@ from streamlit_caching import (
     get_local_streaming_history_from_db,
     get_song_audience_data,
     get_artist_events,
-    get_all_songs_for_artist_from_db
+    get_all_songs_for_artist_from_db,
+    get_song_details
 )
 from streamlit_ui import (
     display_top_countries_trend_chart,
@@ -81,8 +83,24 @@ def update_song_audience_data(artist_uuid, start_date_filter, end_date_filter):
             future_to_song = {}
             for song in songs:
                 song_uuid = song['uuid']
+                # NEW: Extract release date for conditional prev day fetch
+                release_date_str = song.get('releaseDate')
+                release_date = None
+                if release_date_str:
+                    try:
+                        release_date = datetime.fromisoformat(release_date_str.replace('Z', '+00:00')).date()
+                    except (ValueError, TypeError):
+                        pass  # release_date remains None
+
                 query_filter = {'song_uuid': song_uuid, 'platform': 'spotify'}
                 min_db_date, max_db_date = db_manager.get_timeseries_data_range('song_audience', query_filter)
+                
+                # NEW: Fetch prev day if song released before start_date_filter and prev not in DB
+                prev_date = start_date_filter - timedelta(days=1)
+                if release_date and start_date_filter > release_date and prev_date >= release_date:
+                    if min_db_date is None or prev_date < min_db_date.date():
+                        future_to_song[executor.submit(api_client.get_song_streaming_audience, song_uuid, 'spotify', prev_date, prev_date)] = song_uuid
+
                 if min_db_date and start_date_filter < min_db_date.date():
                     future_to_song[executor.submit(api_client.get_song_streaming_audience, song_uuid, 'spotify', start_date_filter, min_db_date.date() - timedelta(days=1))] = song_uuid
                 forward_start = max_db_date.date() + timedelta(days=1) if max_db_date else start_date_filter
@@ -786,7 +804,7 @@ if streaming_data:
     for entry in streaming_data:
         date_val, value = entry.get('date'), entry.get('value')
         if date_val and value is not None:
-            processed_data.append({'date': pd.to_datetime(date_val), 'Streaming Audience': value})
+            processed_data.append({'date': pd.to_datetime(date_val, utc=True), 'Daily Streaming Audience': value})
     
     if processed_data:
         df_artist = pd.DataFrame(processed_data).set_index('date').sort_index()
@@ -795,13 +813,13 @@ if streaming_data:
         fig = px.bar(
             df_artist.reset_index(),
             x='date',
-            y='Streaming Audience',
+            y='Daily Streaming Audience',
             title="",
-            labels={'Streaming Audience': 'Streaming Audience', 'date': 'Date'}
+            labels={'Daily Streaming Audience': 'Daily Streams', 'date': 'Date'}
         )
         fig.update_layout(
             xaxis_title="Date",
-            yaxis_title="Streaming Audience",
+            yaxis_title="Daily Streams",
             yaxis_tickformat=",.0f",
             hovermode="x unified"
         )
@@ -812,81 +830,225 @@ if streaming_data:
 else:
     st.info("No streaming audience data available to display the chart.")
     all_dates = pd.DatetimeIndex([])
-
-if st.button("Update Song Audience Data", use_container_width=True):
-    update_song_audience_data(artist_uuid, start_date_filter, end_date_filter)
-
+        
+    
 st.subheader("Daily Streaming Audience by Top Songs (Stacked)")
-st.caption("This stacked bar chart shows the breakdown of daily streaming audience by the top 10 songs for each day, with the rest grouped as 'Other'. Note that the top songs may vary day to day.")
+st.caption("This stacked bar chart shows the breakdown of daily streaming audience by the top 5 songs for each day, with the rest grouped as 'Other'. Note that the top songs may vary day to day based on daily streams.")
 
 songs = get_all_songs_for_artist_from_db(db_manager, artist_uuid)
 
+# Handle potential duplicate song names by creating unique labels
+from collections import Counter
+name_counts = Counter(song.get('name', 'Unknown') for song in songs)
+song_labels = {}
+for song in songs:
+    name = song.get('name', 'Unknown')
+    uuid = song['uuid']
+    if name_counts[name] > 1:
+        song_labels[uuid] = f"{name} ({uuid[:8]})"
+    else:
+        song_labels[uuid] = name
+
 song_streams = []
+song_release_dates = {}
+missing_release_dates = []
+
+# Define min_start before the loop
+min_start = start_date_filter - timedelta(days=1)
+
 for song in songs:
     song_uuid = song['uuid']
-    song_name = song.get('name', 'Unknown')
-    data = get_song_audience_data(db_manager, song_uuid, 'spotify', start_date_filter, end_date_filter)
+    data = get_song_audience_data(db_manager, song_uuid, 'spotify', min_start, end_date_filter)
     for entry in data:
         date_val = entry.get('date')
         plots = entry.get('plots', [])
         value = plots[0].get('value') if plots else None
         if date_val and value is not None:
-            song_streams.append({'date': pd.to_datetime(date_val), 'song': song_name, 'streams': value})
+            song_streams.append({'date': pd.to_datetime(date_val, utc=True), 'song': song_uuid, 'cumulative': value})
+    song_detail = get_song_details(db_manager, song_uuid)
+    if song_detail and 'releaseDate' in song_detail:
+        try:
+            release_date = pd.to_datetime(song_detail['releaseDate']).date()
+            song_release_dates[song_uuid] = release_date
+        except:
+            missing_release_dates.append(song_labels[song_uuid])
+    else:
+        missing_release_dates.append(song_labels[song_uuid])
+
+if missing_release_dates:
+    st.warning(f"Release dates missing for {len(missing_release_dates)} songs: {', '.join(set(missing_release_dates))}")
 
 if song_streams and not all_dates.empty:
     df_songs = pd.DataFrame(song_streams)
-    # Pivot to have dates as index, songs as columns, fill missing with 0
-    df_pivot = df_songs.pivot_table(index='date', columns='song', values='streams', fill_value=0)
-    # Reindex to match all artist dates, fill 0
-    df_pivot = df_pivot.reindex(all_dates, fill_value=0)
+    # Pivot to have dates as index, songs (uuids) as columns
+    df_pivot = df_songs.pivot(index='date', columns='song', values='cumulative')
+    # Reindex to full range including prev
+    full_date_range = pd.date_range(start=min_start, end=end_date_filter, tz='UTC')
+    df_pivot = df_pivot.reindex(full_date_range)
+    
+    # Handle missing values with interpolation
+    for song_uuid in df_pivot.columns:
+        release = song_release_dates.get(song_uuid)
+        if release:
+            release_dt = pd.to_datetime(release, utc=True)
+            # Set 0 before release
+            before_release = df_pivot.index < release_dt
+            df_pivot.loc[before_release, song_uuid] = 0
+            # Set 0 at release if NaN
+            if release_dt in df_pivot.index and pd.isna(df_pivot.loc[release_dt, song_uuid]):
+                df_pivot.loc[release_dt, song_uuid] = 0
+        else:
+            # If no release date, assume released before min_start, set leading NaNs to 0
+            first_non_nan = df_pivot[song_uuid].first_valid_index()
+            if first_non_nan is not None:
+                before_first = df_pivot.index < first_non_nan
+                df_pivot.loc[before_first, song_uuid] = 0
+        
+        # Interpolate linearly over gaps
+        df_pivot[song_uuid] = df_pivot[song_uuid].interpolate(method='linear', limit_direction='forward')
+        # Ffill any remaining trailing NaNs (though unlikely)
+        df_pivot[song_uuid] = df_pivot[song_uuid].ffill()
+        # Backfill if any leading still NaN (shouldn't be)
+        df_pivot[song_uuid] = df_pivot[song_uuid].bfill()
+    
+    # Now fill any remaining NaNs with 0 (safety)
+    df_pivot = df_pivot.fillna(0)
+    
+    # Compute daily from cumulative diff
+    df_daily = df_pivot.diff(periods=1)
+    # Replace NaN with 0
+    df_daily = df_daily.fillna(0)
     
     stacked_data = []
-    for date in df_pivot.index:
-        df_day = df_pivot.loc[date].sort_values(ascending=False)
-        top_10 = df_day.head(10)
-        other_streams = df_day.iloc[10:].sum() if len(df_day) > 10 else 0
-        for song, streams in top_10.items():
-            stacked_data.append({'date': date, 'song': song, 'streams': streams})
-        if other_streams > 0:
-            stacked_data.append({'date': date, 'song': 'Other', 'streams': other_streams})
+    for date in all_dates:  # Only loop over original all_dates (excluding prev)
+        df_day = df_daily.loc[date].sort_values(ascending=False)
+        top_5 = df_day.head(5)
+        other_daily = df_day.iloc[5:].sum() if len(df_day) > 5 else 0
+        for song_uuid, daily in top_5.items():
+            stacked_data.append({'date': date, 'song': song_labels.get(song_uuid, song_uuid), 'daily': daily})
+        if other_daily > 0:
+            stacked_data.append({'date': date, 'song': 'Other', 'daily': other_daily})
+        total_song_daily = top_5.sum() + other_daily
+        artist_daily_at_date = df_artist.loc[date, 'Daily Streaming Audience'] if date in df_artist.index else 0
+        missing = artist_daily_at_date - total_song_daily
+        if missing > 0:
+            stacked_data.append({'date': date, 'song': 'Missing Data', 'daily': missing})
     
     if stacked_data:
         df_stacked = pd.DataFrame(stacked_data)
+        
         fig_stacked = px.bar(
             df_stacked,
             x='date',
-            y='streams',
+            y='daily',
             color='song',
             title="",
-            labels={'streams': 'Streams', 'date': 'Date'}
+            labels={'daily': 'Daily Streams', 'date': 'Date'}
         )
+        
+        song_colors = {trace.name: trace.marker.color for trace in fig_stacked.data if trace.name}
+        song_colors['Missing Data'] = '#FFCC00'  # Yellow for missing
+        
+        # Prepare sorted lists for custom hover with colors
+        dates = sorted(df_stacked['date'].unique())
+        formatted_lists = []
+        for date in dates:
+            df_day = df_stacked[df_stacked['date'] == date].sort_values('daily', ascending=False)
+            total = df_artist.loc[date, 'Daily Streaming Audience'] if date in df_artist.index else 0
+            df_day_full = df_daily.loc[date]
+            songs_with_data = (df_day_full > 0).sum()
+            lines = [f"Total Daily Streams: {total:,.0f}"]
+            excess_note = ""
+            missing = total - df_day_full.sum()
+            if missing < 0:
+                excess_note = f"<br>Note: Song data exceeds artist total by {abs(missing):,.0f} (possible data error)"
+                missing = 0
+            total_released = sum(1 for uuid, rd in song_release_dates.items() if rd <= date.date())
+            num_missing_songs = total_released - songs_with_data
+            for _, row in df_day.iterrows():
+                song = row['song']
+                daily = row['daily']
+                perc = (daily / total * 100) if total > 0 else 0
+                color = song_colors.get(song, '#000000')
+                color_block = f'<span style="color:{color}">■</span>'
+                if song == 'Other':
+                    num_other_songs = songs_with_data - 5 if songs_with_data > 5 else 0
+                    lines.append(f"{color_block} {song} ({num_other_songs} songs): {daily:,.0f} ({perc:.1f}%)")
+                elif song == 'Missing Data':
+                    lines.append(f"{color_block} {song} ({num_missing_songs} songs): {daily:,.0f} ({perc:.1f}%)")
+                else:
+                    lines.append(f"{color_block} {song}: {daily:,.0f} ({perc:.1f}%)")
+            if missing > 0 and 'Missing Data' not in df_day['song'].values:
+                perc_missing = (missing / total * 100) if total > 0 else 0
+                color_block = f'<span style="color:#FFCC00">■</span>'
+                lines.append(f"{color_block} Missing Data ({num_missing_songs} songs): {missing:,.0f} ({perc_missing:.1f}%)")
+            formatted_list = "<br>".join(lines) + f"<br><br>Total songs released up to this date: {total_released}<br>Songs with streaming data on this day: {songs_with_data}" + excess_note
+            formatted_lists.append(formatted_list)
+        
+        df_totals = df_artist['Daily Streaming Audience'].reset_index(name='total_daily')
+        df_totals = df_totals.sort_values('date')
+        
+        fig_stacked.add_trace(go.Bar(
+            x=df_totals['date'],
+            y=df_totals['total_daily'],
+            customdata=formatted_lists,
+            hovertemplate="%{customdata}<extra></extra>",
+            opacity=0,
+            showlegend=False,
+            marker_color='rgba(0,0,0,0)',
+            marker_line_width=0
+        ))
+        for i in range(len(fig_stacked.data) - 1):
+            fig_stacked.data[i].update(hoverinfo='skip', hovertemplate=None)
+        y_range = _get_optimal_y_range(df_artist, ['Daily Streaming Audience'])
         fig_stacked.update_layout(
             xaxis_title="Date",
-            yaxis_title="Streams",
+            yaxis_title="Daily Streams",
             yaxis_tickformat=",.0f",
+            yaxis_range=y_range,
             hovermode="x unified",
             barmode='stack',
-            legend=dict(
-                font=dict(size=10),
-                itemwidth=30,
-                tracegroupgap=5,
-                itemsizing='constant'
-            ),
+            showlegend=False,
             hoverlabel=dict(
                 font_size=12,
                 align='left'
             )
         )
-        fig_stacked.update_traces(
-            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Streams: %{y:,.0f}<extra></extra>'
-        )
         st.plotly_chart(fig_stacked, use_container_width=True)
+        
+        # Date selector for debug
+        date_options = sorted(all_dates, reverse=True)  # Most recent first
+        selected_date = st.selectbox("Select a date to view detailed data:", date_options, format_func=lambda x: x.date().isoformat())
+        
+        if selected_date:
+            df_day_full = df_daily.loc[selected_date]
+            
+            total_released_names = sorted([song_labels.get(uuid, uuid) for uuid, rd in song_release_dates.items() if rd <= selected_date.date()])
+            
+            songs_with_data = sorted([song_labels.get(uuid, uuid) for uuid in df_day_full[df_day_full > 0].index])
+            
+            missing_songs = sorted([song_labels.get(uuid, uuid) for uuid, rd in song_release_dates.items() if rd <= selected_date.date() and (uuid not in df_day_full.index or df_day_full[uuid] <= 0)])
+            
+            df_debug = pd.DataFrame({
+                "Song": [song_labels.get(uuid, uuid) for uuid in df_day_full.index],
+                "Daily Streams": df_day_full.values
+            }).sort_values("Daily Streams", ascending=False)
+            
+            with st.expander(f"Debug for {selected_date.date()}", expanded=True):
+                st.write("**Total Released Songs:**")
+                st.write(", ".join(total_released_names))
+                st.write("**Songs with Streaming Data (>0):**")
+                st.write(", ".join(songs_with_data))
+                st.write("**Missing Songs (released but <=0 streams):**")
+                st.write(", ".join(missing_songs))
+                st.subheader("All Songs Daily Streams")
+                st.dataframe(df_debug, use_container_width=True)
     else:
         st.info("No song streaming data available.")
 else:
     st.info("No song streaming data available.")
-    
-        
+      
+            
 st.markdown("---")
 st.subheader("Event Management")
 st.caption("First, fetch the raw event list. Then, fetch the details for all associated venues and festivals.")
