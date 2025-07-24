@@ -5,13 +5,14 @@ import json
 from plotly.subplots import make_subplots
 import plotly.express as px
 import numpy as np
-# --- MODIFICATION: Removed detect_event_effect and detect_changepoint_effect ---
+from scipy.interpolate import splrep, BSpline
 from analysis_tools import (
     detect_anomalous_spikes, convert_cumulative_to_daily,
     detect_additional_contribution,
     detect_prophet_anomalies,
     clean_and_prepare_cumulative_data,
-    detect_wavelet_spikes
+    detect_wavelet_spikes,
+    adjust_and_plot_fast
 )
 import streamlit as st
 import pandas as pd
@@ -204,42 +205,48 @@ def display_full_song_streaming_chart(db_manager, history_data: list, entry_poin
     interpolated_df = pd.DataFrame()
     if not df_cumulative.empty and len(df_cumulative) > 1:
         df_for_interp = df_cumulative.set_index('date')
-        full_date_range = pd.date_range(start=df_for_interp.index.min(), end=df_for_interp.index.max(), freq='D')
+        # Modified: Use midnight timestamps for reindexing
+        full_date_range = pd.date_range(
+            start=df_for_interp.index.min().floor('D'), 
+            end=df_for_interp.index.max().floor('D'), 
+            freq='D'
+        )
+        interpolated_df = df_for_interp.reindex(full_date_range).interpolate(method='time')
         
-        interpolated_df = df_for_interp.reindex(full_date_range)
+        # No need for 'interpolated' flag since all points are now at midnights and potentially interpolated
+        interpolated_df['hover_text'] = ''  # Simplified, no (interpolated) note
         
-        interpolated_df['interpolated'] = interpolated_df['value'].isna()
-        
-        interpolated_df['value'] = interpolated_df['value'].interpolate(method='time')
-        
+        # Remove any points that were originally decreasing values (but now with adjusted times, map approximately)
         if not decreasing_dates.empty:
-            interpolated_df.loc[interpolated_df.index.isin(decreasing_dates), 'value'] = np.nan
-            interpolated_df.loc[interpolated_df.index.isin(decreasing_dates), 'interpolated'] = False
-        
-        interpolated_df['hover_text'] = np.where(interpolated_df['interpolated'], '<br>(interpolated)', '')
-    
+            for dec_date in decreasing_dates:
+                closest_midnight = dec_date.floor('D')
+                if closest_midnight in interpolated_df.index:
+                    interpolated_df.loc[closest_midnight, 'value'] = np.nan
+            interpolated_df['value'] = interpolated_df['value'].interpolate(method='time')  # Re-interpolate if needed
+
     df_daily = pd.DataFrame()
     if not interpolated_df.empty:
         daily_values = interpolated_df['value'].diff().clip(lower=0)
         df_daily = pd.DataFrame({'date': daily_values.index, 'value': daily_values.values})
+        if not df_daily.empty:
+            df_daily = df_daily.iloc[1:].copy() if len(df_daily) > 1 else pd.DataFrame()
 
-    
-
+    # The rest of the function (chart plotting) remains mostly unchanged, but update cumulative chart hover without customdata if needed
     st.subheader("Raw Data: Total Accumulated Streams")
-    st.caption("This chart shows the cumulative stream data. Gaps from decreasing values are shown, while gaps from duplicate days are interpolated.")
+    st.caption("This chart shows the cumulative stream data interpolated at midnight timestamps after adjustment.")
     fig_cumulative = go.Figure()
 
     fig_cumulative.add_trace(go.Scatter(
         x=interpolated_df.index, y=interpolated_df['value'],
         mode='lines', name='Total Streams',
         connectgaps=True,
-        customdata=interpolated_df['hover_text'],
-        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Streams</b>: %{y:,.0f}%{customdata}<extra></extra>'
+        hovertemplate='<b>Date</b>: %{x|%Y-%m-%d}<br><b>Total Streams</b>: %{y:,.0f}<extra></extra>'
     ))
 
     fig_cumulative.update_layout(showlegend=False, yaxis_title="Cumulative Streams")
     st.plotly_chart(fig_cumulative, use_container_width=True, key=f"cumulative_chart_{chart_key}")
     
+        
     st.markdown("---")
     st.subheader("Calculated Data: Daily Streams")
     st.caption("This chart shows the calculated day-over-day change from the cleaned data.")
@@ -2063,6 +2070,8 @@ def display_tracks_grid(songs: List[Dict[str, Any]]):
                         st.rerun()
 
 
+
+# Integrate debug into existing function
 def display_track_details_page(api_client, db_manager, song_uuid: str):
     """Displays the comprehensive detail view for a single track."""
     if st.button("⬅️ Back to all tracks"):
@@ -2076,9 +2085,8 @@ def display_track_details_page(api_client, db_manager, song_uuid: str):
 
     meta_obj = song_details.get('object', song_details)
     song_name = meta_obj.get('name', 'Unknown Song')
-    
     st.subheader(f"Details for: {song_name}")
-    
+
     col1, col2 = st.columns([1, 4])
     with col1:
         if image_url := meta_obj.get("imageUrl"):
@@ -2087,117 +2095,154 @@ def display_track_details_page(api_client, db_manager, song_uuid: str):
         m_col1, m_col2 = st.columns(2)
         release_date = meta_obj.get('releaseDate', 'N/A')
         m_col1.metric("Release Date", str(release_date)[:10])
-        
         duration_seconds = meta_obj.get('duration')
         if duration_seconds is not None:
             minutes = duration_seconds // 60
             seconds = duration_seconds % 60
             m_col2.metric("Duration", f"{minutes}:{seconds:02d}")
-        
-        st.write(f"**ISRC:** `{meta_obj.get('isrc')}`")
-        st.caption(f"**UUID:** `{song_uuid}`")
-
+        st.write(f"ISRC: {meta_obj.get('isrc')}")
+        st.caption(f"UUID: {song_uuid}")
 
     st.markdown("---")
     st.subheader("Performance Data")
 
-    start_date_filter = st.date_input("Chart Start Date", date.today() - timedelta(days=1095), key=f"start_track_{song_uuid}")
-    end_date_filter = st.date_input("Chart End Date", date.today(), key=f"end_track_{song_uuid}")
-    
-    if st.button("Update Track Data", use_container_width=True, type="primary"):
+    start_date_filter = st.date_input("Chart Start Date", datetime(2023, 1, 1), key=f"start_track_{song_uuid}")
+    end_date_filter = st.date_input("Chart End Date", datetime.now(), key=f"end_track_{song_uuid}")
+
+    if 'show_aud_success' not in st.session_state:
+        st.session_state.show_aud_success = False
+    if st.session_state.show_aud_success:
+        st.success("Audience data updated successfully.")
+        st.session_state.show_aud_success = False
+
+    if 'show_pop_success' not in st.session_state:
+        st.session_state.show_pop_success = False
+    if st.session_state.show_pop_success:
+        st.success("Popularity data updated successfully.")
+        st.session_state.show_pop_success = False
+
+    if st.button("Fetch and Update Data", use_container_width=True, type="primary"):
         with st.spinner("Fetching and updating Audience and Popularity data..."):
             with ThreadPoolExecutor(max_workers=2) as executor:
                 future_aud = executor.submit(api_client.get_song_streaming_audience, song_uuid, 'spotify', start_date_filter, end_date_filter)
                 future_pop = executor.submit(api_client.get_song_popularity, song_uuid, 'spotify', start_date_filter, end_date_filter)
-                
                 aud_data = future_aud.result()
                 pop_data = future_pop.result()
+                # Process and store audience data
+                try:
+                    if aud_data and not aud_data.get('error') and aud_data.get('items'):
+                        raw_history = []
+                        for item in aud_data['items']:
+                            if 'date' in item:
+                                plots = item.get('plots', [])
+                                if plots:
+                                    max_val = max(p.get('value', 0) for p in plots)
+                                    raw_history.append({'date': item['date'], 'value': max_val})
+                        # Fetch existing for merge
+                        query_filter = {'song_uuid': song_uuid, 'platform': 'spotify'}
+                        existing = db_manager.collections['song_audience'].find_one(query_filter)
+                        history = existing.get('history', []) if existing else []
+                        all_items = history + raw_history
+                        max_values = {}
+                        for item in all_items:
+                            if 'date' in item:
+                                date_str = item['date']
+                                value = item.get('value', 0)
+                                if date_str in max_values:
+                                    max_values[date_str] = max(max_values[date_str], value)
+                                else:
+                                    max_values[date_str] = value
+                        sorted_dates = sorted(
+                            max_values.keys(),
+                            key=lambda d: datetime.fromisoformat(d.replace('Z', '+00:00'))
+                        )
+                        cleaned_items = [{'date': d, 'value': max_values[d]} for d in sorted_dates]
+                        if cleaned_items:
+                            from analysis_tools import adjust_cumulative_history
+                            adjusted_items = adjust_cumulative_history(cleaned_items)
+                        else:
+                            st.warning("No cleaned items to adjust, skipping storage.")
+                        db_manager.store_song_audience_data(song_uuid, {'history': adjusted_items, 'platform': 'spotify'})
+                        get_song_audience_data.clear()
+                        st.session_state.show_aud_success = True
+                    else:
+                        st.warning("No valid audience data received from API.")
+                except Exception as e:
+                    st.error(f"Failed to update audience data: {str(e)}")
+                # Process and store popularity data
+                try:
+                    if pop_data and not pop_data.get('error') and pop_data.get('items'):
+                        db_manager.store_song_popularity_data(song_uuid, pop_data)
+                        get_song_popularity_data.clear()
+                        st.session_state.show_pop_success = True
+                    else:
+                        st.info("No new popularity data to update.")
+                except Exception as e:
+                    st.error(f"Failed to update popularity data: {str(e)}")
+            if st.button("Refresh Page to See Updated Charts"):
+                st.rerun()
+            else:
+                st.info("Data updated! Click the button above to refresh and see charts.")
 
-                data_found = False
-                if aud_data and not aud_data.get('error') and aud_data.get('items'):
-                    db_manager.store_song_audience_data(song_uuid, aud_data)
-                    data_found = True
-                
-                if pop_data and not pop_data.get('error') and pop_data.get('items'):
-                    db_manager.store_song_popularity_data(song_uuid, pop_data)
-                    data_found = True
-
-                if data_found:
-                    get_song_audience_data.clear()
-                    get_song_popularity_data.clear()
-                    st.success("Track data updated successfully.")
-                    st.rerun()
-                else:
-                    st.info("No new data was found for the specified range.")
-
-
-    # --- Display Charts ---
     aud_data = get_song_audience_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
     pop_data = get_song_popularity_data(db_manager, song_uuid, "spotify", start_date_filter, end_date_filter)
-    
-    
-    # --- Display Charts ---
+
     def parse_timeseries_data(raw_data):
         source_list = raw_data.get('history') if isinstance(raw_data, dict) else raw_data
         if not source_list:
             return []
         parsed_list = []
         for entry in source_list:
-            date_val = entry.get('date')
-            value = None
-            if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
-                value = entry['plots'][0].get('value')
-            elif 'value' in entry:
-                value = entry.get('value')
-            if date_val and value is not None:
-                parsed_list.append({'date': date_val, 'value': value})
+            timestamp = entry.get('timestamp')
+            value = entry.get('cumulative_streams')
+            if timestamp and value is not None:
+                parsed_list.append({'date': timestamp, 'value': value})  # Use 'date' for consistency with chart logic
         return parsed_list
 
     parsed_aud = parse_timeseries_data(aud_data)
     if parsed_aud:
-        daily_list = convert_cumulative_to_daily(parsed_aud)
         df_aud_cum = pd.DataFrame(parsed_aud)
-        df_aud_cum['date'] = pd.to_datetime(df_aud_cum['date'])
-        df_aud_cum = df_aud_cum.set_index('date').sort_index()
-        df_daily_aud = pd.DataFrame(daily_list)
-        df_daily_aud['date'] = pd.to_datetime(df_daily_aud['date'])
-        df_daily_aud = df_daily_aud.set_index('date').sort_index()
+        df_aud_cum['date'] = pd.to_datetime(df_aud_cum['date'], format='ISO8601')
+        df_aud_cum = df_aud_cum.sort_values('date').set_index('date')
+        adjusted_times = df_aud_cum.index.tolist()
+        cum_streams = df_aud_cum['value'].tolist()
+        n = len(adjusted_times)
+        mid_times = []
+        rates = []
+        if n >= 2:
+            mid_times = [adjusted_times[i] + (adjusted_times[i+1] - adjusted_times[i]) / 2 for i in range(n - 1)]
+            rates = []
+            for i in range(n - 1):
+                delta_t = (adjusted_times[i + 1] - adjusted_times[i]).total_seconds() / 86400.0
+                delta_c = cum_streams[i + 1] - cum_streams[i]
+                rate = delta_c / delta_t if delta_t > 0 else 0
+                rates.append(rate)
     else:
         df_aud_cum = pd.DataFrame()
-        df_daily_aud = pd.DataFrame()
+        mid_times = []
+        rates = []
 
     parsed_pop = parse_timeseries_data(pop_data)
     if parsed_pop:
         df_pop = pd.DataFrame(parsed_pop)
-        df_pop['date'] = pd.to_datetime(df_pop['date'])
+        df_pop['date'] = pd.to_datetime(df_pop['date'], format='ISO8601')
         df_pop = df_pop.set_index('date').sort_index()
     else:
         df_pop = pd.DataFrame()
 
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("Song Audience Over Time")
+        st.subheader("Song Streaming Numbers Over Time")
         if not df_aud_cum.empty:
-            fig_aud = make_subplots(specs=[[{"secondary_y": True}]])
-            # Daily on left
+            fig_aud = go.Figure()
             fig_aud.add_trace(
-                go.Scatter(x=df_daily_aud.index, y=df_daily_aud['value'], mode='lines', name='Daily Streams', line=dict(color='#1f77b4')),
-                secondary_y=False
+                go.Scatter(x=df_aud_cum.index, y=df_aud_cum['value'], mode='lines', name='Cumulative Streams', line=dict(color='#ff7f0e'))
             )
-            # Cumulative on right
-            fig_aud.add_trace(
-                go.Scatter(x=df_aud_cum.index, y=df_aud_cum['value'], mode='lines', name='Cumulative Streams', line=dict(color='#ff7f0e')),
-                secondary_y=True
-            )
-            y_range_daily = _get_optimal_y_range(df_daily_aud, ['value'])
             y_range_cum = _get_optimal_y_range(df_aud_cum, ['value'])
             fig_aud.update_layout(
-                yaxis_range=y_range_daily,
-                yaxis2_range=y_range_cum,
-                yaxis_title="Daily Streams",
-                yaxis2_title="Cumulative Streams",
+                yaxis_range=y_range_cum,
+                yaxis_title="Cumulative Streams",
                 yaxis_tickformat=",.0f",
-                yaxis2_tickformat=",.0f",
                 showlegend=True,
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                 hovermode="x unified"
@@ -2205,7 +2250,6 @@ def display_track_details_page(api_client, db_manager, song_uuid: str):
             st.plotly_chart(fig_aud, use_container_width=True, key=f"track_aud_{song_uuid}")
         else:
             st.info("No audience data to display.")
-
     with c2:
         st.subheader("Song Popularity Over Time")
         if not df_pop.empty:
@@ -2227,27 +2271,48 @@ def display_track_details_page(api_client, db_manager, song_uuid: str):
             st.info("No popularity data to display.")
 
     st.markdown("---")
+    st.subheader("Daily Song Streams Over Time")
+    if rates:
+        fig_daily = go.Figure()
+        fig_daily.add_trace(
+            go.Scatter(x=mid_times, y=rates, mode='lines+markers', marker=dict(size=3), name='Daily Streams', line=dict(color='#2ca02c'))
+        )
+        temp_df = pd.DataFrame({'daily_streams': rates})
+        y_range_daily = _get_optimal_y_range(temp_df, ['daily_streams'])
+        fig_daily.update_layout(
+            yaxis_range=y_range_daily,
+            yaxis_title="Daily Rate (streams/day)",
+            yaxis_tickformat=",.0f",
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig_daily, use_container_width=True, key=f"track_daily_{song_uuid}")
+    else:
+        st.info("No daily streams data to display.")
+
+    st.markdown("---")
     display_retention_chart(
         audience_data=aud_data,
         popularity_data=pop_data,
         chart_key=f"track_retention_{song_uuid}"
-    )  
-    st.markdown("---")
+    )
 
-    # --- Display Playlist Placements ---
+    st.markdown("---")
     st.subheader("Playlist Placements")
     playlist_entries = get_playlists_for_song(db_manager, song_uuid)
     if not playlist_entries:
         st.info("This song has not been found on any playlists in the database.")
     else:
-        st.write(f"Found this song on **{len(playlist_entries)}** playlist(s):")
+        st.write(f"Found this song on {len(playlist_entries)} playlist(s):")
         for entry in playlist_entries:
             playlist_info = entry.get('playlist', {})
             entry_date = entry.get('entryDate', 'N/A')
             with st.container(border=True):
-                st.write(f"**{playlist_info.get('name', 'N/A')}**")
+                st.write(f"{playlist_info.get('name', 'N/A')}")
                 st.caption(f"Added on: {str(entry_date)[:10]}")
                 st.write(f"Subscribers on entry: {playlist_info.get('latestSubscriberCount', 'N/A'):,}")
+
 
 def display_retention_chart(audience_data: list, popularity_data: list, chart_key: str):
     """
