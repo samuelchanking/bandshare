@@ -142,9 +142,11 @@ def get_streaming_audience_from_db(_db_manager, artist_uuid: str, platform: str,
 @st.cache_data
 def get_song_audience_data(_db_manager, song_uuid: str, platform: str, start_date, end_date):
     """Gets song audience data for a given date range from the database."""
-    if not all([song_uuid, platform, start_date, end_date]): return []
+    if not all([song_uuid, platform, start_date, end_date]):
+        return []
     query_filter = {'song_uuid': song_uuid, 'platform': platform}
-    return _db_manager.get_timeseries_data_for_display('song_audience', query_filter, start_date, end_date)
+    result = _db_manager.get_timeseries_data_for_display('song_audience', query_filter, start_date, end_date)
+    return result
 
 @st.cache_data
 def get_full_song_data_from_db(_db_manager, song_uuid: str):
