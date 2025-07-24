@@ -5,9 +5,7 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 from typing import Dict, Any, List, Tuple, Optional
 import re
 from datetime import datetime, date
-
-class DatabaseManager:
-    """Manages all interactions with the MongoDB database."""
+from analysis_tools import adjust_cumulative_history
 
 class DatabaseManager:
     """Manages all interactions with the MongoDB database."""
@@ -34,17 +32,26 @@ class DatabaseManager:
                 'playlist_audience': self.db['playlist_audience'],
                 'typed_playlists': self.db['typed_playlists'],
                 'songs_playlists': self.db['songs_playlists'],
-                'global_song': self.db['global_song'], # --- NEW COLLECTION ---
-                'global_song_audience': self.db['global_song_audience'], # --- NEW COLLECTION ---
-                'global_song_playlists': self.db['global_song_playlists'], # --- NEW COLLECTION ---
+                'global_song': self.db['global_song'],
+                'global_song_audience': self.db['global_song_audience'],
+                'global_song_playlists': self.db['global_song_playlists'],
+                'song_popularity': self.db['song_popularity'], 
+                'events': self.db['events'], # Add this line
+
+
             }
             # Create indexes for efficient queries
-            # ... (existing indexes)
             self.collections['songs_playlists'].create_index([("artist_uuid", ASCENDING)])
-            self.collections['global_song'].create_index([("playlist_uuid", ASCENDING)]) # --- NEW INDEX ---
-            self.collections['global_song'].create_index([("song.uuid", ASCENDING)]) # --- NEW INDEX ---
-            self.collections['global_song_audience'].create_index([("song_uuid", ASCENDING)]) # --- NEW INDEX ---
-            self.collections['global_song_playlists'].create_index([("playlist.uuid", ASCENDING)]) # --- NEW INDEX ---
+            self.collections['global_song'].create_index([("playlist_uuid", ASCENDING)])
+            self.collections['global_song'].create_index([("song.uuid", ASCENDING)])
+            self.collections['global_song_audience'].create_index([("song_uuid", ASCENDING)])
+            self.collections['global_song_playlists'].create_index([("playlist.uuid", ASCENDING)])
+            self.collections['song_popularity'].create_index([("song_uuid", ASCENDING)]) 
+            self.collections['events'].create_index([("artist_uuid", ASCENDING)]) # Add this line
+            self.collections['events'].create_index([("date", ASCENDING)]) # Add this line
+
+
+
         except ConnectionFailure as e:
             raise e
         
@@ -53,17 +60,29 @@ class DatabaseManager:
         """Closes the MongoDB connection."""
         self.client.close()
         
-    def get_all_songs_for_artist(self, artist_uuid: str) -> List[Dict[str, str]]:
+    # --- MODIFIED FUNCTION ---
+    def get_all_songs_for_artist(self, artist_uuid: str) -> List[Dict[str, Any]]:
         """Retrieves all songs (UUID and name) for a given artist."""
-        songs_cursor = self.collections['songs'].find(
-            {'artist_uuid': artist_uuid},
-            {'song_uuid': 1, 'object.name': 1, 'name': 1, '_id': 0}
-        )
+        # Removed the complex projection to ensure the full document is retrieved
+        songs_cursor = self.collections['songs'].find({'object.artists.uuid': artist_uuid})
+        
         songs = []
-        for song in songs_cursor:
-            name = song.get('object', {}).get('name') or song.get('name')
-            if name and song.get('song_uuid'):
-                songs.append({'song_uuid': song['song_uuid'], 'name': name})
+        for song_doc in songs_cursor:
+            # The full document is now available
+            # Determine the source of metadata (top-level or nested 'object')
+            meta_source = song_doc.get('object', song_doc)
+            
+            # Ensure we have the required fields before appending
+            song_uuid = song_doc.get('song_uuid')
+            name = meta_source.get('name')
+            
+            if song_uuid and name:
+                songs.append({
+                    'uuid': song_uuid,
+                    'name': name,
+                    'releaseDate': song_doc.get('releaseDate'),
+                    'imageUrl': song_doc.get('imageUrl')
+                })
         return songs
 
     def search_artist_by_name(self, artist_name: str) -> Optional[Dict[str, Any]]:
@@ -72,15 +91,37 @@ class DatabaseManager:
         search_regex = re.compile(f"^{re.escape(artist_name)}$", re.IGNORECASE)
         return self.collections['artists'].find_one({'$or': [{'name': search_regex}, {'object.name': search_regex}]})
 
+
+
     def store_static_artist_data(self, artist_uuid: str, data: Dict[str, Any]) -> Dict[str, str]:
         """Upserts the main artist metadata document."""
         if 'error' in data: return {'status': 'error', 'message': data['error']}
         
         try:
             if 'metadata' in data:
+                meta_source = data['metadata'].get('object', data['metadata'])
+                filtered = {
+                    'artist_uuid': artist_uuid,
+                    'name': meta_source.get('name'),
+                    'imageUrl': meta_source.get('imageUrl'),
+                    'countryCode': meta_source.get('countryCode'),
+                    'biography': meta_source.get('biography'),
+                    'gender': meta_source.get('gender'),
+                    'type': meta_source.get('type'),
+                    'careerStage': meta_source.get('careerStage'),
+                }
+                genres_data = meta_source.get('genres', [])
+                all_genres = []
+                for g in genres_data:
+                    root = g.get('root')
+                    if root:
+                        all_genres.append(root)
+                    sub = g.get('sub', [])
+                    all_genres.extend(sub)
+                filtered['genres'] = all_genres
                 self.collections['artists'].update_one(
                     {'artist_uuid': artist_uuid},
-                    {'$set': data['metadata']},
+                    {'$set': filtered},
                     upsert=True
                 )
             return {'status': 'success', 'message': 'Static data stored.'}
@@ -92,48 +133,65 @@ class DatabaseManager:
         Stores or updates all secondary data with improved error handling.
         """
         try:
-            # --- NEW: Logic to store data in the 'songs_playlists' collection ---
             if 'song_playlist_map' in data:
                 all_song_uuids_in_batch = list(data['song_playlist_map'].keys())
                 
-                # First, clear all existing playlist entries for the artist's songs
                 self.collections['songs_playlists'].delete_many({'artist_uuid': artist_uuid})
 
                 docs_to_insert = []
                 for song_uuid, entries in data['song_playlist_map'].items():
+                    song_meta = data.get('song_metadata', {}).get(song_uuid, {})
                     for entry in entries:
                         doc = entry.copy()
-                        doc['song_uuid'] = song_uuid
-                        doc['artist_uuid'] = artist_uuid # Add artist_uuid for broader queries
+                        doc['song'] = {
+                            'uuid': song_uuid,
+                            'name': song_meta.get('name')
+                        }
+                        doc['artist_uuid'] = artist_uuid 
                         docs_to_insert.append(doc)
 
                 if docs_to_insert:
                     self.collections['songs_playlists'].insert_many(docs_to_insert)
-            # --- END NEW LOGIC ---
 
-            # The rest of the function remains the same...
             if 'albums' in data and 'items' in data.get('albums', {}):
                 all_album_metadata = data.get('album_metadata', {})
+                all_tracklists = data.get('tracklists', {})
                 for album_summary in data['albums']['items']:
                     if isinstance(album_summary, dict) and (album_uuid_val := album_summary.get('uuid')):
                         album_meta = all_album_metadata.get(album_uuid_val, {})
+                        tracklist_data = all_tracklists.get(album_uuid_val, {})
                         if isinstance(album_meta, dict):
                             combined_meta = album_summary.copy()
                             combined_meta.update(album_meta)
-                            album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': combined_meta}
+                            # Flatten the 'object' layer if present
+                            if 'object' in combined_meta:
+                                combined_meta.update(combined_meta.pop('object', {}))
+                            # Build tracklist array
+                            tracklist_array = []
+                            if isinstance(tracklist_data, dict) and 'items' in tracklist_data:
+                                for track in sorted(tracklist_data['items'], key=lambda t: (t.get('discNumber', 1), t.get('trackNumber', 0))):
+                                    song_data = track.get('song', {})
+                                    tracklist_array.append({
+                                        'number': track.get('trackNumber', 1),  # Default to 1 for singles or if missing
+                                        'name': song_data.get('name'),
+                                        'uuid': song_data.get('uuid'),
+                                        'imageUrl': song_data.get('imageUrl')
+                                    })
+                            # Filter to keep only specified fields
+                            filtered_meta = {
+                                k: combined_meta.get(k)
+                                for k in ['name', 'creditName', 'releaseDate', 'uuid', 'type', 'upc', 'totalTracks', 'imageUrl']
+                            }
+                            filtered_meta['tracklist'] = tracklist_array
+                            album_doc = {'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'album_metadata': filtered_meta}
                             self.collections['albums'].update_one({'album_uuid': album_uuid_val}, {'$set': album_doc}, upsert=True)
 
-            if 'tracklists' in data:
-                for album_uuid_val, tracklist_data in data.get('tracklists', {}).items():
-                    if isinstance(tracklist_data, dict) and 'error' not in tracklist_data:
-                        doc_to_store = tracklist_data.copy()
-                        doc_to_store.update({'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val})
-                        self.collections['tracklists'].update_one({'album_uuid': album_uuid_val}, {'$set': doc_to_store}, upsert=True)
-            
             if 'song_metadata' in data:
                 for song_uuid, song_meta in data.get('song_metadata', {}).items():
                     if isinstance(song_meta, dict) and 'error' not in song_meta:
-                        album_uuid_val = song_meta.get('album', {}).get('uuid')
+                        album_info = song_meta.get('album')
+                        album_uuid_val = album_info.get('uuid') if isinstance(album_info, dict) else None
+                        
                         doc_to_store = song_meta.copy()
                         doc_to_store.update({'artist_uuid': artist_uuid, 'album_uuid': album_uuid_val, 'song_uuid': song_uuid})
                         self.collections['songs'].update_one({'song_uuid': song_uuid}, {'$set': doc_to_store}, upsert=True)
@@ -155,7 +213,6 @@ class DatabaseManager:
         except OperationFailure as e:
             print(f"Error storing demographic data: {e}")
 
-    # --- CORRECTED FUNCTION ---
     def store_playlist_audience_data(self, playlist_uuid: str, data: Dict[str, Any]):
         """
         Appends new time-series data points to the database for PLAYLIST-LEVEL audience
@@ -178,7 +235,6 @@ class DatabaseManager:
         except OperationFailure as e:
             print(f"Error storing playlist audience data: {e}")
 
-    # --- CORRECTED FUNCTION ---
     def store_album_audience_data(self, album_uuid: str, data: Dict[str, Any]):
         """
         Appends new time-series data points to the database for ALBUM-LEVEL audience
@@ -205,26 +261,58 @@ class DatabaseManager:
     def store_song_metadata(self, song_uuid: str, metadata: Dict[str, Any]):
         """
         Stores or updates the metadata for a single song in the 'songs' collection.
+        This is a more direct way to store song data.
         """
         try:
             if 'error' not in metadata and metadata:
-                # We can add artist_uuid if it's available in the metadata for consistency
-                if artist_info := metadata.get('artists', []):
-                     metadata['artist_uuid'] = artist_info[0].get('uuid')
-                metadata['song_uuid'] = song_uuid
+                doc_to_store = metadata.copy()
+                # Ensure essential UUIDs are at the top level
+                doc_to_store['song_uuid'] = song_uuid
+                if 'artists' in doc_to_store and doc_to_store['artists']:
+                     doc_to_store['artist_uuid'] = doc_to_store['artists'][0].get('uuid')
+                
                 self.collections['songs'].update_one(
                     {'song_uuid': song_uuid},
-                    {'$set': metadata},
+                    {'$set': doc_to_store},
                     upsert=True
                 )
         except OperationFailure as e:
             print(f"Error storing song metadata for {song_uuid}: {e}")
 
-    # --- CORRECTED FUNCTION ---
+
     def store_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
         """
-        Appends new time-series data points to the database for the unified SONG-LEVEL
-        audience collection using a single, atomic operation.
+        Stores pre-processed song audience data by overwriting any existing document.
+        Assumes the passed 'history' is already cleaned, merged, and adjusted.
+        """
+        try:
+            history = data.get('history', [])
+            if not history:
+                return
+
+            platform = data.get('platform', 'spotify')
+            query_filter = {'song_uuid': song_uuid, 'platform': platform}
+
+            # Delete existing document to overwrite
+            self.collections['song_audience'].delete_one(query_filter)
+
+            # Insert new document with the provided history
+            new_document = {
+                'song_uuid': song_uuid,
+                'platform': platform,
+                'history': history
+            }
+            self.collections['song_audience'].insert_one(new_document)
+
+        except OperationFailure as e:
+            print(f"Error storing song audience data: {e}")   
+            
+            
+            
+    def store_song_popularity_data(self, song_uuid: str, data: Dict[str, Any]):
+        """
+        Appends new time-series data points to the database for SONG-LEVEL popularity
+        using a single, atomic operation.
         """
         try:
             if 'error' in data or 'items' not in data or not data['items']:
@@ -236,13 +324,13 @@ class DatabaseManager:
                 '$setOnInsert': {'song_uuid': song_uuid, 'platform': platform},
                 '$addToSet': {'history': {'$each': data['items']}}
             }
-            self.collections['song_audience'].update_one(
+            self.collections['song_popularity'].update_one(
                 query_filter,
                 update_operation,
                 upsert=True
             )
         except OperationFailure as e:
-            print(f"Error storing song audience data: {e}")
+            print(f"Error storing song popularity data: {e}")
 
 
     def store_timeseries_data(self, artist_uuid: str, data: Dict[str, Any]):
@@ -306,16 +394,16 @@ class DatabaseManager:
         start_iso = datetime.combine(start_date, datetime.min.time()).isoformat() + "Z"
         end_iso = datetime.combine(end_date, datetime.max.time()).isoformat() + "Z"
         pipeline = [
-            {'$match': query_filter}, 
+            {'$match': query_filter},
             {'$project': {
                 'history': {
                     '$filter': {
-                        'input': '$history', 
-                        'as': 'item', 
+                        'input': '$history',
+                        'as': 'item',
                         'cond': {
                             '$and': [
-                                {'$gte': ['$$item.date', start_iso]}, 
-                                {'$lte': ['$$item.date', end_iso]}
+                                {'$gte': ['$$item.timestamp', start_iso]},
+                                {'$lte': ['$$item.timestamp', end_iso]}
                             ]
                         }
                     }
@@ -323,8 +411,9 @@ class DatabaseManager:
             }}
         ]
         result = list(self.collections[collection_name].aggregate(pipeline))
-        return result[0]['history'] if result and 'history' in result[0] else []
-
+        return result[0]['history'] if result and 'history' in result[0] else []    
+    
+    
     def get_timeseries_value_for_date(self, collection_name: str, query_filter: Dict, target_date: datetime) -> Optional[int]:
         """
         Finds the value for a specific date within a time-series document's history
@@ -361,7 +450,6 @@ class DatabaseManager:
         
         return value
     
-        # --- NEW METHOD ---
     def store_global_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
         """
         Appends new time-series data points to the database for a song's audience
@@ -383,3 +471,68 @@ class DatabaseManager:
             )
         except OperationFailure as e:
             print(f"Error storing global song audience data for {song_uuid}: {e}")
+            
+    def store_artist_events(self, artist_uuid: str, events: List[Dict[str, Any]]):
+        """
+        Stores or updates the list of events for a given artist.
+        Deletes existing events for the artist before inserting new ones to ensure freshness.
+        """
+        try:
+            if not events or 'error' in events:
+                return  # Do nothing if the new event list is empty or contains an error
+
+            # Delete all existing events for this artist
+            self.collections['events'].delete_many({'artist_uuid': artist_uuid})
+
+            # Add artist_uuid to each event document for easy querying
+            for event in events:
+                event['artist_uuid'] = artist_uuid
+
+            # Insert the new list of events
+            self.collections['events'].insert_many(events)
+
+        except OperationFailure as e:
+            print(f"Error storing artist events for {artist_uuid}: {e}")
+
+    def get_artist_events_from_db(self, artist_uuid: str) -> List[Dict[str, Any]]:
+        """
+        Retrieves all stored events for a given artist, sorted by date.
+        """
+        try:
+            # Sort by date descending to show most recent/upcoming first
+            return list(self.collections['events'].find({'artist_uuid': artist_uuid}).sort('date', -1))
+        except OperationFailure as e:
+            print(f"Error retrieving artist events for {artist_uuid}: {e}")
+            return []
+        
+    def store_venue_metadata(self, venue_data: Dict[str, Any]) -> bool:
+        """Stores or updates metadata for a single venue. Returns True on success."""
+        try:
+            # Handle nested 'object' structure if present
+            inner_data = venue_data.get('object', venue_data)
+            if 'error' not in inner_data and (venue_uuid := inner_data.get('uuid')):
+                result = self.collections['venues'].update_one(
+                    {'uuid': venue_uuid},
+                    {'$set': inner_data},
+                    upsert=True
+                )
+                return result.matched_count > 0 or result.modified_count > 0 or result.upserted_id is not None
+        except OperationFailure as e:
+            print(f"Error storing venue metadata for {venue_data.get('uuid')}: {e}")
+        return False
+
+    def store_festival_metadata(self, festival_data: Dict[str, Any]) -> bool:
+        """Stores or updates metadata for a single festival. Returns True on success."""
+        try:
+            # Handle nested 'object' structure if present
+            inner_data = festival_data.get('object', festival_data)
+            if 'error' not in inner_data and (festival_uuid := inner_data.get('uuid')):
+                result = self.collections['festivals'].update_one(
+                    {'uuid': festival_uuid},
+                    {'$set': inner_data},
+                    upsert=True
+                )
+                return result.matched_count > 0 or result.modified_count > 0 or result.upserted_id is not None
+        except OperationFailure as e:
+            print(f"Error storing festival metadata for {festival_data.get('uuid')}: {e}")
+        return False
