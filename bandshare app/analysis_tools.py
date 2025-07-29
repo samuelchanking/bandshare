@@ -2,16 +2,18 @@
 
 import json
 import numpy as np
+import sys
 import pandas as pd
 from datetime import datetime, timedelta
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, UnivariateSpline
 import streamlit as st
-from typing import List, Dict, Tuple
+import matplotlib.dates as mdates
+from typing import List, Dict, Tuple, Any
 from prophet import Prophet
 from sklearn.metrics import mean_squared_error
 import os # <-- ADDED IMPORT
 import contextlib # <-- ADDED IMPORT
-import io
+import plotly.express as px
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from prophet.plot import plot_plotly, plot_components_plotly
@@ -19,7 +21,57 @@ from sklearn.preprocessing import MinMaxScaler
 import pywt
 from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
+from scipy.optimize import minimize
 
+# Add this function to analysis_tools.py
+
+def remove_sudden_flats_in_cumulative(series: pd.Series, window=3, max_run_length=2, growth_threshold=0.8):
+    """
+    Removes short flat runs (zero growth) in a cumulative time series if surrounded by mostly growing values.
+    Replaces all but the first point in the flat run with NaN for later interpolation.
+    Now time-aware: normalizes growth to rates (streams per day) using precise time deltas.
+    
+    Args:
+        series (pd.Series): Cumulative time series with datetime index.
+        window (int): Number of days before and after to check (total window = 2*window + run length).
+        max_run_length (int): Maximum consecutive flats (duplicates) to consider for removal.
+        growth_threshold (float): Fraction of window rates that must be positive to flag as anomalous (0-1).
+    
+    Returns:
+        pd.Series: Series with short flat runs (except first point) replaced by NaN.
+    """
+    series = series.copy()
+    # Identify groups of consecutive identical values
+    shift_diff = (series != series.shift())
+    group_key = shift_diff.cumsum()
+    for key, group in series.groupby(group_key):
+        run_length = len(group)
+        if run_length > 1 and (run_length - 1) <= max_run_length:  # Flats are run_length - 1
+            group_indices = group.index
+            # Window around the group, excluding the group itself
+            start_idx = group_indices[0] - pd.Timedelta(days=window)
+            end_idx = group_indices[-1] + pd.Timedelta(days=window)
+            window_series = series.loc[start_idx:end_idx].drop(group_indices, errors='ignore')
+            
+            if window_series.empty:
+                continue
+            
+            # Compute time-normalized rates in the window
+            diff_values = window_series.diff().dropna()
+            delta_times = (window_series.index[1:] - window_series.index[:-1]).total_seconds() / 86400.0
+            rates = diff_values / delta_times
+            
+            if rates.empty:
+                continue
+            
+            # Fraction of positive growth in window (on rates)
+            positive_growth_fraction = (rates > 0).sum() / len(rates)
+            
+            if positive_growth_fraction >= growth_threshold:
+                # Set all but the first in the group to NaN
+                series.loc[group_indices[1:]] = np.nan
+    
+    return series
 
 def remove_sudden_zeros(series: pd.Series, window=3, max_run_length=2, non_zero_threshold=0.8):
     """
@@ -64,11 +116,81 @@ def remove_sudden_zeros(series: pd.Series, window=3, max_run_length=2, non_zero_
     
     return series
 
+def smooth_lumped_around_nans(series, threshold_multiplier=1.5, window=3, max_gap_length=2):
+    """
+    Detects and smooths 'lumped' high values adjacent to NaN gaps by distributing the lump across the gap.
+    Optional: Now uses a time-weighted local average if points are not uniformly spaced.
+    """
+    series = series.copy()
+    indices = series.index  # DatetimeIndex
+    nan_mask = series.isna()
+    nan_groups = (nan_mask != nan_mask.shift()).cumsum()[nan_mask]
+    
+    for group in nan_groups.unique():
+        group_indices = nan_groups[nan_groups == group].index
+        gap_length = len(group_indices)
+        if gap_length > max_gap_length:
+            continue
+        
+        # Get positions in the index list
+        group_pos = [series.index.get_loc(idx) for idx in group_indices]
+        before_pos = group_pos[0] - 1
+        after_pos = group_pos[-1] + 1
+        
+        if before_pos < 0 or after_pos >= len(indices):
+            continue
+        
+        before_idx = indices[before_pos]
+        after_idx = indices[after_pos]
+        
+        val_before = series.loc[before_idx]
+        val_after = series.loc[after_idx]
+        
+        if pd.isna(val_before) or pd.isna(val_after):
+            continue
+        
+        # Define window for local average, excluding the gap, before, and after
+        start_pos = group_pos[0] - window
+        end_pos = group_pos[-1] + window
+        window_indices = indices[max(start_pos, 0):min(end_pos + 1, len(indices))]
+        exclude_indices = [before_idx, after_idx] + list(group_indices)
+        window_values = series.loc[window_indices].drop(exclude_indices, errors='ignore')
+        
+        if window_values.empty or len(window_values) < 2:
+            continue
+        
+        # Time-weighted local average (using inverse distance weights for simplicity)
+        window_times = (window_values.index - before_idx).total_seconds() / 86400.0  # Days from reference
+        weights = 1 / (np.abs(window_times) + 1e-6)  # Inverse distance, avoid div0
+        local_avg = np.average(window_values, weights=weights)
+        
+        # Check if before or after is unusually high
+        lump_pos = None
+        lump_val = None
+        if val_before > threshold_multiplier * local_avg:
+            lump_pos = before_pos
+            lump_val = val_before
+            num_days = gap_length + 1
+            dist_start_pos = before_pos
+            dist_end_pos = group_pos[-1]
+        elif val_after > threshold_multiplier * local_avg:
+            lump_pos = after_pos
+            lump_val = val_after
+            num_days = gap_length + 1
+            dist_start_pos = group_pos[0]
+            dist_end_pos = after_pos
+        
+        if lump_pos is not None:
+            distributed_val = lump_val / num_days
+            dist_indices = indices[dist_start_pos: dist_end_pos + 1]
+            series.loc[dist_indices] = distributed_val
+    
+    return series
 
 def find_spikes_by_std_dev(series: pd.Series, threshold: float, window_size: int):
     """
     Finds local maxima and minima that are a significant number of standard
-    deviations away from a rolling average.
+    deviations away from a rolling average, and also meet a relative deviation threshold of 80%.
 
     Args:
         series (pd.Series): Input time series data.
@@ -98,15 +220,19 @@ def find_spikes_by_std_dev(series: pd.Series, threshold: float, window_size: int
 
         # Check if the standard deviation is valid and the point exceeds the threshold
         if pd.notna(std_at_idx) and std_at_idx > 0:
-            if abs(value - mean_at_idx) > (threshold * std_at_idx):
-                if idx in maxima_indices:
-                    reason = "Maximum"
-                elif idx in minima_indices:
-                    reason = "Minimum"
-                else:
-                    reason = "Unknown"
-                
-                spikes.append({'date': series.index[idx], 'streams': value, 'type': reason})
+            deviation = abs(value - mean_at_idx)
+            if deviation > (threshold * std_at_idx):
+                # Additional criterion: relative deviation >= 80% of the mean
+                # Skip if mean is zero or negative to avoid invalid relative checks
+                if mean_at_idx > 0 and (deviation / mean_at_idx) >= 0.2:
+                    if idx in maxima_indices:
+                        reason = "Maximum"
+                    elif idx in minima_indices:
+                        reason = "Minimum"
+                    else:
+                        reason = "Unknown"
+                    
+                    spikes.append({'date': series.index[idx], 'streams': value, 'type': reason})
             
     if not spikes:
         return pd.DataFrame()
@@ -315,25 +441,56 @@ def clean_and_prepare_cumulative_data(
     """
     Takes raw cumulative history, applies cleaning rules, and returns both the
     cleaned DataFrame and a list of dates that were removed for decreasing.
+    Now includes timestamp adjustment for better data cleaning.
     """
     if not history_data:
         return pd.DataFrame(), pd.to_datetime([])
 
     parsed_history = []
     for entry in history_data:
-        # This handles the two slightly different data structures for stream history
         value = None
         if 'plots' in entry and isinstance(entry['plots'], list) and entry['plots']:
             value = entry['plots'][0].get('value')
-        elif 'value' in entry: # Handles global audience data structure
+        elif 'value' in entry:
             value = entry.get('value')
 
         if entry.get('date') and value is not None:
             parsed_history.append({'date': entry['date'], 'value': value})
 
-
     if not parsed_history:
         return pd.DataFrame(), pd.to_datetime([])
+
+    df = pd.DataFrame(parsed_history)
+
+    # Apply timestamp adjustment
+    dates_str = df['date'].tolist()
+    values = df['value'].tolist()
+    adjust_json = adjust_json
+    adjust = json.loads(adjust_json)
+
+    if adjust['error']:
+        # Proceed with original data if adjustment fails
+        pass
+    else:
+        adjusted = adjust['adjusted_data']
+        df = pd.DataFrame({
+            'date': [pd.to_datetime(item['timestamp']) for item in adjusted],
+            'value': [item['cumulative_streams'] for item in adjusted]
+        })
+
+    df.sort_values(by='date', inplace=True)
+
+    # Identify and store dates where the cumulative value erroneously decreased
+    decreasing_mask = df['value'].diff() < 0
+    decreasing_dates = df.loc[decreasing_mask, 'date']
+    
+    # Remove the rows with decreasing values
+    df_processed = df[~decreasing_mask].reset_index(drop=True)
+    
+    # Apply the intelligent duplicate removal logic (adapted for datetime index)
+    df_cleaned = handle_cumulative_duplicates(df_processed)
+
+    return df_cleaned, decreasing_dates
 
     df = pd.DataFrame(parsed_history)
     df['date'] = pd.to_datetime(df['date'])
@@ -363,7 +520,7 @@ def convert_cumulative_to_daily(cumulative_data: List[Dict]) -> List[Dict]:
         return cumulative_data
 
     df = pd.DataFrame(cumulative_data)
-    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['date'], format='ISO8601', utc=True)
     df.sort_values(by='date', inplace=True)
 
     # Calculate day-over-day difference and ensure no negative values
@@ -371,7 +528,6 @@ def convert_cumulative_to_daily(cumulative_data: List[Dict]) -> List[Dict]:
     df['value'] = df['value'].clip(lower=0)
 
     return df.to_dict('records')
-
 
 @st.cache_data
 def detect_anomalous_spikes(data_tuple: Tuple, discretization_step: int = 7, sensitivity: float = 2.0, smoothing_window_size: int = 7) -> str:
@@ -680,425 +836,519 @@ def detect_prophet_anomalies(data: Dict, interval_width: float = 0.95) -> str:
 
     except Exception as e:
         return json.dumps({'anomalies': [], 'plots_json': None, 'error': f'An error occurred: {str(e)}'})
-def detect_comparative_anomalies(target_df: pd.DataFrame, baseline_df: pd.DataFrame, sensitivity: float = 2.0, window: int = 7) -> dict:
-    """
-    Detects anomalies in a target country's streams by comparing its performance
-    ratio against a baseline of other countries. Now returns debug data for plotting.
-    """
-    if target_df.empty or baseline_df.empty:
-        return {"anomalies": [], "debug_data": None, "error": "Input dataframes cannot be empty."}
 
-    target_df['date'] = pd.to_datetime(target_df['date'])
-    target_df.set_index('date', inplace=True)
-    baseline_df['date'] = pd.to_datetime(baseline_df['date'])
-    baseline_df.set_index('date', inplace=True)
 
-    df_merged = target_df.join(baseline_df, lsuffix='_target', rsuffix='_baseline', how='inner')
+
+def load_and_process_data(file_path):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    history = data.get('history', [])
+    points = []
+    for item in history:
+        # Parse ISO with timezone
+        dt_str = item['date']
+        dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))  # Handle Z if present
+        dt = dt.replace(tzinfo=None)  # Make naive (UTC assumed)
+        val = item['value']
+        points.append((dt, val))
+    points.sort(key=lambda x: x[0])  # Sort by date
     
-    df_merged.replace(0, np.nan, inplace=True)
-
-    df_merged['ratio'] = df_merged['streams_target'] / df_merged['streams_baseline']
+    # Remove consecutive duplicates in values
+    if not points:
+        return [], np.array([])
+    filtered = [points[0]]
+    for p in points[1:]:
+        if p[1] != filtered[-1][1]:
+            filtered.append(p)
     
-    ratio_series = df_merged['ratio'].dropna()
-    if ratio_series.empty:
-        return {"anomalies": [], "debug_data": None, "error": "No overlapping data to calculate ratio."}
+    dates, cum_streams = zip(*filtered)
+    return list(dates), np.array(cum_streams)
 
-    df_merged['rolling_mean'] = ratio_series.rolling(window=window, center=True, min_periods=1).mean()
-    df_merged['rolling_std'] = ratio_series.rolling(window=window, center=True, min_periods=1).std()
 
-    df_merged['upper_bound'] = df_merged['rolling_mean'] + sensitivity * df_merged['rolling_std']
+def robust_spline(t, y, s_smooth, iterations=2):
+    w = np.ones(len(t))
+    idx = np.argsort(t)
+    t = t[idx]
+    y = y[idx]
+    for _ in range(iterations):
+        spline = UnivariateSpline(t, y, w=w, s=s_smooth)
+        r = y - spline(t)
+        mad = np.median(np.abs(r))
+        if mad == 0:
+            break
+        scale = mad / 0.67448975
+        u = r / (scale * 4.685)
+        mask = np.abs(u) < 1
+        w = np.zeros_like(u)
+        w[mask] = (1 - u[mask]**2)**2
+    return spline
 
-    anomalies_df = df_merged[df_merged['ratio'] > df_merged['upper_bound']].copy()
-
-    anomalies_list = []
-    for date, row in anomalies_df.iterrows():
-        anomalies_list.append({
-            'date': date,
-            'target_streams': row['streams_target'],
-            'baseline_streams': row['streams_baseline'],
-            'ratio': row['ratio'],
-            'threshold': row['upper_bound']
-        })
+def adjust_and_plot_fast(input_path, output_path):
+    dates, cum_streams = load_and_process_data(input_path)
+    n = len(dates)
+    final_spline = None
+    min_time_diff = 1 / 24.0  # 1 hour in days
+    epsilon = 1e-6
+    if n < 3:
+        h = np.full(n, 12.0)
+        adjusted_times = [dates[i] + timedelta(hours=h[i]) for i in range(n)]
+    else:
+        ref_date = dates[0]
+        t_orig = np.array([(d - ref_date).days for d in dates], dtype=float)
+        midday_t = t_orig + 0.5
+        t = midday_t.copy()
         
-    debug_df = df_merged[['ratio', 'rolling_mean', 'upper_bound']].reset_index()
-    debug_data = {
-        'dates': debug_df['date'].dt.strftime('%Y-%m-%d').tolist(),
-        'ratios': debug_df['ratio'].apply(lambda x: x if pd.notna(x) else -1).tolist(),
-        'means': debug_df['rolling_mean'].apply(lambda x: x if pd.notna(x) else -1).tolist(),
-        'bounds': debug_df['upper_bound'].apply(lambda x: x if pd.notna(x) else -1).tolist(),
-    }
-
-    return {"anomalies": anomalies_list, "debug_data": debug_data, "error": ""}
-
-def find_trend_divergence_periods(data_dict: Dict[str, pd.DataFrame], baseline_countries: List[str], test_country: str, sensitivity: float = 2.0, window: int = 14) -> Dict:
-    """
-    Finds specific periods where a test country's trend diverges from a baseline trend.
-    """
-    # 1. Prepare Baseline Data
-    baseline_dfs = [df for country, df in data_dict.items() if country in baseline_countries]
-    if not baseline_dfs or test_country not in data_dict:
-        return {"error": "Baseline countries or test country not found or have insufficient data."}
-
-    # Aggregate baseline streams and ensure unique dates
-    baseline_agg_df = pd.concat(baseline_dfs).groupby('date')['streams'].sum().reset_index()
-    test_df = data_dict[test_country]
-
-    # 2. Normalize Data
-    scaler_base = MinMaxScaler()
-    scaler_test = MinMaxScaler()
-    
-    baseline_agg_df['y_scaled'] = scaler_base.fit_transform(baseline_agg_df[['streams']])
-    test_df['y_scaled'] = scaler_test.fit_transform(test_df[['streams']])
-    
-    baseline_agg_df['date'] = baseline_agg_df['date'].dt.tz_localize(None)
-    test_df['date'] = test_df['date'].dt.tz_localize(None)
-
-    # 3. Train Prophet Models to get trends
-    with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-        # Baseline model
-        base_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-        base_model.fit(baseline_agg_df.rename(columns={'date': 'ds', 'y_scaled': 'y'}))
-        base_forecast = base_model.predict(base_model.history)
+        # Initial min_t and max_t based on t_orig, enforcing min_time_diff
+        min_t = np.zeros(n)
+        max_t = np.zeros(n)
+        min_t[0] = t_orig[0]
+        max_t[0] = t_orig[0] + 1 - epsilon
+        for i in range(1, n):
+            min_t[i] = max(t_orig[i-1] + min_time_diff, t_orig[i])
+            max_t[i] = t_orig[i] + 1 - epsilon
         
-        # Test model
-        test_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-        test_model.fit(test_df.rename(columns={'date': 'ds', 'y_scaled': 'y'}))
-        test_forecast = test_model.predict(test_model.history)
-
-    # 4. Analyze Trend Difference
-    trends = pd.merge(
-        base_forecast[['ds', 'trend']], 
-        test_forecast[['ds', 'trend']], 
-        on='ds', 
-        suffixes=('_base', '_test')
-    )
-    trends['difference'] = trends['trend_test'] - trends['trend_base']
-
-    # 5. Find Anomalous Periods in the difference
-    trends['rolling_mean'] = trends['difference'].rolling(window=window, center=True, min_periods=1).mean()
-    trends['rolling_std'] = trends['difference'].rolling(window=window, center=True, min_periods=1).std()
-    
-    trends['upper_bound'] = trends['rolling_mean'] + sensitivity * trends['rolling_std']
-    trends['lower_bound'] = trends['rolling_mean'] - sensitivity * trends['rolling_std']
-    
-    trends['anomaly'] = (trends['difference'] > trends['upper_bound']) | (trends['difference'] < trends['lower_bound'])
-
-    # Group consecutive anomalies into periods
-    anomalous_periods = []
-    in_anomaly = False
-    start_date = None
-    for i, row in trends.iterrows():
-        if row['anomaly'] and not in_anomaly:
-            in_anomaly = True
-            start_date = row['ds']
-        elif not row['anomaly'] and in_anomaly:
-            in_anomaly = False
-            anomalous_periods.append({'start': start_date, 'end': trends.loc[i-1, 'ds']})
-    if in_anomaly: # Close the last period if it extends to the end
-        anomalous_periods.append({'start': start_date, 'end': trends.iloc[-1]['ds']})
-
-    return {
-        "baseline_trend": base_forecast[['ds', 'trend']].to_dict('records'),
-        "test_trend": test_forecast[['ds', 'trend']].to_dict('records'),
-        "anomalous_periods": anomalous_periods,
-        "error": ""
-    }
-    """
-    Analyzes trends of multiple countries against a baseline using Prophet.
-    Returns a dictionary with trend data for plotting and flags divergent countries.
-    """
-    if baseline_country not in data_dict:
-        return {"error": "Baseline country not found in the provided data."}
-
-    # Normalize all dataframes to compare trend shapes
-    scalers = {}
-    normalized_dfs = {}
-    for country, df in data_dict.items():
-        if df.empty or len(df) < 2: continue
+        # Compute second derivative for lambda step
+        typical_second_deriv = 0.0
+        if n >= 3:
+            diff_t = np.maximum(np.diff(t_orig), min_time_diff)
+            diff_t_prev = np.maximum(np.diff(t_orig[:-1]), min_time_diff)
+            first_derivs = np.diff(cum_streams) / diff_t
+            second_derivs = np.diff(first_derivs) / diff_t_prev
+            typical_second_deriv = np.median(np.abs(second_derivs))
         
-        # MODIFIED: Remove timezone information to make the 'ds' column timezone-naive
-        df['date'] = df['date'].dt.tz_localize(None)
+        # Compute initial s_smooth based on square-averaged first derivative
+        if n >= 2:
+            rates = np.diff(cum_streams) / np.maximum(np.diff(t_orig), min_time_diff)
+            rms_rate = np.sqrt(np.mean(rates**2))
+            max_deviation = rms_rate
+            sigma = max_deviation / 2  # For most residuals < max_deviation
+            s_smooth = n * sigma ** 2
+        else:
+            # Fallback for small datasets
+            typical_rate = (cum_streams[-1] - cum_streams[0]) / (t_orig[-1] - t_orig[0]) if t_orig[-1] - t_orig[0] > 0 else 0.0
+            rms_rate = typical_rate
+            sigma = rms_rate / 2
+            s_smooth = n * sigma ** 2
         
-        scaler = MinMaxScaler()
-        # Reshape is needed for single-column scaling
-        df['y_scaled'] = scaler.fit_transform(df[['streams']])
-        normalized_dfs[country] = df.rename(columns={'date': 'ds', 'y_scaled': 'y'})
-        scalers[country] = scaler
-    
-    if not normalized_dfs or baseline_country not in normalized_dfs:
-        return {"error": "Not enough data to perform analysis or baseline country has insufficient data."}
-
-    # Train baseline model
-    with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-        baseline_df = normalized_dfs[baseline_country]
-        baseline_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-        baseline_model.fit(baseline_df)
-    baseline_forecast = baseline_model.predict(baseline_df[['ds']])
-    baseline_trend = baseline_forecast[['ds', 'trend']].copy()
-
-    # Analyze each test country against the baseline
-    results = []
-    trend_errors = []
-    for country, df in normalized_dfs.items():
-        if country == baseline_country:
-            continue
-        with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-            test_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-            test_model.fit(df)
-        forecast = test_model.predict(df[['ds']])
-        test_trend = forecast[['ds', 'trend']]
-        
-        # Merge trends and calculate error
-        merged_trends = pd.merge(baseline_trend, test_trend, on='ds', suffixes=('_base', '_test'))
-        if not merged_trends.empty:
-            rmse = np.sqrt(mean_squared_error(merged_trends['trend_base'], merged_trends['trend_test']))
-            trend_errors.append(rmse)
-            results.append({
-                "country": country,
-                "trend_df": test_trend,
-                "rmse": rmse
-            })
-    
-    if not trend_errors:
-        return {"error": "Could not compute trends for test countries."}
-
-    # Flag divergent countries
-    avg_rmse = np.mean(trend_errors)
-    final_results = []
-    for res in results:
-        is_divergent = res['rmse'] > (avg_rmse * divergence_threshold)
-        final_results.append({
-            "country": res['country'],
-            "trend": res['trend_df'].to_dict('records'),
-            "is_divergent": is_divergent,
-            "score": res['rmse'] / avg_rmse if avg_rmse > 0 else 0
-        })
-
-    return {
-        "baseline_country": baseline_country,
-        "baseline_trend": baseline_trend.to_dict('records'),
-        "test_countries": final_results,
-        "error": ""
-    }
-
-
-    """
-    Analyzes trends of multiple countries against a baseline using Prophet.
-    Returns a dictionary with trend data for plotting and flags divergent countries.
-    """
-    if baseline_country not in data_dict:
-        return {"error": "Baseline country not found in the provided data."}
-
-    # Normalize all dataframes to compare trend shapes
-    scalers = {}
-    normalized_dfs = {}
-    for country, df in data_dict.items():
-        if df.empty or len(df) < 2: continue
-        scaler = MinMaxScaler()
-        # Reshape is needed for single-column scaling
-        df['y_scaled'] = scaler.fit_transform(df[['streams']])
-        normalized_dfs[country] = df.rename(columns={'date': 'ds', 'y_scaled': 'y'})
-        scalers[country] = scaler
-    
-    if not normalized_dfs:
-        return {"error": "Not enough data to perform analysis."}
-
-    # Train baseline model
-    with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-        baseline_df = normalized_dfs[baseline_country]
-        baseline_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-        baseline_model.fit(baseline_df)
-    baseline_forecast = baseline_model.predict(baseline_df[['ds']])
-    baseline_trend = baseline_forecast[['ds', 'trend']].copy()
-
-    # Analyze each test country against the baseline
-    results = []
-    trend_errors = []
-    for country, df in normalized_dfs.items():
-        if country == baseline_country:
-            continue
-        with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-            test_model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-            test_model.fit(df)
-        forecast = test_model.predict(df[['ds']])
-        test_trend = forecast[['ds', 'trend']]
-        
-        # Merge trends and calculate error
-        merged_trends = pd.merge(baseline_trend, test_trend, on='ds', suffixes=('_base', '_test'))
-        if not merged_trends.empty:
-            rmse = np.sqrt(mean_squared_error(merged_trends['trend_base'], merged_trends['trend_test']))
-            trend_errors.append(rmse)
-            results.append({
-                "country": country,
-                "trend_df": test_trend,
-                "rmse": rmse
-            })
-    
-    if not trend_errors:
-        return {"error": "Could not compute trends for test countries."}
-
-    # Flag divergent countries
-    avg_rmse = np.mean(trend_errors)
-    final_results = []
-    for res in results:
-        is_divergent = res['rmse'] > (avg_rmse * divergence_threshold)
-        final_results.append({
-            "country": res['country'],
-            "trend": res['trend_df'].to_dict('records'),
-            "is_divergent": is_divergent,
-            "score": res['rmse'] / avg_rmse if avg_rmse > 0 else 0
-        })
-
-    return {
-        "baseline_country": baseline_country,
-        "baseline_trend": baseline_trend.to_dict('records'),
-        "test_countries": final_results,
-        "error": ""
-    }
-    
-def run_automated_divergence_analysis(data_dict: Dict[str, pd.DataFrame], divergence_threshold: float = 1.5, outlier_threshold_multiplier: float = 1.5) -> Dict:
-    """
-    Performs a cross-validation style analysis to automatically find divergent countries and their anomalous periods.
-    Now returns debug data for plotting the divergence scores.
-    """
-    if len(data_dict) < 2:
-        return {"error": "At least two countries are required for this analysis."}
-
-    # 1. Normalize all data and train a Prophet model for each country
-    models = {}
-    with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-        for country, df in data_dict.items():
-            if df.empty or len(df) < 14: continue
-            df['date'] = df['date'].dt.tz_localize(None)
-            scaler = MinMaxScaler()
-            df['y_scaled'] = scaler.fit_transform(df[['streams']])
+        # Iterate spline fitting and adjustment, 5 times
+        num_iterations = 5
+        for outer_iter in range(num_iterations):
+            if outer_iter == num_iterations-1:
+                # Update min_t and max_t based on current adjusted t for the last iteration
+                min_t[0] = t[0]
+                max_t[0] = t[0] + 1 - epsilon
+                for i in range(1, n):
+                    min_t[i] = max(t[i-1] + min_time_diff, t[i] - (1 - min_time_diff))
+                    max_t[i] = t[i] + 1 - epsilon
             
-            model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-            model.fit(df.rename(columns={'date': 'ds', 'y_scaled': 'y'}))
-            forecast = model.predict(model.history)
-            models[country] = forecast[['ds', 'trend']]
-
-    if len(models) < 2:
-        return {"error": "Could not train enough models to perform cross-comparison."}
-
-    # 2. Cross-comparison to get divergence scores
-    divergence_scores = {country: 0 for country in models.keys()}
-    for baseline_country, baseline_trend in models.items():
-        rmses = []
-        for test_country, test_trend in models.items():
-            if baseline_country == test_country: continue
-            merged = pd.merge(baseline_trend, test_trend, on='ds')
-            if not merged.empty:
-                rmses.append(np.sqrt(mean_squared_error(merged['trend_x'], merged['trend_y'])))
-        
-        if not rmses: continue
-        avg_rmse = np.mean(rmses)
-        
-        for test_country, test_trend in models.items():
-             if baseline_country == test_country: continue
-             merged = pd.merge(baseline_trend, test_trend, on='ds')
-             if not merged.empty:
-                rmse = np.sqrt(mean_squared_error(merged['trend_x'], merged['trend_y']))
-                if rmse > avg_rmse * divergence_threshold:
-                    divergence_scores[baseline_country] += 1
-    
-    # 3. Identify genuine and divergent countries
-    avg_score = np.mean(list(divergence_scores.values()))
-    score_threshold = avg_score * outlier_threshold_multiplier
-    
-    genuine_countries = [country for country, score in divergence_scores.items() if score <= score_threshold]
-    divergent_countries = [country for country, score in divergence_scores.items() if score > score_threshold]
-
-    if not genuine_countries:
-        return {"error": "Could not identify a stable baseline of 'genuine' countries. Trends may be too chaotic."}
-
-    # 4. Run final analysis for each divergent country against the genuine baseline
-    final_analysis_results = []
-    for d_country in divergent_countries:
-        result = find_trend_divergence_periods(data_dict, genuine_countries, d_country)
-        if not result.get("error"):
-            result['country'] = d_country
-            final_analysis_results.append(result)
-
-    # 5. Prepare debug plot data
-    debug_plot_data = {
-        "divergence_scores": [{"country": c, "score": s} for c, s in divergence_scores.items()],
-        "score_threshold": score_threshold
-    }
-
-    return {
-        "genuine_countries": genuine_countries,
-        "divergent_countries": divergent_countries,
-        "analysis_results": final_analysis_results,
-        "debug_plot_data": debug_plot_data, # ADDED
-        "error": ""
-    }
-
-    """
-    Performs a cross-validation style analysis to automatically find divergent countries and their anomalous periods.
-    """
-    if len(data_dict) < 2:
-        return {"error": "At least two countries are required for this analysis."}
-
-    # 1. Normalize all data and train a Prophet model for each country
-    models = {}
-    with open(os.devnull, 'w') as devnull, contextlib.redirect_stdout(devnull):
-        for country, df in data_dict.items():
-            if df.empty or len(df) < 14: continue
-            df['date'] = df['date'].dt.tz_localize(None)
-            scaler = MinMaxScaler()
-            df['y_scaled'] = scaler.fit_transform(df[['streams']])
+            spline = robust_spline(t, cum_streams, s_smooth)
+            final_spline = spline  # Store the last spline
             
-            model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=True)
-            model.fit(df.rename(columns={'date': 'ds', 'y_scaled': 'y'}))
-            forecast = model.predict(model.history)
-            models[country] = forecast[['ds', 'trend']]
-
-    if len(models) < 2:
-        return {"error": "Could not train enough models to perform cross-comparison."}
-
-    # 2. Cross-comparison to get divergence scores
-    divergence_scores = {country: 0 for country in models.keys()}
-    for baseline_country, baseline_trend in models.items():
-        rmses = []
-        for test_country, test_trend in models.items():
-            if baseline_country == test_country: continue
-            merged = pd.merge(baseline_trend, test_trend, on='ds')
-            if not merged.empty:
-                rmses.append(np.sqrt(mean_squared_error(merged['trend_x'], merged['trend_y'])))
+            # Tune penalty coefficient lambda
+            lam = 0.0
+            step = typical_second_deriv ** 2 / 100.0 if typical_second_deriv > 0 else 1e-6
+            max_tune_iter = 30
+            for tune_iter in range(max_tune_iter):
+                num_boundary = 0
+                t_new = np.zeros(n)
+                for i in range(n):
+                    tts = np.linspace(min_t[i], max_t[i], 50)
+                    cost = (spline(tts) - cum_streams[i])**2 + lam * ((tts - midday_t[i])/(max_t[i]-min_t[i]))**2
+                    idx = np.argmin(cost)
+                    t_new[i] = tts[idx]
+                    if abs(t_new[i] - min_t[i]) < 1e-4 or abs(t_new[i] - max_t[i]) < 1e-4:
+                        num_boundary += 1
+                percentage = num_boundary / n
+                if percentage <= 0.02:
+                    t = t_new
+                    break
+                lam += step
+                step *= 2  # Exponential increase
+            
+            # Update s_smooth based on current t for next iteration
+            if n >= 2:
+                diff_t = np.maximum(np.diff(t), min_time_diff)
+                rates = np.diff(cum_streams) / diff_t
+                rms_rate = np.sqrt(np.mean(rates**2))
+                max_deviation = rms_rate
+                sigma = max_deviation / 4
+                s_smooth = n * sigma ** 2
+            else:
+                s_smooth *= 2  # Fallback increase
         
-        if not rmses: continue
-        avg_rmse = np.mean(rmses)
+        # Very last smoothing step
+        alpha = 0.8
+        for _ in range(5):
+            for i in range(1, n-1):
+                d_left = cum_streams[i] - cum_streams[i-1]
+                d_right = cum_streams[i+1] - cum_streams[i]
+                a = t[i-1]
+                b = t[i+1]
+                # Analytical solution for t_i_optimal
+                if d_left + d_right != 0 and b - a >= 2 * min_time_diff:
+                    t_i_optimal = (d_left * b + d_right * a) / (d_left + d_right)
+                else:
+                    t_i_optimal = t[i]  # Fallback to current time
+                # Compute new time
+                t_new_i = (1 - alpha) * t[i] + alpha * t_i_optimal
+                # Enforce bounds
+                date_i = (ref_date + timedelta(seconds=t_new_i * 86400)).date()
+                orig_date_i = (ref_date + timedelta(seconds=t_orig[i] * 86400)).date()
+                date_i_minus_1 = (ref_date + timedelta(seconds=t_orig[i-1] * 86400)).date()
+                date_i_plus_1 = (ref_date + timedelta(seconds=t_orig[i+1] * 86400)).date()
+                if date_i == orig_date_i:
+                    t[i] = min(max(t_new_i, t[i-1] + min_time_diff), t[i+1] - min_time_diff)
+                elif date_i_minus_1 < date_i < date_i_plus_1:
+                    t[i] = min(max(t_new_i, t[i-1] + min_time_diff), t[i+1] - min_time_diff)
+                else:
+                    # Clip to bounds [t[i-1] + min_time_diff, t[i+1] - min_time_diff]
+                    t[i] = min(max(t_new_i, t[i-1] + min_time_diff), t[i+1] - min_time_diff)
         
-        for test_country, test_trend in models.items():
-             if baseline_country == test_country: continue
-             merged = pd.merge(baseline_trend, test_trend, on='ds')
-             if not merged.empty:
-                rmse = np.sqrt(mean_squared_error(merged['trend_x'], merged['trend_y']))
-                if rmse > avg_rmse * divergence_threshold:
-                    divergence_scores[baseline_country] += 1
+        h = (t - t_orig) * 24
+        adjusted_times = [ref_date + timedelta(seconds=t[i] * 86400) for i in range(n)]
     
-    # 3. Identify genuine and divergent countries
-    avg_score = np.mean(list(divergence_scores.values()))
-    score_threshold = avg_score * outlier_threshold_multiplier
+    # Output adjusted JSON
+    output_data = [
+        {"timestamp": dt.isoformat(), "cumulative_streams": int(cum_streams[i])}
+        for i, dt in enumerate(adjusted_times)
+    ]
+    with open(output_path, 'w') as f:
+        json.dump(output_data, f, indent=4)
     
-    genuine_countries = [country for country, score in divergence_scores.items() if score <= score_threshold]
-    divergent_countries = [country for country, score in divergence_scores.items() if score > score_threshold]
+    # Plots with date formatting and smaller markers
+    ms = 3
+    
+    fig1, ax1 = plt.subplots(figsize=(10, 5))
+    ax1.plot(dates, cum_streams, 'o-', label='Original (midnight)', markersize=ms)
+    ax1.plot(adjusted_times, cum_streams, 'x-', label='Adjusted', markersize=ms)
+    if final_spline is not None:
+        # Plot the final spline
+        t_min = min(t)
+        t_max = max(t)
+        t_spline = np.linspace(t_min, t_max, 1000)
+        y_spline = final_spline(t_spline)
+        spline_dates = [ref_date + timedelta(seconds=t_s * 86400) for t_s in t_spline]
+        ax1.plot(spline_dates, y_spline, '--', label='Final Spline', color='green')
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax1.xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig1.autofmt_xdate()
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Cumulative Streams')
+    ax1.legend()
+    ax1.set_title('Cumulative Streams (Fast)')
+    fig1.savefig('cumulative_fast.png')
+    
+    if n >= 2:
+        # Derivative plot
+        mid_times = [adjusted_times[i] + (adjusted_times[i+1] - adjusted_times[i]) / 2 for i in range(n - 1)]
+        rates = []
+        for i in range(n - 1):
+            delta_t = (adjusted_times[i + 1] - adjusted_times[i]).total_seconds() / 86400.0
+            delta_c = cum_streams[i + 1] - cum_streams[i]
+            rate = delta_c / delta_t if delta_t > 0 else 0
+            rates.append(rate)
+        fig2, ax2 = plt.subplots(figsize=(10, 5))
+        ax2.plot(mid_times, rates, 'o-', markersize=ms)
+        ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax2.xaxis.set_major_locator(mdates.AutoDateLocator())
+        fig2.autofmt_xdate()
+        ax2.set_xlabel('Date')
+        ax2.set_ylabel('Daily Rate (streams/day)')
+        ax2.set_title('Adjusted Finite-Difference Derivative (Fast)')
+        fig2.savefig('derivative_fast.png')
+    
+    # Adjustment plot
+    fig3, ax3 = plt.subplots(figsize=(10, 5))
+    ax3.plot(dates, h, 'o-', markersize=ms)
+    ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax3.xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig3.autofmt_xdate()
+    ax3.set_xlabel('Original Date')
+    ax3.set_ylabel('Time Adjustment (hours)')
+    ax3.set_title('Time Adjustments (Fast)')
+    fig3.savefig('adjustment_fast.png')
+    
+    plt.show()  # Show all plots simultaneously
+    
+    print("Adjusted data saved to", output_path)
+    print("Plots saved to cumulative_fast.png, derivative_fast.png, adjustment_fast.png")
+    print("Interactive plots displayed on-screen.")
 
-    if not genuine_countries:
-        return {"error": "Could not identify a stable baseline of 'genuine' countries. Trends may be too chaotic."}
+# Add this new function to the end of analysis_tools.py (before the if __name__ == "__main__" block)
 
-    # 4. Run final analysis for each divergent country against the genuine baseline
-    final_analysis_results = []
-    for d_country in divergent_countries:
-        result = find_trend_divergence_periods(data_dict, genuine_countries, d_country)
-        if not result.get("error"):
-            result['country'] = d_country
-            final_analysis_results.append(result)
+def adjust_cumulative_history(history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Adjusts the timestamps of cumulative streaming history data using spline fitting and optimization,
+    without generating plots or files. Returns the adjusted history in the same format as input.
+    """
+    # Extract and parse points
+    points = []
+    for item in history:
+        dt_str = item['date']
+        dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+        dt = dt.replace(tzinfo=None)
+        val = item['value']
+        points.append((dt, val))
+    points.sort(key=lambda x: x[0])
 
-    return {
-        "genuine_countries": genuine_countries,
-        "divergent_countries": divergent_countries,
-        "analysis_results": final_analysis_results,
-        "error": ""
-    }
+    # Remove consecutive duplicates in values
+    if not points:
+        return []
+    filtered = [points[0]]
+    for p in points[1:]:
+        if p[1] != filtered[-1][1]:
+            filtered.append(p)
+
+    dates, cum_streams = zip(*filtered)
+    dates = list(dates)
+    cum_streams = np.array(cum_streams)
+    n = len(dates)
+
+    min_time_diff = 1 / 24.0  # 1 hour in days
+    epsilon = 1e-6
+    if n < 3:
+        h = np.full(n, 12.0)
+        adjusted_times = [dates[i] + timedelta(hours=h[i]) for i in range(n)]
+        adjusted_data = [{"date": dt.isoformat() + 'Z', "value": int(cum_streams[i])} for i, dt in enumerate(adjusted_times)]
+        return adjusted_data
+
+    ref_date = dates[0]
+    t_orig = np.array([(d - ref_date).days for d in dates], dtype=float)
+    midday_t = t_orig + 0.5
+    t = midday_t.copy()
+
+    # Initial min_t and max_t based on t_orig, enforcing min_time_diff
+    min_t = np.zeros(n)
+    max_t = np.zeros(n)
+    min_t[0] = t_orig[0]
+    max_t[0] = t_orig[0] + 1 - epsilon
+    for i in range(1, n):
+        min_t[i] = max(t_orig[i-1] + min_time_diff, t_orig[i])
+        max_t[i] = t_orig[i] + 1 - epsilon
+
+    # Compute second derivative for lambda step
+    typical_second_deriv = 0.0
+    if n >= 3:
+        diff_t = np.maximum(np.diff(t_orig), min_time_diff)
+        diff_t_prev = np.maximum(np.diff(t_orig[:-1]), min_time_diff)
+        first_derivs = np.diff(cum_streams) / diff_t
+        second_derivs = np.diff(first_derivs) / diff_t_prev
+        typical_second_deriv = np.median(np.abs(second_derivs))
+
+    # Compute initial s_smooth based on square-averaged first derivative
+    if n >= 2:
+        rates = np.diff(cum_streams) / np.maximum(np.diff(t_orig), min_time_diff)
+        rms_rate = np.sqrt(np.mean(rates**2))
+        max_deviation = rms_rate
+        sigma = max_deviation / 2  # For most residuals < max_deviation
+        s_smooth = n * sigma ** 2
+    else:
+        # Fallback for small datasets
+        typical_rate = (cum_streams[-1] - cum_streams[0]) / (t_orig[-1] - t_orig[0]) if t_orig[-1] - t_orig[0] > 0 else 0.0
+        rms_rate = typical_rate
+        sigma = rms_rate / 2
+        s_smooth = n * sigma ** 2
+
+    # Iterate spline fitting and adjustment, 5 times
+    num_iterations = 5
+    for outer_iter in range(num_iterations):
+        if outer_iter == num_iterations-1:
+            # Update min_t and max_t based on current adjusted t for the last iteration
+            min_t[0] = t[0]
+            max_t[0] = t[0] + 1 - epsilon
+            for i in range(1, n):
+                min_t[i] = max(t[i-1] + min_time_diff, t[i] - (1 - min_time_diff))
+                max_t[i] = t[i] + 1 - epsilon
+
+        spline = robust_spline(t, cum_streams, s_smooth)
+
+        # Tune penalty coefficient lambda
+        lam = 0.0
+        step = typical_second_deriv ** 2 / 100.0 if typical_second_deriv > 0 else 1e-6
+        max_tune_iter = 30
+        for tune_iter in range(max_tune_iter):
+            num_boundary = 0
+            t_new = np.zeros(n)
+            for i in range(n):
+                tts = np.linspace(min_t[i], max_t[i], 50)
+                cost = (spline(tts) - cum_streams[i])**2 + lam * ((tts - midday_t[i])/(max_t[i]-min_t[i]))**2
+                idx = np.argmin(cost)
+                t_new[i] = tts[idx]
+                if abs(t_new[i] - min_t[i]) < 1e-4 or abs(t_new[i] - max_t[i]) < 1e-4:
+                    num_boundary += 1
+            percentage = num_boundary / n
+            if percentage <= 0.02:
+                t = t_new
+                break
+            lam += step
+            step *= 2  # Exponential increase
+
+        # Update s_smooth based on current t for next iteration
+        if n >= 2:
+            diff_t = np.maximum(np.diff(t), min_time_diff)
+            rates = np.diff(cum_streams) / diff_t
+            rms_rate = np.sqrt(np.mean(rates**2))
+            max_deviation = rms_rate
+            sigma = max_deviation / 4
+            s_smooth = n * sigma ** 2
+        else:
+            s_smooth *= 2  # Fallback increase
+
+    # Very last smoothing step
+    alpha = 0.8
+    for _ in range(5):
+        for i in range(1, n-1):
+            d_left = cum_streams[i] - cum_streams[i-1]
+            d_right = cum_streams[i+1] - cum_streams[i]
+            a = t[i-1]
+            b = t[i+1]
+            # Analytical solution for t_i_optimal
+            if d_left + d_right != 0 and b - a >= 2 * min_time_diff:
+                t_i_optimal = (d_left * b + d_right * a) / (d_left + d_right)
+            else:
+                t_i_optimal = t[i]  # Fallback to current time
+            # Compute new time
+            t_new_i = (1 - alpha) * t[i] + alpha * t_i_optimal
+            # Enforce bounds
+            date_i = (ref_date + timedelta(seconds=t_new_i * 86400)).date()
+            orig_date_i = (ref_date + timedelta(seconds=t_orig[i] * 86400)).date()
+            date_i_minus_1 = (ref_date + timedelta(seconds=t_orig[i-1] * 86400)).date()
+            date_i_plus_1 = (ref_date + timedelta(seconds=t_orig[i+1] * 86400)).date()
+            if date_i == orig_date_i:
+                t[i] = min(max(t_new_i, t[i-1] + min_time_diff), t[i+1] - min_time_diff)
+            elif date_i_minus_1 < date_i < date_i_plus_1:
+                t[i] = min(max(t_new_i, t[i-1] + min_time_diff), t[i+1] - min_time_diff)
+            else:
+                # Clip to bounds [t[i-1] + min_time_diff, t[i+1] - min_time_diff]
+                t[i] = min(max(t_new_i, t[i-1] + min_time_diff), t[i+1] - min_time_diff)
+
+    adjusted_times = [ref_date + timedelta(seconds=t[i] * 86400) for i in range(n)]
+    adjusted_data = [{"date": dt.isoformat(), "value": int(cum_streams[i])} for i, dt in enumerate(adjusted_times)]
+    return adjusted_data
+
+
+def analyze_song_streams(mid_times, rates, N=20, relative_threshold=1.6, absolute_threshold=50, epsilon=1e-6):
+    """
+    Detects spikes in daily streams using the logic from DataGuessing2 1.py, without plotting.
+    Takes pre-computed mid_times (list of datetime) and rates (list of floats).
+    Returns list of dicts with spike details, formatted to match app expectations.
+    """
+    m = len(rates)
+    if m < 2:
+        return []
+
+    date_objs = mid_times  # Assuming mid_times are datetime objects
+    s = rates
+
+    # Compute global mean and std for z-score compatibility
+    mean_s = np.mean(s)
+    std_s = np.std(s) if np.std(s) > 0 else 1.0
+
+    # Find local extrema
+    extrema = []
+    for j in range(m):
+        if j == 0:
+            if j + 1 < m:
+                if s[j] > s[j + 1]:
+                    extrema.append((j, 'max'))
+                elif s[j] < s[j + 1]:
+                    extrema.append((j, 'min'))
+        elif j == m - 1:
+            if s[j] > s[j - 1]:
+                extrema.append((j, 'max'))
+            elif s[j] < s[j - 1]:
+                extrema.append((j, 'min'))
+        else:
+            is_max = s[j] > s[j - 1] and s[j] > s[j + 1]
+            is_min = s[j] < s[j - 1] and s[j] < s[j + 1]
+            if is_max:
+                extrema.append((j, 'max'))
+            elif is_min:
+                extrema.append((j, 'min'))
+
+    # Filter extrema based on thresholds
+    kept_extrema = []
+    for j, label in extrema:
+        # Compute adjusted left_idx and right_idx
+        left_idx = max(0, j - N)
+        right_idx = min(m - 1, j + N)
+
+        dt_window = (date_objs[right_idx] - date_objs[left_idx]).total_seconds() / 86400.0 if m > 1 else 1
+        if dt_window <= 0:
+            continue  # Skip invalid window
+
+        # For daily rates, av is mean of s in window
+        window_s = s[left_idx:right_idx+1]
+        av = np.mean(window_s) if len(window_s) > 0 else 0
+
+        # Check absolute threshold
+        absolute_diff = abs(s[j] - av)
+        if absolute_diff < absolute_threshold:
+            continue
+
+        # Check relative threshold
+        if label == 'max':
+            ratio = s[j] / av if av != 0 else float('inf')
+            if ratio > relative_threshold:
+                kept_extrema.append((j, label, av))
+        elif label == 'min':
+            denom = s[j] + epsilon
+            ratio = av / denom if denom != 0 else float('inf')
+            if ratio > relative_threshold:
+                kept_extrema.append((j, label, av))
+
+    # For each kept, compute i, f, area, and app-expected fields
+    results = []
+    for j, label, av in kept_extrema:
+        dev_ext = s[j] - av
+        sign_ext = get_sign(dev_ext)
+
+        # Backwards to find i
+        i = 0
+        for k in range(j - 1, -1, -1):
+            dev_k = s[k] - av
+            if get_sign(dev_k) != sign_ext:
+                i = k + 1
+                break
+
+        # Forwards to find f
+        f = m - 1
+        for k in range(j + 1, m):
+            dev_k = s[k] - av
+            if get_sign(dev_k) != sign_ext:
+                f = k - 1
+                break
+
+        # Compute area
+        area = 0.0
+        for k in range(i, f):
+            dt_span = (date_objs[k+1] - date_objs[k]).total_seconds() / 86400.0
+            avg_dev = ((s[k] - av) + (s[k+1] - av)) / 2
+            area += avg_dev * dt_span
+
+        # Compute z-score for app compatibility
+        z_score = (s[j] - mean_s) / std_s
+
+        # Map to sign for app
+        sign = 'Positive Spike' if label == 'max' else 'Negative Spike'
+
+        results.append({
+            'date': date_objs[j],  # datetime object (app uses res['date'].date())
+            'streams': s[j],
+            'z_score': z_score,
+            'sign': sign,
+            # Optional extras from DataGuessing (app ignores them)
+            'start_time': date_objs[i].isoformat(),
+            'end_time': date_objs[f].isoformat(),
+            'area': area
+        })
+
+    return results
+
+def get_sign(z_score, threshold=3.0):
+    if z_score > threshold:
+        return "Positive Spike"
+    elif z_score < -threshold:
+        return "Negative Spike"
+    else:
+        return "Normal"
