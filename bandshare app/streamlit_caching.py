@@ -7,6 +7,7 @@ from database_manager import DatabaseManager
 from soundcharts_client import SoundchartsAPIClient
 from typing import List, Dict, Any
 import pandas as pd
+from datetime import datetime
 
 @st.cache_data
 def get_all_artists(_db_manager): # This can be removed if not used in app.py
@@ -141,11 +142,19 @@ def get_streaming_audience_from_db(_db_manager, artist_uuid: str, platform: str,
 
 @st.cache_data
 def get_song_audience_data(_db_manager, song_uuid: str, platform: str, start_date, end_date):
-    """Gets song audience data for a given date range from the database."""
+    """Gets song audience data for a given date range from the database, returned per identifier."""
     if not all([song_uuid, platform, start_date, end_date]):
-        return []
-    query_filter = {'song_uuid': song_uuid, 'platform': platform}
-    result = _db_manager.get_timeseries_data_for_display('song_audience', query_filter, start_date, end_date)
+        return {}
+    start_iso = datetime.combine(start_date, datetime.min.time()).isoformat() + "+00:00"
+    end_iso = datetime.combine(end_date, datetime.max.time()).isoformat() + "+00:00"
+    result = {}
+    cursor = _db_manager.collections['song_audience'].find({'song_uuid': song_uuid, 'platform': platform})
+    for doc in cursor:
+        identifier = doc.get('identifier')
+        history = doc.get('history', [])
+        filtered = [item for item in history if start_iso <= item['date'] <= end_iso]
+        if filtered:
+            result[identifier] = sorted(filtered, key=lambda x: x['date'])
     return result
 
 @st.cache_data
@@ -256,4 +265,74 @@ def get_cum_song_data(_db_manager, artist_uuid, start_date_filter, end_date_filt
     df_pivot = df_pivot.reindex(_all_dates, fill_value=0)
     return df_pivot
 
+
+# Add this to streamlit_caching.py or wherever caching functions are defined
+
+# Updated caching function to sort by date ascending (earliest first)
+@st.cache_data
+def get_playlist_tracklists(_db_manager, playlist_uuid: str):
+    """
+    Fetches all tracklist snapshots for a given playlist from the 'playlist_tracklists' collection,
+    sorted by date in ascending order (earliest first).
+    """
+    if not playlist_uuid:
+        return []
+    
+    if 'playlist_tracklists' in _db_manager.collections:
+        return list(_db_manager.collections['playlist_tracklists'].find(
+            {'playlist_uuid': playlist_uuid}
+        ).sort('date', 1))  # Changed to ascending sort
+    
+    return []
+
+@st.cache_data
+def get_song_playlist_presence_intervals(_db_manager, song_uuid: str):
+    """
+    Aggregates presence intervals across all playlists for the song.
+    """
+    intervals = []
+    playlist_entries = get_playlists_for_song(_db_manager, song_uuid)
+    
+    for entry in playlist_entries:
+        playlist_uuid = entry.get('playlist', {}).get('uuid')
+        if not playlist_uuid:
+            continue
+        
+        tracklists = get_playlist_tracklists(_db_manager, playlist_uuid)
+        
+        history = []
+        for tl in tracklists:
+            date_str = tl.get('date')
+            position = None
+            for track in tl.get('tracks', []):
+                if track.get('song', {}).get('uuid') == song_uuid:
+                    position = track.get('position')
+                    break
+            history.append({'date': pd.to_datetime(date_str), 'position': position})
+        
+        start = None
+        for h in history:
+            if h['position'] is not None:
+                if start is None:
+                    start = h['date']
+            else:
+                if start is not None:
+                    intervals.append({'start': start, 'end': h['date']})
+                    start = None
+        if start is not None:
+            # Assume still present up to last snapshot
+            intervals.append({'start': start, 'end': history[-1]['date']})
+    
+    # Merge overlapping intervals
+    if intervals:
+        intervals.sort(key=lambda i: i['start'])
+        merged = [intervals[0]]
+        for current in intervals[1:]:
+            previous = merged[-1]
+            if previous['end'] >= current['start']:
+                previous['end'] = max(previous['end'], current['end'])
+            else:
+                merged.append(current)
+        return merged
+    return []
 
