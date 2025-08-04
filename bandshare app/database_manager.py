@@ -25,6 +25,7 @@ class DatabaseManager:
                 'audience': self.db['audience'],
                 'popularity': self.db['popularity'],
                 'streaming_audience': self.db['streaming_audience'],
+                'playlist_tracklists': self.db['playlist_tracklists'],
                 'demographic_followers': self.db['demographic_followers'],
                 'local_streaming_history': self.db['local_streaming_history'],
                 'album_audience': self.db['album_audience'],
@@ -139,8 +140,10 @@ class DatabaseManager:
 
                 docs_to_insert = []
                 for song_uuid, entries in data['song_playlist_map'].items():
+                    # Filter entries to only those where playlist name is "Discover Weekly"
+                    filtered_entries = [entry for entry in entries if entry.get('playlist', {}).get('name') == "Discover Weekly"]
                     song_meta = data.get('song_metadata', {}).get(song_uuid, {})
-                    for entry in entries:
+                    for entry in filtered_entries:
                         doc = entry.copy()
                         doc['song'] = {
                             'uuid': song_uuid,
@@ -189,10 +192,13 @@ class DatabaseManager:
                 for song_uuid, song_meta in data.get('song_metadata', {}).items():
                     if isinstance(song_meta, dict) and 'error' not in song_meta:
                         meta_source = song_meta.get('object', song_meta)  # Handle nested 'object'
+                        if meta_source is None:
+                            print(f"Warning: meta_source is None for song {song_uuid}, skipping.")
+                            continue
                         album_info = meta_source.get('album', {})
                         album_uuid_val = album_info.get('uuid') if isinstance(album_info, dict) else None
                         name = meta_source.get('name')
-                        isrc = meta_source.get('isrc', {}).get('value')
+                        upc = meta_source.get('upc', {}).get('value')
                         release_date = meta_source.get('releaseDate')
                         image_url = meta_source.get('imageUrl')
                         duration = meta_source.get('duration')
@@ -212,7 +218,7 @@ class DatabaseManager:
                             'album_uuid': album_uuid_val,
                             'artist_uuid': artist_uuid,
                             'name': name,
-                            'isrc': isrc,
+                            'upc': upc,
                             'releaseDate': release_date,
                             'imageUrl': image_url,
                             'duration': duration,
@@ -349,10 +355,12 @@ class DatabaseManager:
 
 
 
+    # Modified function in database_manager.py
     def store_song_audience_data(self, song_uuid: str, data: Dict[str, Any]):
         """
         Stores pre-processed song audience data by overwriting any existing document.
         Assumes the passed 'history' is already cleaned, merged, and adjusted.
+        Now stores per identifier.
         """
         try:
             history = data.get('history', [])
@@ -360,7 +368,12 @@ class DatabaseManager:
                 return
 
             platform = data.get('platform', 'spotify')
-            query_filter = {'song_uuid': song_uuid, 'platform': platform}
+            identifier = data.get('identifier')
+            if not identifier:
+                print("No identifier provided, skipping storage.")
+                return
+
+            query_filter = {'song_uuid': song_uuid, 'platform': platform, 'identifier': identifier}
 
             # Delete existing document to overwrite
             self.collections['song_audience'].delete_one(query_filter)
@@ -369,6 +382,7 @@ class DatabaseManager:
             new_document = {
                 'song_uuid': song_uuid,
                 'platform': platform,
+                'identifier': identifier,
                 'history': history
             }
             self.collections['song_audience'].insert_one(new_document)
@@ -376,7 +390,30 @@ class DatabaseManager:
         except OperationFailure as e:
             print(f"Error storing song audience data: {e}")   
             
-            
+
+    def store_song_playlists_and_tracklists(self, artist_uuid: str, songs_playlists_docs: List[Dict], playlist_tracklists_docs: List[Dict]):
+        """
+        Stores the song playlists data and associated playlist tracklists into the database using upsert logic.
+        """
+        # Upsert for songs_playlists
+        for doc in songs_playlists_docs:
+            # Define the filter for uniqueness, e.g., based on artist_uuid, song_uuid, playlist_uuid, entryDate
+            filter_query = {
+                'artist_uuid': artist_uuid,
+                'song.uuid': doc['song']['uuid'],
+                'playlist.uuid': doc['playlist']['uuid'],
+                'entryDate': doc['entryDate']
+            }
+            self.collections['songs_playlists'].update_one(filter_query, {'$set': doc}, upsert=True)
+
+        # Upsert for playlist_tracklists
+        for doc in playlist_tracklists_docs:
+            # Define the filter for uniqueness, e.g., based on playlist_uuid and date
+            filter_query = {
+                'playlist_uuid': doc['playlist_uuid'],
+                'date': doc['date']
+            }
+            self.collections['playlist_tracklists'].update_one(filter_query, {'$set': doc}, upsert=True)
             
     def store_song_popularity_data(self, song_uuid: str, data: Dict[str, Any]):
         """
@@ -477,29 +514,54 @@ class DatabaseManager:
             print(f"Error storing typed playlists: {e}")
 
     
+    # Modified function in database_manager.py
     def get_timeseries_data_for_display(self, collection_name: str, query_filter: Dict, start_date, end_date) -> List[Dict]:
         """Gets the final time-series data within a specific date range for display."""
         start_iso = datetime.combine(start_date, datetime.min.time()).isoformat() + "+00:00"
         end_iso = datetime.combine(end_date, datetime.max.time()).isoformat() + "+00:00"
-        pipeline = [
-            {'$match': query_filter},
-            {'$project': {
-                'history': {
-                    '$filter': {
-                        'input': '$history',
-                        'as': 'item',
-                        'cond': {
-                            '$and': [
-                                {'$gte': ['$$item.date', start_iso]},
-                                {'$lte': ['$$item.date', end_iso]}
-                            ]
+
+        if collection_name == 'song_audience':
+            # Special pipeline for song_audience to sum values across multiple documents (per identifier)
+            pipeline = [
+                {'$match': query_filter},
+                {'$unwind': '$history'},
+                {'$match': {
+                    'history.date': {'$gte': start_iso, '$lte': end_iso}
+                }},
+                {'$group': {
+                    '_id': '$history.date',
+                    'value': {'$sum': '$history.value'}
+                }},
+                {'$project': {
+                    'date': '$_id',
+                    'value': 1,
+                    '_id': 0
+                }},
+                {'$sort': {'date': 1}}
+            ]
+            result = list(self.collections[collection_name].aggregate(pipeline))
+            return result
+        else:
+            # Original pipeline for other collections
+            pipeline = [
+                {'$match': query_filter},
+                {'$project': {
+                    'history': {
+                        '$filter': {
+                            'input': '$history',
+                            'as': 'item',
+                            'cond': {
+                                '$and': [
+                                    {'$gte': ['$$item.date', start_iso]},
+                                    {'$lte': ['$$item.date', end_iso]}
+                                ]
+                            }
                         }
                     }
-                }
-            }}
-        ]
-        result = list(self.collections[collection_name].aggregate(pipeline))
-        return result[0]['history'] if result and 'history' in result[0] else []    
+                }}
+            ]
+            result = list(self.collections[collection_name].aggregate(pipeline))
+            return result[0]['history'] if result and 'history' in result[0] else []
     
     
     def get_timeseries_value_for_date(self, collection_name: str, query_filter: Dict, target_date: datetime) -> Optional[int]:
