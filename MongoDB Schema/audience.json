@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "artist_uuid",
+    "history",
+    "platform"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "artist_uuid": {
+      "type": "string"
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "followerCount",
+          "followingCount",
+          "likeCount",
+          "postCount",
+          "viewCount"
+        ],
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "followerCount": {
+            "type": "integer"
+          },
+          "followingCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "likeCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "postCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "viewCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        }
+      }
+    },
+    "platform": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
