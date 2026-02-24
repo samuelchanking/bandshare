@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "album_uuid",
+    "artist_uuid",
+    "composers",
+    "distributor",
+    "duration",
+    "genres",
+    "imageUrl",
+    "name",
+    "producers",
+    "releaseDate",
+    "song_uuid"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "album_uuid": {
+      "type": "null"
+    },
+    "artist_uuid": {
+      "type": "string"
+    },
+    "composers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "distributor": {
+      "type": "string"
+    },
+    "duration": {
+      "type": "integer"
+    },
+    "genres": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "imageUrl": {
+      "type": "string"
+    },
+    "isrc": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "producers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "releaseDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "song_uuid": {
+      "type": "string"
+    },
+    "upc": {
+      "type": "null"
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
