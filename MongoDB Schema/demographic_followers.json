@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "artist_uuid",
+    "errors",
+    "items",
+    "page",
+    "platform",
+    "related"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "artist_uuid": {
+      "type": "string"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": []
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "cityPlots",
+          "countryPlots",
+          "date",
+          "value"
+        ],
+        "properties": {
+          "cityPlots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "cityName",
+                "countryCode",
+                "countryName",
+                "date",
+                "region",
+                "value"
+              ],
+              "properties": {
+                "cityName": {
+                  "type": "string"
+                },
+                "countryCode": {
+                  "type": "string"
+                },
+                "countryName": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "countryPlots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "countryCode",
+                "countryName",
+                "date",
+                "value"
+              ],
+              "properties": {
+                "countryCode": {
+                  "type": "string"
+                },
+                "countryName": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "date": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "required": [
+        "limit",
+        "next",
+        "offset",
+        "previous",
+        "total"
+      ],
+      "properties": {
+        "limit": {
+          "type": "integer"
+        },
+        "next": {
+          "type": "null"
+        },
+        "offset": {
+          "type": "integer"
+        },
+        "previous": {
+          "type": "null"
+        },
+        "total": {
+          "type": "integer"
+        }
+      }
+    },
+    "platform": {
+      "type": "string"
+    },
+    "related": {
+      "type": "object",
+      "required": [
+        "artist",
+        "lastCrawlDate",
+        "platform"
+      ],
+      "properties": {
+        "artist": {
+          "type": "object",
+          "required": [
+            "appUrl",
+            "imageUrl",
+            "name",
+            "slug",
+            "uuid"
+          ],
+          "properties": {
+            "appUrl": {
+              "type": "string"
+            },
+            "imageUrl": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            },
+            "uuid": {
+              "type": "string"
+            }
+          }
+        },
+        "lastCrawlDate": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
