@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "artist_uuid",
+    "date",
+    "playlist_uuid",
+    "tracks"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "artist_uuid": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "playlist_uuid": {
+      "type": "string"
+    },
+    "tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "position",
+          "song"
+        ],
+        "properties": {
+          "position": {
+            "type": "integer"
+          },
+          "song": {
+            "type": "object",
+            "required": [
+              "creditName",
+              "imageUrl",
+              "name",
+              "uuid"
+            ],
+            "properties": {
+              "creditName": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
