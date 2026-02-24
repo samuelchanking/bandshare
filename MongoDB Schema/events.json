@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "artist_uuid",
+    "capacity",
+    "date",
+    "endedAt",
+    "festival",
+    "name",
+    "price",
+    "startedAt",
+    "status",
+    "type",
+    "uuid",
+    "venue"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "artist_uuid": {
+      "type": "string"
+    },
+    "capacity": {
+      "type": "integer"
+    },
+    "date": {
+      "type": "string"
+    },
+    "endedAt": {
+      "type": "string"
+    },
+    "festival": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "cityName",
+            "countryCode",
+            "countryName",
+            "imageUrl",
+            "name",
+            "region",
+            "type",
+            "uuid"
+          ],
+          "properties": {
+            "cityName": {
+              "type": "string"
+            },
+            "countryCode": {
+              "type": "string"
+            },
+            "countryName": {
+              "type": "string"
+            },
+            "imageUrl": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "uuid": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "price": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "currency",
+            "max",
+            "min"
+          ],
+          "properties": {
+            "currency": {
+              "type": "string"
+            },
+            "max": {
+              "type": "integer"
+            },
+            "min": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "startedAt": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "uuid": {
+      "type": "string"
+    },
+    "venue": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "cityName",
+            "countryCode",
+            "countryName",
+            "imageUrl",
+            "name",
+            "region",
+            "type",
+            "uuid"
+          ],
+          "properties": {
+            "cityName": {
+              "type": "string"
+            },
+            "countryCode": {
+              "type": "string"
+            },
+            "countryName": {
+              "type": "string"
+            },
+            "imageUrl": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "uuid": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
