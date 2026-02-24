@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "artist_uuid",
+    "entryDate",
+    "peakPosition",
+    "peakPositionDate",
+    "playlist",
+    "position",
+    "positionDate",
+    "song",
+    "tracklist_dates"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "artist_uuid": {
+      "type": "string"
+    },
+    "entryDate": {
+      "type": "string"
+    },
+    "peakPosition": {
+      "type": "integer"
+    },
+    "peakPositionDate": {
+      "type": "string"
+    },
+    "playlist": {
+      "type": "object",
+      "required": [
+        "countryCode",
+        "identifier",
+        "imageUrl",
+        "latestCrawlDate",
+        "latestSubscriberCount",
+        "latestTrackCount",
+        "name",
+        "platform",
+        "type",
+        "uuid"
+      ],
+      "properties": {
+        "countryCode": {
+          "type": "string"
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "latestCrawlDate": {
+          "type": "string"
+        },
+        "latestSubscriberCount": {
+          "type": "integer"
+        },
+        "latestTrackCount": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      }
+    },
+    "position": {
+      "type": "integer"
+    },
+    "positionDate": {
+      "type": "string"
+    },
+    "song": {
+      "type": "object",
+      "required": [
+        "name",
+        "uuid"
+      ],
+      "properties": {
+        "name": {
+          "type": "null"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      }
+    },
+    "tracklist_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
