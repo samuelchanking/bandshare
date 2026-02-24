@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "album_metadata",
+    "album_uuid",
+    "artist_uuid"
+  ],
+  "properties": {
+    "_id": {
+      "$ref": "#/$defs/ObjectId"
+    },
+    "album_metadata": {
+      "type": "object",
+      "required": [
+        "creditName",
+        "imageUrl",
+        "name",
+        "releaseDate",
+        "totalTracks",
+        "tracklist",
+        "type",
+        "upc",
+        "uuid"
+      ],
+      "properties": {
+        "creditName": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "releaseDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "totalTracks": {
+          "type": "integer"
+        },
+        "tracklist": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "imageUrl",
+              "name",
+              "number",
+              "uuid"
+            ],
+            "properties": {
+              "imageUrl": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer"
+              },
+              "uuid": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "type": {
+          "type": "string"
+        },
+        "upc": {
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string"
+        }
+      }
+    },
+    "album_uuid": {
+      "type": "string"
+    },
+    "artist_uuid": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "ObjectId": {
+      "type": "object",
+      "properties": {
+        "$oid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
+      },
+      "required": [
+        "$oid"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
