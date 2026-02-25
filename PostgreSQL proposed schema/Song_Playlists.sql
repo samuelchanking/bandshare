@@ -19,13 +19,16 @@ CREATE TABLE song_playlist_placements (
     artist_uuid UUID NOT NULL REFERENCES artists(artist_uuid) ON DELETE CASCADE,
     playlist_uuid UUID NOT NULL REFERENCES playlists(playlist_uuid) ON DELETE CASCADE,
     
-    entry_date DATE,
+    -- Added fields for joining and exiting the playlist
+    join_date DATE, 
+    exit_date DATE, 
+    
     peak_position INTEGER,
     peak_position_date DATE,
     current_position INTEGER,
     position_date DATE,
     
-    -- Postgres supports arrays natively, which is perfect for tracklist_dates
+    -- Array of all dates the song was present on the playlist
     tracklist_dates DATE[],
     
     -- Ensure a song only has one active performance record per playlist
